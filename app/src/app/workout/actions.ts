@@ -1,0 +1,385 @@
+'use server';
+
+import { db, exercises, workoutSessions, workoutSets, users, userGamification, xpTransactions, personalRecords } from '@/db';
+import { eq, desc, and, sql } from 'drizzle-orm';
+
+export type Exercise = {
+  id: string;
+  nameFr: string;
+  nameEn: string | null;
+  muscleGroup: string;
+  secondaryMuscles: string[] | null;
+  equipment: string[] | null;
+  difficulty: string | null;
+};
+
+export type WorkoutSession = {
+  id: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  durationMinutes: number | null;
+  totalVolume: string | null;
+  notes: string | null;
+};
+
+export type WorkoutSet = {
+  id: string;
+  exerciseId: string;
+  exerciseName: string;
+  setNumber: number;
+  reps: number | null;
+  weight: string | null;
+  rpe: number | null;
+  isWarmup: boolean | null;
+  isPr: boolean | null;
+};
+
+export type ActiveSession = {
+  session: WorkoutSession;
+  sets: WorkoutSet[];
+  exercises: Map<string, Exercise>;
+};
+
+// Get all exercises grouped by muscle
+export async function getExercises(): Promise<Exercise[]> {
+  const result = await db
+    .select({
+      id: exercises.id,
+      nameFr: exercises.nameFr,
+      nameEn: exercises.nameEn,
+      muscleGroup: exercises.muscleGroup,
+      secondaryMuscles: exercises.secondaryMuscles,
+      equipment: exercises.equipment,
+      difficulty: exercises.difficulty,
+    })
+    .from(exercises)
+    .orderBy(exercises.muscleGroup, exercises.nameFr);
+
+  return result;
+}
+
+// Get exercises by muscle group
+export async function getExercisesByMuscle(muscle: string): Promise<Exercise[]> {
+  const result = await db
+    .select({
+      id: exercises.id,
+      nameFr: exercises.nameFr,
+      nameEn: exercises.nameEn,
+      muscleGroup: exercises.muscleGroup,
+      secondaryMuscles: exercises.secondaryMuscles,
+      equipment: exercises.equipment,
+      difficulty: exercises.difficulty,
+    })
+    .from(exercises)
+    .where(eq(exercises.muscleGroup, muscle))
+    .orderBy(exercises.nameFr);
+
+  return result;
+}
+
+// Get recent workout sessions
+export async function getRecentSessions(limit = 10): Promise<WorkoutSession[]> {
+  const user = await db.select().from(users).limit(1);
+  if (user.length === 0) return [];
+
+  const result = await db
+    .select({
+      id: workoutSessions.id,
+      startedAt: workoutSessions.startedAt,
+      endedAt: workoutSessions.endedAt,
+      durationMinutes: workoutSessions.durationMinutes,
+      totalVolume: workoutSessions.totalVolume,
+      notes: workoutSessions.notes,
+    })
+    .from(workoutSessions)
+    .where(eq(workoutSessions.userId, user[0].id))
+    .orderBy(desc(workoutSessions.startedAt))
+    .limit(limit);
+
+  return result.map(s => ({
+    ...s,
+    startedAt: s.startedAt!,
+  }));
+}
+
+// Start a new workout session
+export async function startWorkoutSession(): Promise<string> {
+  // Get or create user
+  let user = await db.select().from(users).limit(1);
+  if (user.length === 0) {
+    const [newUser] = await db
+      .insert(users)
+      .values({ email: 'demo@workout.app', displayName: 'haze' })
+      .returning();
+    user = [newUser];
+  }
+
+  const [session] = await db
+    .insert(workoutSessions)
+    .values({
+      userId: user[0].id,
+      startedAt: new Date(),
+    })
+    .returning();
+
+  return session.id;
+}
+
+// Get active session with sets
+export async function getActiveSession(sessionId: string): Promise<ActiveSession | null> {
+  const [session] = await db
+    .select()
+    .from(workoutSessions)
+    .where(eq(workoutSessions.id, sessionId));
+
+  if (!session) return null;
+
+  // Get all sets for this session with exercise names
+  const sets = await db
+    .select({
+      id: workoutSets.id,
+      exerciseId: workoutSets.exerciseId,
+      exerciseName: exercises.nameFr,
+      setNumber: workoutSets.setNumber,
+      reps: workoutSets.reps,
+      weight: workoutSets.weight,
+      rpe: workoutSets.rpe,
+      isWarmup: workoutSets.isWarmup,
+      isPr: workoutSets.isPr,
+    })
+    .from(workoutSets)
+    .leftJoin(exercises, eq(workoutSets.exerciseId, exercises.id))
+    .where(eq(workoutSets.sessionId, sessionId))
+    .orderBy(workoutSets.performedAt);
+
+  // Get unique exercises used in session
+  const exerciseIds = [...new Set(sets.map(s => s.exerciseId).filter(Boolean))];
+  const exercisesData = exerciseIds.length > 0
+    ? await db
+        .select({
+          id: exercises.id,
+          nameFr: exercises.nameFr,
+          nameEn: exercises.nameEn,
+          muscleGroup: exercises.muscleGroup,
+          secondaryMuscles: exercises.secondaryMuscles,
+          equipment: exercises.equipment,
+          difficulty: exercises.difficulty,
+        })
+        .from(exercises)
+        .where(sql`${exercises.id} IN ${exerciseIds}`)
+    : [];
+
+  const exerciseMap = new Map<string, Exercise>();
+  exercisesData.forEach(e => exerciseMap.set(e.id, e));
+
+  return {
+    session: {
+      id: session.id,
+      startedAt: session.startedAt!,
+      endedAt: session.endedAt,
+      durationMinutes: session.durationMinutes,
+      totalVolume: session.totalVolume,
+      notes: session.notes,
+    },
+    sets: sets.map(s => ({
+      ...s,
+      exerciseId: s.exerciseId!,
+      exerciseName: s.exerciseName || 'Unknown',
+    })),
+    exercises: exerciseMap,
+  };
+}
+
+// Add a set to the session
+export async function addSet(
+  sessionId: string,
+  exerciseId: string,
+  setNumber: number,
+  reps: number,
+  weight: number,
+  rpe?: number,
+  isWarmup = false
+): Promise<{ id: string; isPr: boolean }> {
+  // Check if this is a PR
+  const user = await db.select().from(users).limit(1);
+  if (user.length === 0) throw new Error('No user found');
+
+  // Get current PR for this exercise (1RM estimation: weight * (1 + reps/30))
+  const estimated1RM = weight * (1 + reps / 30);
+
+  const [currentPR] = await db
+    .select()
+    .from(personalRecords)
+    .where(
+      and(
+        eq(personalRecords.userId, user[0].id),
+        eq(personalRecords.exerciseId, exerciseId),
+        eq(personalRecords.recordType, '1rm')
+      )
+    );
+
+  const isPr = !currentPR || estimated1RM > parseFloat(currentPR.value);
+
+  // Insert the set
+  const [set] = await db
+    .insert(workoutSets)
+    .values({
+      sessionId,
+      exerciseId,
+      setNumber,
+      reps,
+      weight: weight.toString(),
+      rpe,
+      isWarmup,
+      isPr,
+      performedAt: new Date(),
+    })
+    .returning();
+
+  // Update PR if this is a new record
+  if (isPr && !isWarmup) {
+    await db
+      .insert(personalRecords)
+      .values({
+        userId: user[0].id,
+        exerciseId,
+        recordType: '1rm',
+        value: estimated1RM.toFixed(2),
+        workoutSetId: set.id,
+        achievedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [personalRecords.userId, personalRecords.exerciseId, personalRecords.recordType],
+        set: {
+          value: estimated1RM.toFixed(2),
+          workoutSetId: set.id,
+          achievedAt: new Date(),
+        },
+      });
+  }
+
+  return { id: set.id, isPr: isPr && !isWarmup };
+}
+
+// Delete a set
+export async function deleteSet(setId: string): Promise<void> {
+  await db.delete(workoutSets).where(eq(workoutSets.id, setId));
+}
+
+// End workout session
+export async function endWorkoutSession(
+  sessionId: string,
+  perceivedDifficulty?: number,
+  notes?: string
+): Promise<{ xpEarned: number; totalVolume: number; duration: number; prCount: number }> {
+  const session = await getActiveSession(sessionId);
+  if (!session) throw new Error('Session not found');
+
+  // Calculate stats
+  const endTime = new Date();
+  const startTime = new Date(session.session.startedAt);
+  const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
+
+  // Calculate total volume (sum of weight * reps for all sets)
+  let totalVolume = 0;
+  let prCount = 0;
+  for (const set of session.sets) {
+    if (!set.isWarmup && set.weight && set.reps) {
+      totalVolume += parseFloat(set.weight) * set.reps;
+    }
+    if (set.isPr) prCount++;
+  }
+
+  // Update session
+  await db
+    .update(workoutSessions)
+    .set({
+      endedAt: endTime,
+      durationMinutes,
+      totalVolume: totalVolume.toFixed(2),
+      perceivedDifficulty,
+      notes,
+    })
+    .where(eq(workoutSessions.id, sessionId));
+
+  // Award XP
+  const user = await db.select().from(users).limit(1);
+  if (user.length === 0) throw new Error('No user found');
+
+  // Base XP + bonus for volume and PRs
+  const baseXp = 50;
+  const volumeBonus = Math.floor(totalVolume / 1000) * 10; // 10 XP per 1000kg
+  const prBonus = prCount * 25; // 25 XP per PR
+  const totalXp = baseXp + volumeBonus + prBonus;
+
+  // Add XP transaction
+  await db.insert(xpTransactions).values({
+    userId: user[0].id,
+    amount: totalXp,
+    reason: 'workout_completed',
+    referenceType: 'workout_session',
+    referenceId: sessionId,
+  });
+
+  // Update user gamification
+  await db
+    .insert(userGamification)
+    .values({
+      userId: user[0].id,
+      totalXp,
+      lastActivityDate: new Date().toISOString().split('T')[0],
+    })
+    .onConflictDoUpdate({
+      target: userGamification.userId,
+      set: {
+        totalXp: sql`${userGamification.totalXp} + ${totalXp}`,
+        lastActivityDate: new Date().toISOString().split('T')[0],
+        currentStreak: sql`${userGamification.currentStreak} + 1`,
+        updatedAt: new Date(),
+      },
+    });
+
+  return {
+    xpEarned: totalXp,
+    totalVolume,
+    duration: durationMinutes,
+    prCount,
+  };
+}
+
+// Get last sets for an exercise (to show previous performance)
+export async function getLastSetsForExercise(exerciseId: string, limit = 5): Promise<WorkoutSet[]> {
+  const user = await db.select().from(users).limit(1);
+  if (user.length === 0) return [];
+
+  const result = await db
+    .select({
+      id: workoutSets.id,
+      exerciseId: workoutSets.exerciseId,
+      exerciseName: exercises.nameFr,
+      setNumber: workoutSets.setNumber,
+      reps: workoutSets.reps,
+      weight: workoutSets.weight,
+      rpe: workoutSets.rpe,
+      isWarmup: workoutSets.isWarmup,
+      isPr: workoutSets.isPr,
+    })
+    .from(workoutSets)
+    .innerJoin(workoutSessions, eq(workoutSets.sessionId, workoutSessions.id))
+    .leftJoin(exercises, eq(workoutSets.exerciseId, exercises.id))
+    .where(
+      and(
+        eq(workoutSessions.userId, user[0].id),
+        eq(workoutSets.exerciseId, exerciseId),
+        eq(workoutSets.isWarmup, false)
+      )
+    )
+    .orderBy(desc(workoutSets.performedAt))
+    .limit(limit);
+
+  return result.map(s => ({
+    ...s,
+    exerciseId: s.exerciseId!,
+    exerciseName: s.exerciseName || 'Unknown',
+  }));
+}
