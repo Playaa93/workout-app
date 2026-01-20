@@ -55,6 +55,7 @@ export type WorkoutSet = {
   rpe: number | null;
   isWarmup: boolean | null;
   isPr: boolean | null;
+  restTaken: number | null;
 };
 
 export type ActiveSession = {
@@ -91,9 +92,11 @@ export async function getExercisesByMuscle(muscle: string): Promise<Exercise[]> 
       nameFr: exercises.nameFr,
       nameEn: exercises.nameEn,
       muscleGroup: exercises.muscleGroup,
+      primaryMuscles: exercises.primaryMuscles,
       secondaryMuscles: exercises.secondaryMuscles,
       equipment: exercises.equipment,
       difficulty: exercises.difficulty,
+      morphotypeRecommendations: exercises.morphotypeRecommendations,
     })
     .from(exercises)
     .where(eq(exercises.muscleGroup, muscle))
@@ -171,6 +174,7 @@ export async function getActiveSession(sessionId: string): Promise<ActiveSession
       rpe: workoutSets.rpe,
       isWarmup: workoutSets.isWarmup,
       isPr: workoutSets.isPr,
+      restTaken: workoutSets.restTaken,
     })
     .from(workoutSets)
     .leftJoin(exercises, eq(workoutSets.exerciseId, exercises.id))
@@ -186,9 +190,11 @@ export async function getActiveSession(sessionId: string): Promise<ActiveSession
           nameFr: exercises.nameFr,
           nameEn: exercises.nameEn,
           muscleGroup: exercises.muscleGroup,
+          primaryMuscles: exercises.primaryMuscles,
           secondaryMuscles: exercises.secondaryMuscles,
           equipment: exercises.equipment,
           difficulty: exercises.difficulty,
+          morphotypeRecommendations: exercises.morphotypeRecommendations,
         })
         .from(exercises)
         .where(sql`${exercises.id} IN ${exerciseIds}`)
@@ -223,7 +229,8 @@ export async function addSet(
   reps: number,
   weight: number,
   rpe?: number,
-  isWarmup = false
+  isWarmup = false,
+  restTaken?: number
 ): Promise<{ id: string; isPr: boolean }> {
   // Check if this is a PR
   const user = await db.select().from(users).limit(1);
@@ -257,6 +264,7 @@ export async function addSet(
       rpe,
       isWarmup,
       isPr,
+      restTaken,
       performedAt: new Date(),
     })
     .returning();
@@ -443,6 +451,7 @@ export async function getLastSetsForExercise(exerciseId: string, limit = 5): Pro
       rpe: workoutSets.rpe,
       isWarmup: workoutSets.isWarmup,
       isPr: workoutSets.isPr,
+      restTaken: workoutSets.restTaken,
     })
     .from(workoutSets)
     .innerJoin(workoutSessions, eq(workoutSets.sessionId, workoutSessions.id))
@@ -571,13 +580,16 @@ export async function getTemplates(): Promise<WorkoutTemplate[]> {
       ...template,
       targetMuscles: template.targetMuscles || [],
       createdAt: template.createdAt!,
-      exercises: templateExercises.map(e => ({
-        ...e,
-        exerciseName: e.exerciseName || 'Unknown',
-        targetSets: e.targetSets || 3,
-        targetReps: e.targetReps || '8-12',
-        restSeconds: e.restSeconds || 90,
-      })),
+      exercises: templateExercises
+        .filter(e => e.exerciseId !== null)
+        .map(e => ({
+          ...e,
+          exerciseId: e.exerciseId!,
+          exerciseName: e.exerciseName || 'Unknown',
+          targetSets: e.targetSets || 3,
+          targetReps: e.targetReps || '8-12',
+          restSeconds: e.restSeconds || 90,
+        })),
     });
   }
 
@@ -624,13 +636,16 @@ export async function startWorkoutFromTemplate(templateId: string): Promise<{ se
 
   return {
     sessionId: session.id,
-    exercises: templateExercises.map(e => ({
-      ...e,
-      exerciseName: e.exerciseName || 'Unknown',
-      targetSets: e.targetSets || 3,
-      targetReps: e.targetReps || '8-12',
-      restSeconds: e.restSeconds || 90,
-    })),
+    exercises: templateExercises
+      .filter(e => e.exerciseId !== null)
+      .map(e => ({
+        ...e,
+        exerciseId: e.exerciseId!,
+        exerciseName: e.exerciseName || 'Unknown',
+        targetSets: e.targetSets || 3,
+        targetReps: e.targetReps || '8-12',
+        restSeconds: e.restSeconds || 90,
+      })),
   };
 }
 
@@ -676,13 +691,16 @@ export async function getSessionTemplateExercises(sessionId: string): Promise<Te
     .where(eq(workoutTemplateExercises.templateId, session.templateId))
     .orderBy(workoutTemplateExercises.orderIndex);
 
-  return templateExercises.map(e => ({
-    ...e,
-    exerciseName: e.exerciseName || 'Unknown',
-    targetSets: e.targetSets || 3,
-    targetReps: e.targetReps || '8-12',
-    restSeconds: e.restSeconds || 90,
-  }));
+  return templateExercises
+    .filter(e => e.exerciseId !== null)
+    .map(e => ({
+      ...e,
+      exerciseId: e.exerciseId!,
+      exerciseName: e.exerciseName || 'Unknown',
+      targetSets: e.targetSets || 3,
+      targetReps: e.targetReps || '8-12',
+      restSeconds: e.restSeconds || 90,
+    }));
 }
 
 // Get similar exercises (same primary muscles) for swapping
@@ -708,6 +726,7 @@ export async function getSimilarExercises(exerciseId: string): Promise<Exercise[
         nameFr: exercises.nameFr,
         nameEn: exercises.nameEn,
         muscleGroup: exercises.muscleGroup,
+        primaryMuscles: exercises.primaryMuscles,
         secondaryMuscles: exercises.secondaryMuscles,
         equipment: exercises.equipment,
         difficulty: exercises.difficulty,

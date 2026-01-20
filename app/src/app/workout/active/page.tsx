@@ -57,6 +57,9 @@ import Timer from '@mui/icons-material/Timer';
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import Search from '@mui/icons-material/Search';
 import SwapHoriz from '@mui/icons-material/SwapHoriz';
+import VolumeUp from '@mui/icons-material/VolumeUp';
+import VolumeOff from '@mui/icons-material/VolumeOff';
+import Vibration from '@mui/icons-material/Vibration';
 
 function ActiveWorkoutContent() {
   const router = useRouter();
@@ -76,6 +79,8 @@ function ActiveWorkoutContent() {
   const [restTimer, setRestTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerDuration] = useState(90);
+  const [timerSound, setTimerSound] = useState(true);
+  const [timerVibration, setTimerVibration] = useState(true);
 
   // Elapsed time
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -128,9 +133,30 @@ function ActiveWorkoutContent() {
       setRestTimer((prev) => {
         if (prev <= 1) {
           setIsTimerRunning(false);
-          // Play notification sound or vibrate
-          if ('vibrate' in navigator) {
-            navigator.vibrate([200, 100, 200]);
+          // Vibration
+          if (timerVibration && 'vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200, 100, 200]);
+          }
+          // Sound - 3 beeps
+          if (timerSound) {
+            try {
+              const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+              const audioContext = new AudioContextClass();
+              [0, 0.25, 0.5].forEach((delay) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.frequency.value = 880;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.4, audioContext.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + 0.2);
+                osc.start(audioContext.currentTime + delay);
+                osc.stop(audioContext.currentTime + delay + 0.2);
+              });
+            } catch {
+              // Audio not supported
+            }
           }
           return 0;
         }
@@ -139,10 +165,12 @@ function ActiveWorkoutContent() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isTimerRunning, restTimer]);
+  }, [isTimerRunning, restTimer, timerSound, timerVibration]);
 
-  const startTimer = (duration?: number) => {
+  const startTimer = (duration?: number, sound?: boolean, vibration?: boolean) => {
     setRestTimer(duration || timerDuration);
+    if (sound !== undefined) setTimerSound(sound);
+    if (vibration !== undefined) setTimerVibration(vibration);
     setIsTimerRunning(true);
   };
 
@@ -277,12 +305,36 @@ function ActiveWorkoutContent() {
                 <Typography variant="h5" fontWeight={700} fontFamily="monospace">{formatTime(restTimer)}</Typography>
               </Box>
             </Stack>
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <IconButton
+                size="small"
+                onClick={() => setTimerSound(!timerSound)}
+                sx={{
+                  width: 28,
+                  height: 28,
+                  color: timerSound ? 'primary.light' : 'text.disabled',
+                  opacity: timerSound ? 1 : 0.5,
+                }}
+              >
+                {timerSound ? <VolumeUp sx={{ fontSize: 18 }} /> : <VolumeOff sx={{ fontSize: 18 }} />}
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => setTimerVibration(!timerVibration)}
+                sx={{
+                  width: 28,
+                  height: 28,
+                  color: timerVibration ? 'primary.light' : 'text.disabled',
+                  opacity: timerVibration ? 1 : 0.5,
+                }}
+              >
+                <Vibration sx={{ fontSize: 18 }} />
+              </IconButton>
               <Button
                 size="small"
                 variant="contained"
                 onClick={() => setRestTimer((prev) => prev + 30)}
-                sx={{ bgcolor: 'primary.dark', minWidth: 48 }}
+                sx={{ bgcolor: 'primary.dark', minWidth: 44, height: 28, fontSize: '0.75rem' }}
               >
                 +30s
               </Button>
@@ -290,6 +342,7 @@ function ActiveWorkoutContent() {
                 size="small"
                 variant="outlined"
                 onClick={stopTimer}
+                sx={{ minWidth: 44, height: 28, fontSize: '0.75rem' }}
               >
                 Stop
               </Button>
@@ -377,7 +430,16 @@ function ActiveWorkoutContent() {
                           {exerciseSets.map((set, i) => (
                             <Chip
                               key={set.id}
-                              label={`${set.weight}kg × ${set.reps}`}
+                              label={
+                                <Stack direction="row" alignItems="center" spacing={0.5}>
+                                  <span>{set.weight}kg × {set.reps}</span>
+                                  {set.restTaken && (
+                                    <Typography component="span" sx={{ fontSize: '0.6rem', opacity: 0.6 }}>
+                                      {Math.floor(set.restTaken / 60)}:{(set.restTaken % 60).toString().padStart(2, '0')}
+                                    </Typography>
+                                  )}
+                                </Stack>
+                              }
                               size="small"
                               color={set.isPr ? 'warning' : 'default'}
                               variant="outlined"
@@ -449,9 +511,9 @@ function ActiveWorkoutContent() {
             setNumber={(setsByExercise.get(selectedExercise.id)?.length || 0) + 1}
             morphotype={morphotype}
             onClose={() => setSelectedExercise(null)}
-            onSetAdded={() => {
+            onSetAdded={(restDuration) => {
               loadSession();
-              startTimer();
+              startTimer(restDuration);
             }}
           />
         )}
@@ -696,6 +758,11 @@ function ExerciseCard({
                   <Typography component="span" color="text.secondary" sx={{ mx: 1 }}>×</Typography>
                   <Typography component="span" fontWeight={500}>{set.reps}</Typography>
                   {set.rpe && <Typography component="span" color="text.secondary" sx={{ ml: 1 }}>RPE {set.rpe}</Typography>}
+                  {set.restTaken && (
+                    <Typography component="span" color="text.disabled" sx={{ ml: 1, fontSize: '0.75rem' }}>
+                      ⏱️ {Math.floor(set.restTaken / 60)}:{(set.restTaken % 60).toString().padStart(2, '0')}
+                    </Typography>
+                  )}
                 </Box>
               </Stack>
               <Stack direction="row" alignItems="center" spacing={1}>
@@ -741,10 +808,10 @@ function ExerciseCard({
           lastWeight={lastSet?.weight ? parseFloat(lastSet.weight) : undefined}
           lastReps={lastSet?.reps || undefined}
           onCancel={() => setShowAddSet(false)}
-          onAdd={() => {
+          onAdd={(restDuration) => {
             setShowAddSet(false);
             onSetAdded();
-            onStartTimer();
+            onStartTimer(restDuration);
           }}
         />
       )}
@@ -768,18 +835,20 @@ function QuickSetInput({
   lastWeight?: number;
   lastReps?: number;
   onCancel: () => void;
-  onAdd: () => void;
+  onAdd: (restDuration: number) => void;
 }) {
-  const [weight, setWeight] = useState(lastWeight?.toString() || '');
-  const [reps, setReps] = useState(lastReps?.toString() || '');
+  const [weight, setWeight] = useState(lastWeight || 0);
+  const [reps, setReps] = useState(lastReps || 0);
+  const [restTime, setRestTime] = useState(90);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!weight || !reps) return;
     setIsSubmitting(true);
+    triggerHaptic('heavy');
     try {
-      await addSet(sessionId, exerciseId, setNumber, parseInt(reps), parseFloat(weight));
-      onAdd();
+      await addSet(sessionId, exerciseId, setNumber, reps, weight, undefined, false, restTime);
+      onAdd(restTime);
     } catch (error) {
       console.error('Error adding set:', error);
       setIsSubmitting(false);
@@ -787,38 +856,55 @@ function QuickSetInput({
   };
 
   return (
-    <Box sx={{ p: 2, bgcolor: 'action.hover', borderTop: 1, borderColor: 'divider' }}>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-        <TextField
-          label="Poids (kg)"
-          type="number"
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          size="small"
-          fullWidth
-          autoFocus
-          InputProps={{ inputProps: { style: { textAlign: 'center' } } }}
-        />
-        <TextField
+    <Box sx={{ py: 2, px: 3 }}>
+      {/* Reps & Weight */}
+      <Stack direction="row" spacing={4} justifyContent="center" sx={{ mb: 2 }}>
+        <StepperInput
           label="Reps"
-          type="number"
           value={reps}
-          onChange={(e) => setReps(e.target.value)}
-          size="small"
-          fullWidth
-          InputProps={{ inputProps: { style: { textAlign: 'center' } } }}
+          onChange={setReps}
+          step={1}
+          min={0}
+          max={100}
+        />
+        <StepperInput
+          label="Poids"
+          value={weight}
+          onChange={setWeight}
+          step={2.5}
+          unit="kg"
         />
       </Stack>
-      <Stack direction="row" spacing={1}>
-        <Button fullWidth variant="outlined" onClick={onCancel}>
+
+      {/* Rest time */}
+      <Box sx={{ mb: 2 }}>
+        <RestTimePicker value={restTime} onChange={setRestTime} />
+      </Box>
+
+      {/* Actions */}
+      <Stack direction="row" spacing={1.5}>
+        <Button
+          fullWidth
+          onClick={onCancel}
+          sx={{
+            color: 'text.secondary',
+            fontWeight: 500,
+            '&:hover': { bgcolor: 'action.hover' },
+          }}
+        >
           Annuler
         </Button>
         <Button
           fullWidth
-          variant="contained"
           onClick={handleSubmit}
           disabled={!weight || !reps || isSubmitting}
-          sx={{ background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)' }}
+          sx={{
+            bgcolor: 'text.primary',
+            color: 'background.default',
+            fontWeight: 600,
+            '&:hover': { bgcolor: 'text.primary', opacity: 0.9 },
+            '&:disabled': { bgcolor: 'action.disabled', color: 'text.disabled' },
+          }}
         >
           {isSubmitting ? '...' : 'Valider'}
         </Button>
@@ -883,40 +969,56 @@ const MUSCLE_GROUP_LABELS: Record<string, string> = {
   full_body: 'Full Body',
 };
 
-// Subcategory groupings (simplified primary muscles)
-const SUBCATEGORY_GROUPS: Record<string, Record<string, string[]>> = {
-  legs: {
-    'Quadriceps': ['quadriceps_rectus_femoris', 'quadriceps_vastus_lateralis', 'quadriceps_vastus_medialis'],
-    'Fessiers': ['gluteus_maximus'],
-    'Ischios': ['hamstrings_biceps_femoris', 'hamstrings_semitendinosus'],
-    'Mollets': ['calves_gastrocnemius', 'calves_soleus'],
-    'Adducteurs': ['adductors', 'hip_flexors'],
-  },
-  arms: {
-    'Biceps': ['biceps_long_head', 'biceps_short_head', 'brachialis', 'brachioradialis'],
-    'Triceps': ['triceps_long_head', 'triceps_lateral_head', 'triceps_medial_head'],
-    'Avant-bras': ['forearm_flexors', 'forearm_extensors'],
-  },
-  shoulders: {
-    'Deltoïde ant.': ['anterior_delt'],
-    'Deltoïde lat.': ['lateral_delt'],
-    'Deltoïde post.': ['posterior_delt', 'infraspinatus'],
-  },
-  back: {
-    'Grand dorsal': ['latissimus_dorsi', 'teres_major'],
-    'Trapèzes': ['trapezius_mid', 'trapezius_upper', 'rhomboids'],
-    'Lombaires': ['erector_spinae'],
-  },
-  chest: {
-    'Pec. haut': ['pec_major_clavicular'],
-    'Pec. milieu': ['pec_major_sternal'],
-    'Pec. bas': ['pec_major_abdominal'],
-  },
-  core: {
-    'Abdos': ['rectus_abdominis', 'transverse_abdominis'],
-    'Obliques': ['obliques'],
-  },
+// Mapping primary muscles to simplified subcategory names
+const MUSCLE_TO_SUBCATEGORY: Record<string, string> = {
+  // Jambes
+  quadriceps_rectus_femoris: 'Quadriceps',
+  quadriceps_vastus_lateralis: 'Quadriceps',
+  quadriceps_vastus_medialis: 'Quadriceps',
+  gluteus_maximus: 'Fessiers',
+  hamstrings_biceps_femoris: 'Ischios',
+  hamstrings_semitendinosus: 'Ischios',
+  calves_gastrocnemius: 'Mollets',
+  calves_soleus: 'Mollets',
+  adductors: 'Adducteurs',
+  hip_flexors: 'Adducteurs',
+  // Bras
+  biceps_long_head: 'Biceps',
+  biceps_short_head: 'Biceps',
+  brachialis: 'Biceps',
+  brachioradialis: 'Biceps',
+  triceps_long_head: 'Triceps',
+  triceps_lateral_head: 'Triceps',
+  triceps_medial_head: 'Triceps',
+  forearm_flexors: 'Avant-bras',
+  forearm_extensors: 'Avant-bras',
+  // Épaules
+  anterior_delt: 'Delt. avant',
+  lateral_delt: 'Delt. latéral',
+  posterior_delt: 'Delt. arrière',
+  infraspinatus: 'Delt. arrière',
+  // Dos
+  latissimus_dorsi: 'Grand dorsal',
+  teres_major: 'Grand dorsal',
+  trapezius_mid: 'Trapèzes',
+  trapezius_upper: 'Trapèzes',
+  rhomboids: 'Trapèzes',
+  erector_spinae: 'Lombaires',
+  // Pectoraux
+  pec_major_clavicular: 'Pec. haut',
+  pec_major_sternal: 'Pec. milieu',
+  pec_major_abdominal: 'Pec. bas',
+  // Core
+  rectus_abdominis: 'Abdos',
+  transverse_abdominis: 'Abdos',
+  obliques: 'Obliques',
 };
+
+// Helper to get subcategory for an exercise
+function getExerciseSubcategory(primaryMuscles: string[] | null): string | null {
+  if (!primaryMuscles || primaryMuscles.length === 0) return null;
+  return MUSCLE_TO_SUBCATEGORY[primaryMuscles[0]] || null;
+}
 
 // Exercise Picker Modal
 function ExercisePicker({
@@ -935,10 +1037,19 @@ function ExercisePicker({
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [sortByScore, setSortByScore] = useState(true);
 
-  const muscleGroups = [...new Set(exercises.map((e) => e.muscleGroup))];
+  const muscleGroups = [...new Set(exercises.map((e) => e.muscleGroup))].filter(g => g !== 'full_body');
 
-  // Get subcategories for selected muscle group
-  const subcategories = selectedMuscle ? SUBCATEGORY_GROUPS[selectedMuscle] || {} : {};
+  // Dynamically generate subcategories from exercises in selected muscle group
+  const subcategories = useMemo(() => {
+    if (!selectedMuscle) return [];
+    const muscleExercises = exercises.filter(e => e.muscleGroup === selectedMuscle);
+    const subs = new Set<string>();
+    muscleExercises.forEach(ex => {
+      const sub = getExerciseSubcategory(ex.primaryMuscles);
+      if (sub) subs.add(sub);
+    });
+    return Array.from(subs).sort();
+  }, [exercises, selectedMuscle]);
 
   // Calculate scores for all exercises
   const exercisesWithScores = useMemo(() => {
@@ -957,12 +1068,11 @@ function ExercisePicker({
       const matchesSearch = exercise.nameFr.toLowerCase().includes(search.toLowerCase());
       const matchesMuscle = !selectedMuscle || exercise.muscleGroup === selectedMuscle;
 
-      // Subcategory filter
+      // Subcategory filter - match by subcategory name
       let matchesSubcategory = true;
-      if (selectedSubcategory && subcategories[selectedSubcategory]) {
-        const targetMuscles = subcategories[selectedSubcategory];
-        const exercisePrimaryMuscles = exercise.primaryMuscles || [];
-        matchesSubcategory = exercisePrimaryMuscles.some(m => targetMuscles.includes(m));
+      if (selectedSubcategory) {
+        const exerciseSubcategory = getExerciseSubcategory(exercise.primaryMuscles);
+        matchesSubcategory = exerciseSubcategory === selectedSubcategory;
       }
 
       return matchesSearch && matchesMuscle && matchesSubcategory;
@@ -973,7 +1083,7 @@ function ExercisePicker({
     }
 
     return filtered;
-  }, [exercisesWithScores, search, selectedMuscle, selectedSubcategory, subcategories, sortByScore]);
+  }, [exercisesWithScores, search, selectedMuscle, selectedSubcategory, sortByScore]);
 
   const handleMuscleSelect = (muscle: string | null) => {
     setSelectedMuscle(muscle);
@@ -1033,7 +1143,7 @@ function ExercisePicker({
       </Box>
 
       {/* Subcategory Filter (when muscle selected) */}
-      {selectedMuscle && Object.keys(subcategories).length > 0 && (
+      {selectedMuscle && subcategories.length > 0 && (
         <Box sx={{ px: 2, py: 1, bgcolor: 'action.hover' }}>
           <Stack direction="row" spacing={0.5} sx={{ overflowX: 'auto', flexWrap: 'wrap', gap: 0.5 }}>
             <Chip
@@ -1044,7 +1154,7 @@ function ExercisePicker({
               variant={!selectedSubcategory ? 'filled' : 'outlined'}
               sx={{ height: 24, fontSize: '0.7rem' }}
             />
-            {Object.keys(subcategories).map((sub) => (
+            {subcategories.map((sub) => (
               <Chip
                 key={sub}
                 label={sub}
@@ -1090,12 +1200,12 @@ function ExercisePicker({
                   primary={exercise.nameFr}
                   secondary={
                     <Stack direction="row" spacing={0.5} sx={{ mt: 0.25 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                      <Typography variant="caption" color="text.secondary">
                         {MUSCLE_GROUP_LABELS[exercise.muscleGroup] || exercise.muscleGroup}
                       </Typography>
-                      {exercise.primaryMuscles && exercise.primaryMuscles.length > 0 && (
+                      {getExerciseSubcategory(exercise.primaryMuscles) && (
                         <Typography variant="caption" color="primary.main">
-                          • {PRIMARY_MUSCLE_LABELS[exercise.primaryMuscles[0]] || exercise.primaryMuscles[0]}
+                          • {getExerciseSubcategory(exercise.primaryMuscles)}
                         </Typography>
                       )}
                     </Stack>
@@ -1107,6 +1217,200 @@ function ExercisePicker({
           ))}
         </List>
       </Box>
+    </Box>
+  );
+}
+
+// Haptic feedback helper
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  if ('vibrate' in navigator) {
+    const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
+    navigator.vibrate(patterns[style]);
+  }
+};
+
+// Rest Time Picker (Ultra minimal - presets + fine-tune)
+function RestTimePicker({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (seconds: number) => void;
+}) {
+  const presets = [60, 90, 120, 180, 300];
+
+  const formatTime = (t: number) =>
+    t % 60 === 0 ? `${t / 60}'` : `${Math.floor(t / 60)}:${(t % 60).toString().padStart(2, '0')}`;
+
+  const handleAdjust = (delta: number) => {
+    const newValue = Math.max(30, Math.min(600, value + delta));
+    if (newValue !== value) {
+      triggerHaptic('light');
+      onChange(newValue);
+    }
+  };
+
+  const isPreset = presets.includes(value);
+
+  return (
+    <Box>
+      {/* Presets */}
+      <Stack direction="row" justifyContent="center" alignItems="baseline" spacing={2}>
+        {presets.map((t) => {
+          const isSelected = value === t;
+          return (
+            <Typography
+              key={t}
+              onClick={() => {
+                triggerHaptic('light');
+                onChange(t);
+              }}
+              sx={{
+                cursor: 'pointer',
+                fontSize: isSelected ? '1.1rem' : '0.85rem',
+                fontWeight: isSelected ? 600 : 400,
+                color: isSelected ? 'text.primary' : 'text.disabled',
+                opacity: isSelected ? 1 : 0.5,
+                transition: 'all 0.15s ease',
+                '&:active': { opacity: 0.7 },
+              }}
+            >
+              {formatTime(t)}
+            </Typography>
+          );
+        })}
+      </Stack>
+
+      {/* Fine-tune controls */}
+      <Stack direction="row" justifyContent="center" alignItems="center" spacing={1.5} sx={{ mt: 1 }}>
+        <Typography
+          onClick={() => handleAdjust(-30)}
+          sx={{
+            cursor: value <= 30 ? 'default' : 'pointer',
+            opacity: value <= 30 ? 0.2 : 0.4,
+            fontSize: '0.85rem',
+            fontWeight: 500,
+            userSelect: 'none',
+            '&:active': { opacity: 0.6 },
+          }}
+        >
+          −30s
+        </Typography>
+
+        {!isPreset && (
+          <Typography
+            sx={{
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              color: 'primary.main',
+              minWidth: 40,
+              textAlign: 'center',
+            }}
+          >
+            {formatTime(value)}
+          </Typography>
+        )}
+
+        <Typography
+          onClick={() => handleAdjust(30)}
+          sx={{
+            cursor: value >= 600 ? 'default' : 'pointer',
+            opacity: value >= 600 ? 0.2 : 0.4,
+            fontSize: '0.85rem',
+            fontWeight: 500,
+            userSelect: 'none',
+            '&:active': { opacity: 0.6 },
+          }}
+        >
+          +30s
+        </Typography>
+      </Stack>
+    </Box>
+  );
+}
+
+// Stepper Input Component (Apple-style minimal)
+function StepperInput({
+  label,
+  value,
+  onChange,
+  step,
+  min = 0,
+  max = 999,
+  unit,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  step: number;
+  min?: number;
+  max?: number;
+  unit?: string;
+}) {
+  const handleChange = (delta: number) => {
+    const newValue = Math.max(min, Math.min(max, value + delta));
+    if (newValue !== value) {
+      triggerHaptic('light');
+      onChange(newValue);
+    }
+  };
+
+  return (
+    <Box sx={{ textAlign: 'center', flex: 1 }}>
+      {/* Label */}
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.disabled',
+          fontSize: '0.65rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        }}
+      >
+        {label}{unit && ` (${unit})`}
+      </Typography>
+
+      {/* Stepper */}
+      <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mt: 0.5 }}>
+        <Typography
+          onClick={() => handleChange(-step)}
+          sx={{
+            cursor: value <= min ? 'default' : 'pointer',
+            opacity: value <= min ? 0.2 : 0.4,
+            fontSize: '1.5rem',
+            fontWeight: 300,
+            userSelect: 'none',
+            '&:active': { opacity: 0.6 },
+          }}
+        >
+          −
+        </Typography>
+
+        <Typography
+          sx={{
+            fontSize: '2rem',
+            fontWeight: 600,
+            minWidth: 48,
+            color: 'text.primary',
+          }}
+        >
+          {value}
+        </Typography>
+
+        <Typography
+          onClick={() => handleChange(step)}
+          sx={{
+            cursor: value >= max ? 'default' : 'pointer',
+            opacity: value >= max ? 0.2 : 0.4,
+            fontSize: '1.5rem',
+            fontWeight: 300,
+            userSelect: 'none',
+            '&:active': { opacity: 0.6 },
+          }}
+        >
+          +
+        </Typography>
+      </Stack>
     </Box>
   );
 }
@@ -1125,11 +1429,12 @@ function SetInputSheet({
   setNumber: number;
   morphotype: MorphotypeResult | null;
   onClose: () => void;
-  onSetAdded: () => void;
+  onSetAdded: (restDuration: number) => void;
 }) {
-  const [weight, setWeight] = useState('');
-  const [reps, setReps] = useState('');
-  const [rpe, setRpe] = useState('');
+  const [weight, setWeight] = useState(0);
+  const [reps, setReps] = useState(0);
+  const [rpe, setRpe] = useState(0);
+  const [restTime, setRestTime] = useState(90);
   const [isWarmup, setIsWarmup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previousSets, setPreviousSets] = useState<WorkoutSet[]>([]);
@@ -1139,8 +1444,8 @@ function SetInputSheet({
     getLastSetsForExercise(exercise.id).then((sets) => {
       setPreviousSets(sets);
       if (sets.length > 0) {
-        setWeight(sets[0].weight || '');
-        setReps(sets[0].reps?.toString() || '');
+        setWeight(parseFloat(sets[0].weight || '0'));
+        setReps(sets[0].reps || 0);
       }
     });
   }, [exercise.id]);
@@ -1148,17 +1453,19 @@ function SetInputSheet({
   const handleSubmit = async () => {
     if (!weight || !reps) return;
     setIsSubmitting(true);
+    triggerHaptic('heavy');
     try {
       await addSet(
         sessionId,
         exercise.id,
         isWarmup ? 0 : setNumber,
-        parseInt(reps),
-        parseFloat(weight),
-        rpe ? parseInt(rpe) : undefined,
-        isWarmup
+        reps,
+        weight,
+        rpe || undefined,
+        isWarmup,
+        restTime
       );
-      onSetAdded();
+      onSetAdded(restTime);
       onClose();
     } catch (error) {
       console.error('Error adding set:', error);
@@ -1166,25 +1473,166 @@ function SetInputSheet({
     }
   };
 
+  const handleUsePrevious = () => {
+    if (previousSets.length > 0) {
+      triggerHaptic('medium');
+      setWeight(parseFloat(previousSets[0].weight || '0'));
+      setReps(previousSets[0].reps || 0);
+    }
+  };
+
+  const handleProgressiveOverload = () => {
+    if (previousSets.length > 0) {
+      triggerHaptic('medium');
+      setWeight(parseFloat(previousSets[0].weight || '0') + 2.5);
+      setReps(previousSets[0].reps || 0);
+    }
+  };
+
   return (
     <Box sx={{ p: 3, maxHeight: '90vh', overflow: 'auto' }}>
       {/* Handle */}
-      <Box sx={{ width: 48, height: 4, bgcolor: 'action.hover', borderRadius: 2, mx: 'auto', mb: 3 }} />
+      <Box sx={{ width: 48, height: 4, bgcolor: 'action.hover', borderRadius: 2, mx: 'auto', mb: 2 }} />
 
-      {/* Exercise Name */}
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 3 }}>
+      {/* Header */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Box>
-          <Typography variant="h6" fontWeight={600}>{exercise.nameFr}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {isWarmup ? 'Échauffement' : `Série ${setNumber}`}
-          </Typography>
+          <Typography variant="subtitle1" fontWeight={600}>{exercise.nameFr}</Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Chip
+              label={isWarmup ? 'Échauffement' : `Série ${setNumber}`}
+              size="small"
+              color={isWarmup ? 'warning' : 'primary'}
+              sx={{ height: 22, fontSize: '0.7rem' }}
+            />
+            <Chip
+              label={isWarmup ? 'Travail' : 'Échauf.'}
+              size="small"
+              variant="outlined"
+              onClick={() => {
+                triggerHaptic('light');
+                setIsWarmup(!isWarmup);
+              }}
+              sx={{ height: 22, fontSize: '0.7rem', cursor: 'pointer' }}
+            />
+          </Stack>
         </Box>
-        <IconButton onClick={onClose}>
+        <IconButton onClick={onClose} size="small">
           <Close />
         </IconButton>
       </Stack>
 
-      {/* Morpho Tips Panel (collapsible) */}
+      {/* Quick Fill - Last Set */}
+      {previousSets.length > 0 && (
+        <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleUsePrevious}
+            sx={{
+              flex: 1,
+              py: 1,
+              borderStyle: 'dashed',
+              textTransform: 'none',
+            }}
+          >
+            <Stack alignItems="center" spacing={0.25}>
+              <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {previousSets[0].weight}kg × {previousSets[0].reps}
+              </Typography>
+            </Stack>
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleProgressiveOverload}
+            sx={{
+              flex: 1,
+              py: 1,
+              textTransform: 'none',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            }}
+          >
+            <Stack alignItems="center" spacing={0.25}>
+              <Typography variant="caption" sx={{ opacity: 0.9 }}>Progression</Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {(parseFloat(previousSets[0].weight || '0') + 2.5).toFixed(1)}kg × {previousSets[0].reps}
+              </Typography>
+            </Stack>
+          </Button>
+        </Stack>
+      )}
+
+      {/* Reps & Weight */}
+      <Stack direction="row" spacing={4} justifyContent="center" sx={{ mb: 3 }}>
+        <StepperInput
+          label="Reps"
+          value={reps}
+          onChange={setReps}
+          step={1}
+          min={0}
+          max={100}
+        />
+        <StepperInput
+          label="Poids"
+          value={weight}
+          onChange={setWeight}
+          step={2.5}
+          unit="kg"
+        />
+      </Stack>
+
+      {/* Rest time */}
+      <Box sx={{ mb: 2 }}>
+        <RestTimePicker value={restTime} onChange={setRestTime} />
+      </Box>
+
+      {/* Effort level (minimal) */}
+      <Box sx={{ mb: 2 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            display: 'block',
+            textAlign: 'center',
+            mb: 1,
+            color: 'text.disabled',
+            fontSize: '0.65rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}
+        >
+          Difficulté
+        </Typography>
+        <Stack direction="row" spacing={2} justifyContent="center">
+          {[
+            { value: 6, label: '😊' },
+            { value: 7, label: '🙂' },
+            { value: 8, label: '😤' },
+            { value: 9, label: '🥵' },
+            { value: 10, label: '💀' },
+          ].map((item) => (
+            <Typography
+              key={item.value}
+              onClick={() => {
+                triggerHaptic('light');
+                setRpe(rpe === item.value ? 0 : item.value);
+              }}
+              sx={{
+                fontSize: rpe === item.value ? '1.5rem' : '1.2rem',
+                opacity: rpe === item.value ? 1 : 0.4,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                '&:active': { transform: 'scale(0.9)' },
+              }}
+            >
+              {item.label}
+            </Typography>
+          ))}
+        </Stack>
+      </Box>
+
+      {/* Morpho Tips (collapsible) */}
       {morphotype && (
         <Card
           sx={{
@@ -1192,78 +1640,28 @@ function SetInputSheet({
             bgcolor: 'action.hover',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            '&:hover': { bgcolor: 'action.selected' },
           }}
           onClick={() => setShowMorphoTips(!showMorphoTips)}
         >
-          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-            <MorphoTipsPanel
-              exerciseName={exercise.nameFr}
-              muscleGroup={exercise.muscleGroup}
-              morphotype={morphotype}
-              morphoRecommendation={exercise.morphotypeRecommendations as MorphoRecommendation | null}
-              expanded={showMorphoTips}
-            />
-            {!showMorphoTips && (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'center' }}>
-                Appuyer pour voir les conseils
-              </Typography>
+          <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+            {showMorphoTips ? (
+              <MorphoTipsPanel
+                exerciseName={exercise.nameFr}
+                muscleGroup={exercise.muscleGroup}
+                morphotype={morphotype}
+                morphoRecommendation={exercise.morphotypeRecommendations as MorphoRecommendation | null}
+                expanded={true}
+              />
+            ) : (
+              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
+                <Typography variant="caption" color="text.secondary">
+                  💡 Conseils morpho
+                </Typography>
+              </Stack>
             )}
           </CardContent>
         </Card>
       )}
-
-      {/* Previous Performance */}
-      {previousSets.length > 0 && (
-        <Card sx={{ mb: 3, bgcolor: 'action.hover' }}>
-          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-            <Typography variant="caption" color="text.secondary">Dernière séance</Typography>
-            <Typography variant="body1" fontWeight={500}>
-              {previousSets[0].weight}kg × {previousSets[0].reps} reps
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Inputs */}
-      <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-        <TextField
-          label="Poids (kg)"
-          type="number"
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          fullWidth
-          InputProps={{ inputProps: { style: { textAlign: 'center', fontSize: '1.25rem', fontWeight: 700 } } }}
-        />
-        <TextField
-          label="Reps"
-          type="number"
-          value={reps}
-          onChange={(e) => setReps(e.target.value)}
-          fullWidth
-          InputProps={{ inputProps: { style: { textAlign: 'center', fontSize: '1.25rem', fontWeight: 700 } } }}
-        />
-        <TextField
-          label="RPE"
-          type="number"
-          value={rpe}
-          onChange={(e) => setRpe(e.target.value)}
-          fullWidth
-          InputProps={{ inputProps: { min: 1, max: 10, style: { textAlign: 'center', fontSize: '1.25rem', fontWeight: 700 } } }}
-        />
-      </Stack>
-
-      {/* Warmup Toggle */}
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={isWarmup}
-            onChange={(e) => setIsWarmup(e.target.checked)}
-          />
-        }
-        label="C'est un échauffement"
-        sx={{ mb: 3 }}
-      />
 
       {/* Submit Button */}
       <Button
@@ -1273,14 +1671,24 @@ function SetInputSheet({
         onClick={handleSubmit}
         disabled={!weight || !reps || isSubmitting}
         sx={{
-          py: 1.5,
+          py: 2,
+          fontSize: '1rem',
+          fontWeight: 700,
+          borderRadius: 3,
           background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+          boxShadow: '0 4px 20px rgba(103, 80, 164, 0.4)',
           '&:hover': {
             background: 'linear-gradient(135deg, #7f67be 0%, #bb86fc 100%)',
           },
+          '&:active': {
+            transform: 'scale(0.98)',
+          },
+          '&:disabled': {
+            background: 'rgba(255,255,255,0.1)',
+          },
         }}
       >
-        {isSubmitting ? 'Enregistrement...' : 'Valider la série'}
+        {isSubmitting ? 'Enregistrement...' : `Valider ${weight}kg × ${reps}`}
       </Button>
     </Box>
   );
