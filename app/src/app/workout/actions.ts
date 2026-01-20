@@ -1,7 +1,7 @@
 'use server';
 
 import { db, exercises, workoutSessions, workoutSets, users, userGamification, xpTransactions, personalRecords } from '@/db';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { eq, desc, and, sql, gte, lte } from 'drizzle-orm';
 
 export type Exercise = {
   id: string;
@@ -266,12 +266,38 @@ export async function deleteSet(setId: string): Promise<void> {
   await db.delete(workoutSets).where(eq(workoutSets.id, setId));
 }
 
+// Estimate calories burned during strength training
+// Based on MET values: ~5 MET for moderate strength training
+// Formula: Calories = MET × weight(kg) × duration(hours)
+function estimateCaloriesBurned(durationMinutes: number, totalVolume: number, perceivedDifficulty?: number): number {
+  // Base MET for strength training (3.5-6 depending on intensity)
+  let met = 4.5;
+
+  // Adjust MET based on perceived difficulty (1-10 scale)
+  if (perceivedDifficulty) {
+    met = 3.5 + (perceivedDifficulty / 10) * 2.5; // Range 3.5-6
+  }
+
+  // Assume average weight of 75kg if not available
+  const weightKg = 75;
+  const durationHours = durationMinutes / 60;
+
+  // Base calories from duration
+  let calories = met * weightKg * durationHours;
+
+  // Bonus for high volume (extra effort)
+  const volumeBonus = Math.min(totalVolume / 10000 * 50, 100); // Up to 100 extra cal
+  calories += volumeBonus;
+
+  return Math.round(calories);
+}
+
 // End workout session
 export async function endWorkoutSession(
   sessionId: string,
   perceivedDifficulty?: number,
   notes?: string
-): Promise<{ xpEarned: number; totalVolume: number; duration: number; prCount: number }> {
+): Promise<{ xpEarned: number; totalVolume: number; duration: number; prCount: number; caloriesBurned: number }> {
   const session = await getActiveSession(sessionId);
   if (!session) throw new Error('Session not found');
 
@@ -290,6 +316,9 @@ export async function endWorkoutSession(
     if (set.isPr) prCount++;
   }
 
+  // Calculate calories burned
+  const caloriesBurned = estimateCaloriesBurned(durationMinutes, totalVolume, perceivedDifficulty);
+
   // Update session
   await db
     .update(workoutSessions)
@@ -297,6 +326,7 @@ export async function endWorkoutSession(
       endedAt: endTime,
       durationMinutes,
       totalVolume: totalVolume.toFixed(2),
+      caloriesBurned,
       perceivedDifficulty,
       notes,
     })
@@ -344,7 +374,32 @@ export async function endWorkoutSession(
     totalVolume,
     duration: durationMinutes,
     prCount,
+    caloriesBurned,
   };
+}
+
+// Get today's calories burned from workouts
+export async function getTodayWorkoutCalories(): Promise<number> {
+  const user = await db.select().from(users).limit(1);
+  if (user.length === 0) return 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const sessions = await db
+    .select({ caloriesBurned: workoutSessions.caloriesBurned })
+    .from(workoutSessions)
+    .where(
+      and(
+        eq(workoutSessions.userId, user[0].id),
+        gte(workoutSessions.startedAt, today),
+        lte(workoutSessions.startedAt, tomorrow)
+      )
+    );
+
+  return sessions.reduce((total, s) => total + (s.caloriesBurned || 0), 0);
 }
 
 // Get last sets for an exercise (to show previous performance)

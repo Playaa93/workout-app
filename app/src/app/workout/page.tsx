@@ -2,7 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getRecentSessions, startWorkoutSession, type WorkoutSession } from './actions';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardActionArea from '@mui/material/CardActionArea';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Skeleton from '@mui/material/Skeleton';
+import Divider from '@mui/material/Divider';
+import ArrowBack from '@mui/icons-material/ArrowBack';
+import FitnessCenter from '@mui/icons-material/FitnessCenter';
+import PlayArrow from '@mui/icons-material/PlayArrow';
+import AccessTime from '@mui/icons-material/AccessTime';
+import Scale from '@mui/icons-material/Scale';
 
 export default function WorkoutPage() {
   const router = useRouter();
@@ -31,71 +50,84 @@ export default function WorkoutPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
       {/* Header */}
-      <header className="px-4 py-4 border-b border-neutral-800 flex items-center gap-4">
-        <a href="/" className="text-neutral-400 hover:text-white transition-colors">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </a>
-        <h1 className="text-lg font-semibold">Entraînement</h1>
-      </header>
+      <Paper
+        elevation={0}
+        sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: 1,
+          borderColor: 'divider',
+          borderRadius: 0,
+          bgcolor: 'background.paper',
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <IconButton component={Link} href="/" size="small">
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h6" fontWeight={600}>
+            Entraînement
+          </Typography>
+        </Stack>
+      </Paper>
 
       {/* Start Workout Button */}
-      <div className="p-4">
-        <button
+      <Box sx={{ p: 2 }}>
+        <Button
+          variant="contained"
+          fullWidth
+          size="large"
           onClick={handleStartWorkout}
           disabled={isStarting}
-          className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-3"
+          startIcon={isStarting ? <CircularProgress size={20} color="inherit" /> : <FitnessCenter />}
+          sx={{
+            py: 2,
+            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+            fontSize: '1rem',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #7f67be 0%, #bb86fc 100%)',
+            },
+          }}
         >
-          {isStarting ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Démarrage...
-            </>
-          ) : (
-            <>
-              <span className="text-xl">🏋️</span>
-              Nouvelle séance
-            </>
-          )}
-        </button>
-      </div>
+          {isStarting ? 'Démarrage...' : 'Nouvelle séance'}
+        </Button>
+      </Box>
 
       {/* Recent Sessions */}
-      <div className="flex-1 px-4 pb-4">
-        <h2 className="text-lg font-semibold mb-3">Historique</h2>
+      <Box sx={{ flex: 1, px: 2, pb: 2 }}>
+        <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
+          Historique
+        </Typography>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <Stack spacing={1.5}>
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} variant="rounded" height={100} sx={{ borderRadius: 2 }} />
+            ))}
+          </Stack>
         ) : sessions.length === 0 ? (
-          <div className="text-center py-12">
-            <span className="text-4xl mb-4 block">🏃</span>
-            <p className="text-neutral-400">Aucune séance pour l'instant</p>
-            <p className="text-neutral-500 text-sm mt-1">Commence ta première séance !</p>
-          </div>
+          <Card sx={{ textAlign: 'center', py: 6 }}>
+            <CardContent>
+              <Typography variant="h2" sx={{ mb: 2 }}>🏃</Typography>
+              <Typography color="text.secondary">
+                Aucune séance pour l&apos;instant
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Commence ta première séance !
+              </Typography>
+            </CardContent>
+          </Card>
         ) : (
-          <div className="space-y-3">
+          <Stack spacing={1.5}>
             {sessions.map((session) => (
               <SessionCard key={session.id} session={session} />
             ))}
-          </div>
+          </Stack>
         )}
-      </div>
-    </main>
+      </Box>
+    </Box>
   );
 }
 
@@ -115,40 +147,72 @@ function SessionCard({ session }: { session: WorkoutSession }) {
   const volume = session.totalVolume ? parseFloat(session.totalVolume) : 0;
 
   return (
-    <div className="p-4 bg-neutral-900 rounded-xl">
-      <div className="flex justify-between items-start mb-2">
-        <div>
-          <p className="font-medium capitalize">{formattedDate}</p>
-          <p className="text-sm text-neutral-400">{formattedTime}</p>
-        </div>
-        {!isComplete && (
-          <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full">
-            En cours
-          </span>
-        )}
-      </div>
+    <Card>
+      {!isComplete ? (
+        <CardActionArea component={Link} href={`/workout/active?id=${session.id}`}>
+          <CardContent>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box>
+                <Typography variant="subtitle1" fontWeight={500} sx={{ textTransform: 'capitalize' }}>
+                  {formattedDate}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {formattedTime}
+                </Typography>
+              </Box>
+              <Chip
+                label="En cours"
+                size="small"
+                sx={{
+                  bgcolor: 'warning.main',
+                  color: 'warning.contrastText',
+                  fontWeight: 500,
+                }}
+              />
+            </Stack>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<PlayArrow />}
+              sx={{ mt: 2 }}
+            >
+              Reprendre
+            </Button>
+          </CardContent>
+        </CardActionArea>
+      ) : (
+        <CardContent>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Box>
+              <Typography variant="subtitle1" fontWeight={500} sx={{ textTransform: 'capitalize' }}>
+                {formattedDate}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {formattedTime}
+              </Typography>
+            </Box>
+          </Stack>
 
-      {isComplete && (
-        <div className="flex gap-4 mt-3 text-sm">
-          <div>
-            <span className="text-neutral-400">Durée</span>
-            <p className="font-medium">{session.durationMinutes} min</p>
-          </div>
-          <div>
-            <span className="text-neutral-400">Volume</span>
-            <p className="font-medium">{volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`}</p>
-          </div>
-        </div>
+          <Stack direction="row" spacing={3} sx={{ mt: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <AccessTime sx={{ fontSize: 18, color: 'text.secondary' }} />
+              <Box>
+                <Typography variant="caption" color="text.secondary">Durée</Typography>
+                <Typography variant="body2" fontWeight={600}>{session.durationMinutes} min</Typography>
+              </Box>
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Scale sx={{ fontSize: 18, color: 'text.secondary' }} />
+              <Box>
+                <Typography variant="caption" color="text.secondary">Volume</Typography>
+                <Typography variant="body2" fontWeight={600}>
+                  {volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`}
+                </Typography>
+              </Box>
+            </Stack>
+          </Stack>
+        </CardContent>
       )}
-
-      {!isComplete && (
-        <a
-          href={`/workout/active?id=${session.id}`}
-          className="mt-3 block text-center py-2 bg-violet-600 hover:bg-violet-500 rounded-lg text-sm font-medium transition-colors"
-        >
-          Reprendre
-        </a>
-      )}
-    </div>
+    </Card>
   );
 }

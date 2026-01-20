@@ -12,11 +12,32 @@ import {
   type MeasurementInput,
   type ProgressPhotoData,
 } from './actions';
+import Link from 'next/link';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardActionArea from '@mui/material/CardActionArea';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Chip from '@mui/material/Chip';
+import TextField from '@mui/material/TextField';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import CircularProgress from '@mui/material/CircularProgress';
+import Fab from '@mui/material/Fab';
+import Collapse from '@mui/material/Collapse';
+import ArrowBack from '@mui/icons-material/ArrowBack';
+import Add from '@mui/icons-material/Add';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import Close from '@mui/icons-material/Close';
 
-type Tab = 'overview' | 'history' | 'photos';
+type TabValue = 'overview' | 'history' | 'photos';
 
 export default function MeasurementsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [activeTab, setActiveTab] = useState<TabValue>('overview');
   const [measurements, setMeasurements] = useState<MeasurementData[]>([]);
   const [latest, setLatest] = useState<MeasurementData | null>(null);
   const [photos, setPhotos] = useState<ProgressPhotoData[]>([]);
@@ -54,77 +75,67 @@ export default function MeasurementsPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
       {/* Header */}
-      <header className="px-4 py-4 border-b border-neutral-800 flex items-center gap-4">
-        <a href="/" className="text-neutral-400 hover:text-white transition-colors">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </a>
-        <h1 className="text-lg font-semibold">Mensurations</h1>
-      </header>
+      <Paper
+        elevation={0}
+        sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: 1,
+          borderColor: 'divider',
+          borderRadius: 0,
+          bgcolor: 'background.paper',
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <IconButton component={Link} href="/" size="small">
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h6" fontWeight={600}>Mensurations</Typography>
+        </Stack>
+      </Paper>
 
       {/* Tabs */}
-      <div className="px-4 py-3 border-b border-neutral-800">
-        <div className="flex gap-2">
-          {(['overview', 'history', 'photos'] as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
-              }`}
-            >
-              {tab === 'overview' && 'Aperçu'}
-              {tab === 'history' && 'Historique'}
-              {tab === 'photos' && 'Photos'}
-            </button>
-          ))}
-        </div>
-      </div>
+      <Tabs
+        value={activeTab}
+        onChange={(_, v) => setActiveTab(v as TabValue)}
+        variant="fullWidth"
+        sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}
+      >
+        <Tab label="Aperçu" value="overview" />
+        <Tab label="Historique" value="history" />
+        <Tab label="Photos" value="photos" />
+      </Tabs>
 
       {/* Content */}
-      <div className="flex-1 p-4 pb-24">
+      <Box sx={{ flex: 1, p: 2, pb: 12 }}>
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress />
+          </Box>
         ) : (
           <>
-            {activeTab === 'overview' && (
-              <OverviewTab latest={latest} summary={summary} />
-            )}
-            {activeTab === 'history' && (
-              <HistoryTab
-                measurements={measurements}
-                onDelete={handleDeleteMeasurement}
-              />
-            )}
+            {activeTab === 'overview' && <OverviewTab latest={latest} summary={summary} />}
+            {activeTab === 'history' && <HistoryTab measurements={measurements} onDelete={handleDeleteMeasurement} />}
             {activeTab === 'photos' && <PhotosTab photos={photos} onRefresh={loadData} />}
           </>
         )}
-      </div>
+      </Box>
 
       {/* Add Button */}
-      <button
+      <Fab
+        color="primary"
         onClick={() => setShowAddForm(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-violet-600 rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-violet-500 transition-colors"
+        sx={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+        }}
       >
-        +
-      </button>
+        <Add />
+      </Fab>
 
       {/* Add Form Modal */}
       {showAddForm && (
@@ -134,7 +145,7 @@ export default function MeasurementsPage() {
           onClose={() => setShowAddForm(false)}
         />
       )}
-    </main>
+    </Box>
   );
 }
 
@@ -148,11 +159,11 @@ function OverviewTab({
 }) {
   if (!latest) {
     return (
-      <div className="text-center py-12">
-        <span className="text-5xl mb-4 block">📏</span>
-        <h2 className="text-xl font-semibold mb-2">Aucune mesure</h2>
-        <p className="text-neutral-400">Ajoute ta première mesure pour suivre ta progression</p>
-      </div>
+      <Box sx={{ textAlign: 'center', py: 6 }}>
+        <Typography variant="h2" sx={{ mb: 2 }}>📏</Typography>
+        <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>Aucune mesure</Typography>
+        <Typography color="text.secondary">Ajoute ta première mesure pour suivre ta progression</Typography>
+      </Box>
     );
   }
 
@@ -168,95 +179,111 @@ function OverviewTab({
     const isPositive = inverse ? value < 0 : value > 0;
     const sign = value > 0 ? '+' : '';
     return (
-      <span className={isPositive ? 'text-green-400' : value < 0 ? 'text-red-400' : 'text-neutral-400'}>
+      <Typography
+        component="span"
+        color={isPositive ? 'success.main' : value < 0 ? 'error.main' : 'text.secondary'}
+      >
         {sign}{value.toFixed(1)}{unit}
-      </span>
+      </Typography>
     );
   };
 
   return (
-    <div className="space-y-6">
-      {/* Last measurement date */}
-      <p className="text-neutral-400 text-sm">
+    <Stack spacing={3}>
+      <Typography variant="body2" color="text.secondary">
         Dernière mesure : {formatDate(latest.measuredAt)}
-      </p>
+      </Typography>
 
       {/* Progress Summary */}
       {summary && summary.totalMeasurements >= 2 && (
-        <div className="p-4 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 rounded-xl border border-violet-500/30">
-          <h3 className="font-semibold mb-3">Progression ({summary.daysSinceFirst} jours)</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {summary.weightChange !== null && (
-              <div>
-                <p className="text-sm text-neutral-400">Poids</p>
-                <p className="font-medium">{formatChange(summary.weightChange, 'kg', true)}</p>
-              </div>
-            )}
-            {summary.waistChange !== null && (
-              <div>
-                <p className="text-sm text-neutral-400">Tour de taille</p>
-                <p className="font-medium">{formatChange(summary.waistChange, 'cm', true)}</p>
-              </div>
-            )}
-            {summary.chestChange !== null && (
-              <div>
-                <p className="text-sm text-neutral-400">Poitrine</p>
-                <p className="font-medium">{formatChange(summary.chestChange, 'cm')}</p>
-              </div>
-            )}
-            {summary.armChange !== null && (
-              <div>
-                <p className="text-sm text-neutral-400">Bras (moy.)</p>
-                <p className="font-medium">{formatChange(summary.armChange, 'cm')}</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <Card
+          sx={{
+            background: (theme) => theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, rgba(103,80,164,0.2) 0%, rgba(63,81,181,0.15) 100%)'
+              : 'linear-gradient(135deg, rgba(103,80,164,0.15) 0%, rgba(63,81,181,0.1) 100%)',
+            border: 1,
+            borderColor: 'primary.main',
+          }}
+        >
+          <CardContent>
+            <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
+              Progression ({summary.daysSinceFirst} jours)
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+              {summary.weightChange !== null && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Poids</Typography>
+                  <Typography variant="body1" fontWeight={500}>{formatChange(summary.weightChange, 'kg', true)}</Typography>
+                </Box>
+              )}
+              {summary.waistChange !== null && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Tour de taille</Typography>
+                  <Typography variant="body1" fontWeight={500}>{formatChange(summary.waistChange, 'cm', true)}</Typography>
+                </Box>
+              )}
+              {summary.chestChange !== null && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Poitrine</Typography>
+                  <Typography variant="body1" fontWeight={500}>{formatChange(summary.chestChange, 'cm')}</Typography>
+                </Box>
+              )}
+              {summary.armChange !== null && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Bras (moy.)</Typography>
+                  <Typography variant="body1" fontWeight={500}>{formatChange(summary.armChange, 'cm')}</Typography>
+                </Box>
+              )}
+            </Box>
+          </CardContent>
+        </Card>
       )}
 
       {/* Current Stats */}
-      <div className="space-y-4">
-        <h3 className="font-semibold">Mesures actuelles</h3>
+      <Box>
+        <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>Mesures actuelles</Typography>
 
         {/* Weight & Body Fat */}
-        <div className="grid grid-cols-2 gap-3">
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5, mb: 2 }}>
           <MeasureCard label="Poids" value={latest.weight} unit="kg" icon="⚖️" />
           <MeasureCard label="Masse grasse" value={latest.bodyFatPercentage} unit="%" icon="📊" />
-        </div>
+        </Box>
 
         {/* Upper Body */}
-        <div className="p-4 bg-neutral-900 rounded-xl">
-          <h4 className="text-sm text-neutral-400 mb-3">Haut du corps</h4>
-          <div className="grid grid-cols-3 gap-3 text-sm">
-            <MiniMeasure label="Cou" value={latest.neck} />
-            <MiniMeasure label="Épaules" value={latest.shoulders} />
-            <MiniMeasure label="Poitrine" value={latest.chest} />
-            <MiniMeasure label="Bras G" value={latest.leftArm} />
-            <MiniMeasure label="Bras D" value={latest.rightArm} />
-            <MiniMeasure label="Av-bras G" value={latest.leftForearm} />
-            <MiniMeasure label="Av-bras D" value={latest.rightForearm} />
-            <MiniMeasure label="Taille" value={latest.waist} />
-            <MiniMeasure label="Hanches" value={latest.hips} />
-          </div>
-        </div>
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Haut du corps</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+              <MiniMeasure label="Cou" value={latest.neck} />
+              <MiniMeasure label="Épaules" value={latest.shoulders} />
+              <MiniMeasure label="Poitrine" value={latest.chest} />
+              <MiniMeasure label="Bras G" value={latest.leftArm} />
+              <MiniMeasure label="Bras D" value={latest.rightArm} />
+              <MiniMeasure label="Av-bras G" value={latest.leftForearm} />
+              <MiniMeasure label="Av-bras D" value={latest.rightForearm} />
+              <MiniMeasure label="Taille" value={latest.waist} />
+              <MiniMeasure label="Hanches" value={latest.hips} />
+            </Box>
+          </CardContent>
+        </Card>
 
         {/* Lower Body */}
-        <div className="p-4 bg-neutral-900 rounded-xl">
-          <h4 className="text-sm text-neutral-400 mb-3">Bas du corps</h4>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <MiniMeasure label="Cuisse G" value={latest.leftThigh} />
-            <MiniMeasure label="Cuisse D" value={latest.rightThigh} />
-            <MiniMeasure label="Mollet G" value={latest.leftCalf} />
-            <MiniMeasure label="Mollet D" value={latest.rightCalf} />
-          </div>
-        </div>
-      </div>
+        <Card>
+          <CardContent>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Bas du corps</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+              <MiniMeasure label="Cuisse G" value={latest.leftThigh} />
+              <MiniMeasure label="Cuisse D" value={latest.rightThigh} />
+              <MiniMeasure label="Mollet G" value={latest.leftCalf} />
+              <MiniMeasure label="Mollet D" value={latest.rightCalf} />
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
 
-      {/* Weight Chart (simple) */}
-      {summary && summary.totalMeasurements >= 2 && (
-        <WeightChart />
-      )}
-    </div>
+      {/* Weight Chart */}
+      {summary && summary.totalMeasurements >= 2 && <WeightChart />}
+    </Stack>
   );
 }
 
@@ -272,28 +299,30 @@ function MeasureCard({
   icon: string;
 }) {
   return (
-    <div className="p-4 bg-neutral-900 rounded-xl">
-      <div className="flex items-center gap-2 mb-2">
-        <span>{icon}</span>
-        <span className="text-sm text-neutral-400">{label}</span>
-      </div>
-      <p className="text-2xl font-bold">
-        {value ? `${value}${unit}` : '--'}
-      </p>
-    </div>
+    <Card>
+      <CardContent sx={{ py: 2 }}>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+          <Typography variant="h6">{icon}</Typography>
+          <Typography variant="caption" color="text.secondary">{label}</Typography>
+        </Stack>
+        <Typography variant="h5" fontWeight={700}>
+          {value ? `${value}${unit}` : '--'}
+        </Typography>
+      </CardContent>
+    </Card>
   );
 }
 
 function MiniMeasure({ label, value }: { label: string; value: string | null }) {
   return (
-    <div>
-      <p className="text-neutral-500 text-xs">{label}</p>
-      <p className="font-medium">{value ? `${value}cm` : '--'}</p>
-    </div>
+    <Box>
+      <Typography variant="caption" color="text.secondary">{label}</Typography>
+      <Typography variant="body2" fontWeight={500}>{value ? `${value}cm` : '--'}</Typography>
+    </Box>
   );
 }
 
-// Simple Weight Chart
+// Weight Chart
 function WeightChart() {
   const [data, setData] = useState<{ date: string; value: number }[]>([]);
 
@@ -310,29 +339,37 @@ function WeightChart() {
   const range = max - min;
 
   return (
-    <div className="p-4 bg-neutral-900 rounded-xl">
-      <h4 className="text-sm text-neutral-400 mb-4">Évolution du poids</h4>
-      <div className="h-32 flex items-end gap-1">
-        {data.map((point, i) => {
-          const height = ((point.value - min) / range) * 100;
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div
-                className="w-full bg-violet-500 rounded-t transition-all"
-                style={{ height: `${height}%` }}
-              />
-              <span className="text-[10px] text-neutral-500">
-                {point.date.split('-')[2]}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex justify-between mt-2 text-xs text-neutral-500">
-        <span>{min.toFixed(1)}kg</span>
-        <span>{max.toFixed(1)}kg</span>
-      </div>
-    </div>
+    <Card>
+      <CardContent>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Évolution du poids</Typography>
+        <Stack direction="row" spacing={0.5} sx={{ height: 128, alignItems: 'flex-end' }}>
+          {data.map((point, i) => {
+            const height = ((point.value - min) / range) * 100;
+            return (
+              <Box key={i} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                <Box
+                  sx={{
+                    width: '100%',
+                    bgcolor: 'primary.main',
+                    borderTopLeftRadius: 4,
+                    borderTopRightRadius: 4,
+                    height: `${height}%`,
+                    transition: 'height 0.3s ease',
+                  }}
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                  {point.date.split('-')[2]}
+                </Typography>
+              </Box>
+            );
+          })}
+        </Stack>
+        <Stack direction="row" justifyContent="space-between" sx={{ mt: 1 }}>
+          <Typography variant="caption" color="text.secondary">{min.toFixed(1)}kg</Typography>
+          <Typography variant="caption" color="text.secondary">{max.toFixed(1)}kg</Typography>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -348,54 +385,51 @@ function HistoryTab({
 
   if (measurements.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-neutral-400">Aucun historique</p>
-      </div>
+      <Typography color="text.secondary" textAlign="center" sx={{ py: 6 }}>
+        Aucun historique
+      </Typography>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <Stack spacing={1.5}>
       {measurements.map((m) => {
         const date = new Date(m.measuredAt);
         const isExpanded = expanded === m.id;
 
         return (
-          <div key={m.id} className="bg-neutral-900 rounded-xl overflow-hidden">
-            <button
+          <Card key={m.id}>
+            <CardActionArea
               onClick={() => setExpanded(isExpanded ? null : m.id)}
-              className="w-full p-4 flex justify-between items-center"
+              sx={{ p: 2 }}
             >
-              <div className="text-left">
-                <p className="font-medium">
-                  {date.toLocaleDateString('fr-FR', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </p>
-                <p className="text-sm text-neutral-400">
-                  {m.weight ? `${m.weight}kg` : ''}{' '}
-                  {m.chest ? `• Poitrine ${m.chest}cm` : ''}
-                </p>
-              </div>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Box>
+                  <Typography variant="body1" fontWeight={500}>
+                    {date.toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {m.weight ? `${m.weight}kg` : ''}{' '}
+                    {m.chest ? `• Poitrine ${m.chest}cm` : ''}
+                  </Typography>
+                </Box>
+                <ExpandMore
+                  sx={{
+                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s',
+                    color: 'text.secondary',
+                  }}
+                />
+              </Stack>
+            </CardActionArea>
 
-            {isExpanded && (
-              <div className="px-4 pb-4 border-t border-neutral-800 pt-4">
-                <div className="grid grid-cols-3 gap-3 text-sm mb-4">
+            <Collapse in={isExpanded}>
+              <Box sx={{ px: 2, pb: 2, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mb: 2 }}>
                   <MiniMeasure label="Poids" value={m.weight} />
                   <MiniMeasure label="% Gras" value={m.bodyFatPercentage} />
                   <MiniMeasure label="Cou" value={m.neck} />
@@ -408,22 +442,25 @@ function HistoryTab({
                   <MiniMeasure label="Cuisse G" value={m.leftThigh} />
                   <MiniMeasure label="Cuisse D" value={m.rightThigh} />
                   <MiniMeasure label="Mollet G" value={m.leftCalf} />
-                </div>
+                </Box>
                 {m.notes && (
-                  <p className="text-sm text-neutral-400 mb-4">{m.notes}</p>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    {m.notes}
+                  </Typography>
                 )}
-                <button
+                <Button
+                  size="small"
+                  color="error"
                   onClick={() => onDelete(m.id)}
-                  className="text-red-400 text-sm hover:text-red-300"
                 >
                   Supprimer
-                </button>
-              </div>
-            )}
-          </div>
+                </Button>
+              </Box>
+            </Collapse>
+          </Card>
         );
       })}
-    </div>
+    </Stack>
   );
 }
 
@@ -439,23 +476,23 @@ function PhotosTab({
 
   if (photos.length === 0 && !showUpload) {
     return (
-      <div className="text-center py-12">
-        <span className="text-5xl mb-4 block">📸</span>
-        <h2 className="text-xl font-semibold mb-2">Aucune photo</h2>
-        <p className="text-neutral-400 mb-4">
+      <Box sx={{ textAlign: 'center', py: 6 }}>
+        <Typography variant="h2" sx={{ mb: 2 }}>📸</Typography>
+        <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>Aucune photo</Typography>
+        <Typography color="text.secondary" sx={{ mb: 3 }}>
           Prends des photos pour suivre ta transformation
-        </p>
-        <button
+        </Typography>
+        <Button
+          variant="contained"
           onClick={() => setShowUpload(true)}
-          className="px-6 py-3 bg-violet-600 rounded-xl font-medium hover:bg-violet-500 transition-colors"
+          sx={{ background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)' }}
         >
           Ajouter une photo
-        </button>
-      </div>
+        </Button>
+      </Box>
     );
   }
 
-  // Group photos by date
   const photosByDate = photos.reduce((acc, photo) => {
     const date = new Date(photo.takenAt).toLocaleDateString('fr-FR');
     if (!acc[date]) acc[date] = [];
@@ -464,35 +501,54 @@ function PhotosTab({
   }, {} as Record<string, ProgressPhotoData[]>);
 
   return (
-    <div className="space-y-6">
-      <button
+    <Stack spacing={3}>
+      <Button
+        fullWidth
+        variant="outlined"
         onClick={() => setShowUpload(true)}
-        className="w-full py-3 border-2 border-dashed border-neutral-700 rounded-xl text-neutral-400 hover:border-neutral-600 hover:text-neutral-300 transition-colors"
+        sx={{ py: 1.5, borderStyle: 'dashed' }}
+        startIcon={<Add />}
       >
-        + Ajouter une photo
-      </button>
+        Ajouter une photo
+      </Button>
 
       {Object.entries(photosByDate).map(([date, datePhotos]) => (
-        <div key={date}>
-          <h3 className="text-sm text-neutral-400 mb-3">{date}</h3>
-          <div className="grid grid-cols-2 gap-3">
+        <Box key={date}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>{date}</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
             {datePhotos.map((photo) => (
-              <div
+              <Box
                 key={photo.id}
-                className="aspect-[3/4] bg-neutral-800 rounded-xl overflow-hidden relative"
+                sx={{
+                  aspectRatio: '3/4',
+                  bgcolor: 'action.hover',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}
               >
-                <img
+                <Box
+                  component="img"
                   src={photo.photoUrl}
                   alt={photo.photoType}
-                  className="w-full h-full object-cover"
+                  sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
-                <span className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 rounded text-xs capitalize">
-                  {photo.photoType.replace('_', ' ')}
-                </span>
-              </div>
+                <Chip
+                  label={photo.photoType.replace('_', ' ')}
+                  size="small"
+                  sx={{
+                    position: 'absolute',
+                    bottom: 8,
+                    left: 8,
+                    bgcolor: 'rgba(0,0,0,0.7)',
+                    textTransform: 'capitalize',
+                    fontSize: '0.7rem',
+                  }}
+                />
+              </Box>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
       ))}
 
       {showUpload && (
@@ -501,11 +557,11 @@ function PhotosTab({
           onUpload={onRefresh}
         />
       )}
-    </div>
+    </Stack>
   );
 }
 
-// Photo Upload Modal (simplified - stores URL for now)
+// Photo Upload Modal
 function PhotoUploadModal({
   onClose,
   onUpload,
@@ -533,8 +589,6 @@ function PhotoUploadModal({
     setIsUploading(true);
 
     try {
-      // For now, we store the data URL directly
-      // In production, this would upload to a storage service
       const { addProgressPhoto } = await import('./actions');
       await addProgressPhoto(previewUrl, photoType);
       onUpload();
@@ -546,91 +600,116 @@ function PhotoUploadModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex flex-col">
-      <header className="px-4 py-4 border-b border-neutral-800 flex items-center gap-4">
-        <button onClick={onClose} className="text-neutral-400 hover:text-white">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-        <h2 className="text-lg font-semibold">Ajouter une photo</h2>
-      </header>
+    <Box
+      sx={{
+        position: 'fixed',
+        inset: 0,
+        bgcolor: 'background.default',
+        zIndex: 1300,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <IconButton onClick={onClose} size="small">
+            <Close />
+          </IconButton>
+          <Typography variant="h6" fontWeight={600}>Ajouter une photo</Typography>
+        </Stack>
+      </Paper>
 
-      <div className="flex-1 p-4 flex flex-col">
+      <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
         {/* Photo Type Selection */}
-        <div className="mb-4">
-          <p className="text-sm text-neutral-400 mb-2">Type de photo</p>
-          <div className="grid grid-cols-4 gap-2">
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Type de photo</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
             {(['front', 'back', 'side_left', 'side_right'] as const).map((type) => (
-              <button
+              <Chip
                 key={type}
+                label={type === 'front' ? 'Face' : type === 'back' ? 'Dos' : type === 'side_left' ? 'Côté G' : 'Côté D'}
                 onClick={() => setPhotoType(type)}
-                className={`py-2 rounded-lg text-sm transition-colors ${
-                  photoType === type
-                    ? 'bg-violet-600 text-white'
-                    : 'bg-neutral-800 text-neutral-400'
-                }`}
-              >
-                {type === 'front' && 'Face'}
-                {type === 'back' && 'Dos'}
-                {type === 'side_left' && 'Côté G'}
-                {type === 'side_right' && 'Côté D'}
-              </button>
+                color={photoType === type ? 'primary' : 'default'}
+                variant={photoType === type ? 'filled' : 'outlined'}
+              />
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* Preview / Upload Area */}
-        <div className="flex-1 flex items-center justify-center">
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {previewUrl ? (
-            <div className="relative w-full max-w-xs aspect-[3/4]">
-              <img
+            <Box sx={{ position: 'relative', width: '100%', maxWidth: 280, aspectRatio: '3/4' }}>
+              <Box
+                component="img"
                 src={previewUrl}
                 alt="Preview"
-                className="w-full h-full object-cover rounded-xl"
+                sx={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 2 }}
               />
-              <button
+              <IconButton
                 onClick={() => setPreviewUrl(null)}
-                className="absolute top-2 right-2 w-8 h-8 bg-black/70 rounded-full flex items-center justify-center"
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  bgcolor: 'rgba(0,0,0,0.7)',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+                }}
               >
-                ×
-              </button>
-            </div>
+                <Close />
+              </IconButton>
+            </Box>
           ) : (
-            <label className="w-full max-w-xs aspect-[3/4] border-2 border-dashed border-neutral-700 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-neutral-600 transition-colors">
-              <span className="text-4xl mb-2">📷</span>
-              <span className="text-neutral-400">Touche pour choisir</span>
+            <Box
+              component="label"
+              sx={{
+                width: '100%',
+                maxWidth: 280,
+                aspectRatio: '3/4',
+                border: 2,
+                borderStyle: 'dashed',
+                borderColor: 'divider',
+                borderRadius: 2,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                '&:hover': { borderColor: 'primary.main' },
+              }}
+            >
+              <Typography variant="h2" sx={{ mb: 1 }}>📷</Typography>
+              <Typography color="text.secondary">Touche pour choisir</Typography>
               <input
                 type="file"
                 accept="image/*"
                 capture="environment"
                 onChange={handleFileChange}
-                className="hidden"
+                style={{ display: 'none' }}
               />
-            </label>
+            </Box>
           )}
-        </div>
+        </Box>
 
         {/* Submit Button */}
         {previewUrl && (
-          <button
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
             onClick={handleSubmit}
             disabled={isUploading}
-            className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-xl font-semibold transition-colors mt-4"
+            sx={{
+              mt: 2,
+              py: 1.5,
+              background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+            }}
           >
             {isUploading ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
+          </Button>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -663,55 +742,54 @@ function AddMeasurementForm({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
-      <header className="px-4 py-4 border-b border-neutral-800 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button onClick={onClose} className="text-neutral-400 hover:text-white">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-          <h2 className="text-lg font-semibold">Nouvelle mesure</h2>
-        </div>
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting || !data.weight}
-          className="px-4 py-2 bg-violet-600 rounded-lg font-medium disabled:opacity-50"
-        >
-          {isSubmitting ? '...' : 'Enregistrer'}
-        </button>
-      </header>
+    <Box
+      sx={{
+        position: 'fixed',
+        inset: 0,
+        bgcolor: 'background.default',
+        zIndex: 1300,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <IconButton onClick={onClose} size="small">
+              <Close />
+            </IconButton>
+            <Typography variant="h6" fontWeight={600}>Nouvelle mesure</Typography>
+          </Stack>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleSubmit}
+            disabled={isSubmitting || !data.weight}
+            sx={{ background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)' }}
+          >
+            {isSubmitting ? '...' : 'Enregistrer'}
+          </Button>
+        </Stack>
+      </Paper>
 
       {/* Section Tabs */}
-      <div className="px-4 py-3 border-b border-neutral-800 flex gap-2">
-        {(['essential', 'upper', 'lower'] as const).map((section) => (
-          <button
-            key={section}
-            onClick={() => setActiveSection(section)}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              activeSection === section
-                ? 'bg-violet-600 text-white'
-                : 'bg-neutral-800 text-neutral-400'
-            }`}
-          >
-            {section === 'essential' && 'Essentiel'}
-            {section === 'upper' && 'Haut'}
-            {section === 'lower' && 'Bas'}
-          </button>
-        ))}
-      </div>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" spacing={1}>
+          {(['essential', 'upper', 'lower'] as const).map((section) => (
+            <Chip
+              key={section}
+              label={section === 'essential' ? 'Essentiel' : section === 'upper' ? 'Haut' : 'Bas'}
+              onClick={() => setActiveSection(section)}
+              color={activeSection === section ? 'primary' : 'default'}
+              variant={activeSection === section ? 'filled' : 'outlined'}
+            />
+          ))}
+        </Stack>
+      </Box>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         {activeSection === 'essential' && (
-          <div className="space-y-4">
+          <Stack spacing={2}>
             <MeasureInput
               label="Poids"
               unit="kg"
@@ -740,11 +818,11 @@ function AddMeasurementForm({
               onChange={(v) => updateField('chest', v)}
               placeholder={lastMeasurement?.chest || ''}
             />
-          </div>
+          </Stack>
         )}
 
         {activeSection === 'upper' && (
-          <div className="space-y-4">
+          <Stack spacing={2}>
             <MeasureInput
               label="Cou"
               unit="cm"
@@ -766,7 +844,7 @@ function AddMeasurementForm({
               onChange={(v) => updateField('hips', v)}
               placeholder={lastMeasurement?.hips || ''}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <Stack direction="row" spacing={2}>
               <MeasureInput
                 label="Bras gauche"
                 unit="cm"
@@ -781,8 +859,8 @@ function AddMeasurementForm({
                 onChange={(v) => updateField('rightArm', v)}
                 placeholder={lastMeasurement?.rightArm || ''}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            </Stack>
+            <Stack direction="row" spacing={2}>
               <MeasureInput
                 label="Avant-bras G"
                 unit="cm"
@@ -797,13 +875,13 @@ function AddMeasurementForm({
                 onChange={(v) => updateField('rightForearm', v)}
                 placeholder={lastMeasurement?.rightForearm || ''}
               />
-            </div>
-          </div>
+            </Stack>
+          </Stack>
         )}
 
         {activeSection === 'lower' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <Stack spacing={2}>
+            <Stack direction="row" spacing={2}>
               <MeasureInput
                 label="Cuisse gauche"
                 unit="cm"
@@ -818,8 +896,8 @@ function AddMeasurementForm({
                 onChange={(v) => updateField('rightThigh', v)}
                 placeholder={lastMeasurement?.rightThigh || ''}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            </Stack>
+            <Stack direction="row" spacing={2}>
               <MeasureInput
                 label="Mollet gauche"
                 unit="cm"
@@ -834,22 +912,23 @@ function AddMeasurementForm({
                 onChange={(v) => updateField('rightCalf', v)}
                 placeholder={lastMeasurement?.rightCalf || ''}
               />
-            </div>
-          </div>
+            </Stack>
+          </Stack>
         )}
 
         {/* Notes */}
-        <div className="mt-6">
-          <label className="text-sm text-neutral-400 mb-2 block">Notes (optionnel)</label>
-          <textarea
-            value={data.notes || ''}
-            onChange={(e) => setData((prev) => ({ ...prev, notes: e.target.value }))}
-            className="w-full px-4 py-3 bg-neutral-900 rounded-xl resize-none h-24"
-            placeholder="Comment tu te sens ?"
-          />
-        </div>
-      </div>
-    </div>
+        <TextField
+          label="Notes (optionnel)"
+          multiline
+          rows={3}
+          value={data.notes || ''}
+          onChange={(e) => setData((prev) => ({ ...prev, notes: e.target.value }))}
+          placeholder="Comment tu te sens ?"
+          fullWidth
+          sx={{ mt: 3 }}
+        />
+      </Box>
+    </Box>
   );
 }
 
@@ -867,21 +946,17 @@ function MeasureInput({
   placeholder: string;
 }) {
   return (
-    <div>
-      <label className="text-sm text-neutral-400 mb-2 block">{label}</label>
-      <div className="relative">
-        <input
-          type="number"
-          step="0.1"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder || '0'}
-          className="w-full px-4 py-3 bg-neutral-900 rounded-xl pr-12"
-        />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500">
-          {unit}
-        </span>
-      </div>
-    </div>
+    <TextField
+      label={label}
+      type="number"
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder || '0'}
+      fullWidth
+      InputProps={{
+        endAdornment: <Typography color="text.secondary">{unit}</Typography>,
+        inputProps: { step: '0.1' },
+      }}
+    />
   );
 }

@@ -13,6 +13,37 @@ import {
   type WorkoutSet,
   type ActiveSession,
 } from '../actions';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Chip from '@mui/material/Chip';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Fab from '@mui/material/Fab';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import InputAdornment from '@mui/material/InputAdornment';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Divider from '@mui/material/Divider';
+import Add from '@mui/icons-material/Add';
+import Close from '@mui/icons-material/Close';
+import Delete from '@mui/icons-material/Delete';
+import ArrowBack from '@mui/icons-material/ArrowBack';
+import Timer from '@mui/icons-material/Timer';
+import EmojiEvents from '@mui/icons-material/EmojiEvents';
+import Search from '@mui/icons-material/Search';
 
 function ActiveWorkoutContent() {
   const router = useRouter();
@@ -29,7 +60,7 @@ function ActiveWorkoutContent() {
   // Timer state
   const [restTimer, setRestTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [timerDuration, setTimerDuration] = useState(90);
+  const [timerDuration] = useState(90);
 
   // Elapsed time
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -109,17 +140,17 @@ function ActiveWorkoutContent() {
 
   if (!sessionId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-neutral-400">Session invalide</p>
-      </div>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <Typography color="text.secondary">Session invalide</Typography>
+      </Box>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-      </div>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
@@ -137,149 +168,211 @@ function ActiveWorkoutContent() {
   });
 
   return (
-    <main className="min-h-screen flex flex-col pb-32">
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', pb: 16, bgcolor: 'background.default' }}>
       {/* Header with timer */}
-      <header className="px-4 py-3 border-b border-neutral-800 sticky top-0 bg-black/95 backdrop-blur-sm z-10">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="font-semibold">Séance en cours</h1>
-            <p className="text-sm text-neutral-400">{formatTime(elapsedSeconds)}</p>
-          </div>
-          <button
+      <Paper
+        elevation={0}
+        sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: 1,
+          borderColor: 'divider',
+          borderRadius: 0,
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          bgcolor: 'background.paper',
+        }}
+      >
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Box>
+            <Typography variant="subtitle1" fontWeight={600}>Séance en cours</Typography>
+            <Typography variant="body2" color="text.secondary">{formatTime(elapsedSeconds)}</Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="error"
+            size="small"
             onClick={() => setShowEndConfirm(true)}
-            className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors"
+            sx={{ bgcolor: 'rgba(244,67,54,0.2)', color: 'error.light', '&:hover': { bgcolor: 'rgba(244,67,54,0.3)' } }}
           >
             Terminer
-          </button>
-        </div>
-      </header>
+          </Button>
+        </Stack>
+      </Paper>
 
       {/* Rest Timer (sticky) */}
       {(isTimerRunning || restTimer > 0) && (
-        <div className="px-4 py-3 bg-violet-900/30 border-b border-violet-800 sticky top-[60px] z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">⏱️</span>
-              <div>
-                <p className="text-sm text-violet-300">Repos</p>
-                <p className="text-2xl font-bold font-mono">{formatTime(restTimer)}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
+        <Paper
+          sx={{
+            px: 2,
+            py: 1.5,
+            bgcolor: 'rgba(103,80,164,0.2)',
+            borderBottom: 1,
+            borderColor: 'primary.dark',
+            position: 'sticky',
+            top: 56,
+            zIndex: 10,
+          }}
+        >
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Timer sx={{ fontSize: 28, color: 'primary.main' }} />
+              <Box>
+                <Typography variant="caption" color="primary.light">Repos</Typography>
+                <Typography variant="h5" fontWeight={700} fontFamily="monospace">{formatTime(restTimer)}</Typography>
+              </Box>
+            </Stack>
+            <Stack direction="row" spacing={1}>
+              <Button
+                size="small"
+                variant="contained"
                 onClick={() => setRestTimer((prev) => prev + 30)}
-                className="px-3 py-1 bg-violet-600/50 rounded-lg text-sm"
+                sx={{ bgcolor: 'primary.dark', minWidth: 48 }}
               >
                 +30s
-              </button>
-              <button
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
                 onClick={stopTimer}
-                className="px-3 py-1 bg-neutral-700 rounded-lg text-sm"
               >
                 Stop
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Stack>
+          </Stack>
+        </Paper>
       )}
 
       {/* Exercise Sets */}
-      <div className="flex-1 p-4 space-y-4">
-        {Array.from(setsByExercise.entries()).map(([exerciseId, sets]) => {
-          const exercise = session?.exercises.get(exerciseId);
-          return (
-            <ExerciseCard
-              key={exerciseId}
-              exercise={exercise}
-              sets={sets}
-              sessionId={sessionId}
-              onSetAdded={loadSession}
-              onSetDeleted={loadSession}
-              onStartTimer={startTimer}
-            />
-          );
-        })}
+      <Box sx={{ flex: 1, p: 2 }}>
+        <Stack spacing={2}>
+          {Array.from(setsByExercise.entries()).map(([exerciseId, sets]) => {
+            const exercise = session?.exercises.get(exerciseId);
+            return (
+              <ExerciseCard
+                key={exerciseId}
+                exercise={exercise}
+                sets={sets}
+                sessionId={sessionId}
+                onSetAdded={loadSession}
+                onSetDeleted={loadSession}
+                onStartTimer={startTimer}
+              />
+            );
+          })}
 
-        {/* Add Exercise Button */}
-        <button
-          onClick={() => setShowExercisePicker(true)}
-          className="w-full py-4 border-2 border-dashed border-neutral-700 rounded-xl text-neutral-400 hover:border-neutral-600 hover:text-neutral-300 transition-colors flex items-center justify-center gap-2"
-        >
-          <span className="text-xl">+</span>
-          Ajouter un exercice
-        </button>
-      </div>
+          {/* Add Exercise Button */}
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => setShowExercisePicker(true)}
+            sx={{
+              py: 2,
+              borderStyle: 'dashed',
+              borderColor: 'divider',
+              color: 'text.secondary',
+              '&:hover': { borderColor: 'text.secondary', bgcolor: 'action.hover' },
+            }}
+            startIcon={<Add />}
+          >
+            Ajouter un exercice
+          </Button>
+        </Stack>
+      </Box>
 
       {/* Selected Exercise Input (bottom sheet) */}
-      {selectedExercise && (
-        <SetInputSheet
-          exercise={selectedExercise}
-          sessionId={sessionId}
-          setNumber={(setsByExercise.get(selectedExercise.id)?.length || 0) + 1}
-          onClose={() => setSelectedExercise(null)}
-          onSetAdded={() => {
-            loadSession();
-            startTimer();
-          }}
-        />
-      )}
+      <Drawer
+        anchor="bottom"
+        open={!!selectedExercise}
+        onClose={() => setSelectedExercise(null)}
+        PaperProps={{
+          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.paper' },
+        }}
+      >
+        {selectedExercise && (
+          <SetInputSheet
+            exercise={selectedExercise}
+            sessionId={sessionId}
+            setNumber={(setsByExercise.get(selectedExercise.id)?.length || 0) + 1}
+            onClose={() => setSelectedExercise(null)}
+            onSetAdded={() => {
+              loadSession();
+              startTimer();
+            }}
+          />
+        )}
+      </Drawer>
 
       {/* Exercise Picker Modal */}
-      {showExercisePicker && (
+      <Drawer
+        anchor="bottom"
+        open={showExercisePicker}
+        onClose={() => setShowExercisePicker(false)}
+        PaperProps={{
+          sx: { height: '90vh', borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.default' },
+        }}
+      >
         <ExercisePicker
           exercises={exercises}
           onSelect={handleSelectExercise}
           onClose={() => setShowExercisePicker(false)}
         />
-      )}
+      </Drawer>
 
       {/* End Workout Confirmation */}
-      {showEndConfirm && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-neutral-900 rounded-2xl p-6 w-full max-w-sm">
-            <h3 className="text-lg font-semibold mb-2">Terminer la séance ?</h3>
-            <p className="text-neutral-400 text-sm mb-6">
-              Tu as fait {session?.sets.filter(s => !s.isWarmup).length || 0} séries.
-              Tu peux toujours reprendre plus tard.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowEndConfirm(false)}
-                className="flex-1 py-3 bg-neutral-800 rounded-xl font-medium hover:bg-neutral-700 transition-colors"
-              >
-                Continuer
-              </button>
-              <button
-                onClick={handleEndWorkout}
-                className="flex-1 py-3 bg-violet-600 rounded-xl font-medium hover:bg-violet-500 transition-colors"
-              >
-                Terminer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={showEndConfirm} onClose={() => setShowEndConfirm(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Terminer la séance ?</DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary">
+            Tu as fait {session?.sets.filter(s => !s.isWarmup).length || 0} séries.
+            Tu peux toujours reprendre plus tard.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setShowEndConfirm(false)} variant="outlined">
+            Continuer
+          </Button>
+          <Button
+            onClick={handleEndWorkout}
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+            }}
+          >
+            Terminer
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Quick Add FAB */}
       {!selectedExercise && !showExercisePicker && (
-        <button
+        <Fab
+          color="primary"
           onClick={() => setShowExercisePicker(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-violet-600 rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-violet-500 transition-colors"
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+          }}
         >
-          +
-        </button>
+          <Add />
+        </Fab>
       )}
-    </main>
+    </Box>
   );
 }
 
 export default function ActiveWorkoutPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+          <CircularProgress />
+        </Box>
+      }
+    >
       <ActiveWorkoutContent />
     </Suspense>
   );
@@ -316,79 +409,98 @@ function ExerciseCard({
   const lastSet = workingSets[workingSets.length - 1];
 
   return (
-    <div className="bg-neutral-900 rounded-xl overflow-hidden">
+    <Card>
       {/* Exercise Header */}
-      <div className="p-4 border-b border-neutral-800">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-semibold">{exercise.nameFr}</h3>
-            <p className="text-sm text-neutral-400 capitalize">{exercise.muscleGroup}</p>
-          </div>
+      <CardContent sx={{ pb: 0 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+          <Box>
+            <Typography variant="subtitle1" fontWeight={600}>{exercise.nameFr}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+              {exercise.muscleGroup}
+            </Typography>
+          </Box>
           {previousSets.length > 0 && (
-            <div className="text-right text-sm">
-              <p className="text-neutral-500">Dernière fois</p>
-              <p className="text-neutral-300">
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
+              <Typography variant="body2" color="text.primary">
                 {previousSets[0].weight}kg × {previousSets[0].reps}
-              </p>
-            </div>
+              </Typography>
+            </Box>
           )}
-        </div>
-      </div>
+        </Stack>
+      </CardContent>
 
       {/* Sets List */}
-      <div className="divide-y divide-neutral-800">
+      <Box sx={{ px: 2, pb: 1 }}>
         {sets.map((set) => (
-          <div
+          <Box
             key={set.id}
-            className={`px-4 py-3 flex items-center justify-between ${
-              set.isWarmup ? 'bg-neutral-800/50' : ''
-            }`}
+            sx={{
+              py: 1.5,
+              borderBottom: 1,
+              borderColor: 'divider',
+              ...(set.isWarmup && { bgcolor: 'action.hover', mx: -2, px: 2 }),
+            }}
           >
-            <div className="flex items-center gap-4">
-              <span className="w-8 h-8 bg-neutral-800 rounded-full flex items-center justify-center text-sm font-medium">
-                {set.isWarmup ? 'W' : set.setNumber}
-              </span>
-              <div>
-                <span className="font-medium">{set.weight}kg</span>
-                <span className="text-neutral-400 mx-2">×</span>
-                <span className="font-medium">{set.reps}</span>
-                {set.rpe && <span className="text-neutral-500 ml-2">RPE {set.rpe}</span>}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {set.isPr && <span className="text-amber-400 text-sm">🏆 PR!</span>}
-              <button
-                onClick={async () => {
-                  await deleteSet(set.id);
-                  onSetDeleted();
-                }}
-                className="p-2 text-neutral-500 hover:text-red-400 transition-colors"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    bgcolor: 'action.hover',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                  }}
                 >
-                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                </svg>
-              </button>
-            </div>
-          </div>
+                  {set.isWarmup ? 'W' : set.setNumber}
+                </Box>
+                <Box>
+                  <Typography component="span" fontWeight={500}>{set.weight}kg</Typography>
+                  <Typography component="span" color="text.secondary" sx={{ mx: 1 }}>×</Typography>
+                  <Typography component="span" fontWeight={500}>{set.reps}</Typography>
+                  {set.rpe && <Typography component="span" color="text.secondary" sx={{ ml: 1 }}>RPE {set.rpe}</Typography>}
+                </Box>
+              </Stack>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                {set.isPr && (
+                  <Chip
+                    icon={<EmojiEvents sx={{ fontSize: 16 }} />}
+                    label="PR!"
+                    size="small"
+                    color="warning"
+                    sx={{ fontWeight: 600 }}
+                  />
+                )}
+                <IconButton
+                  size="small"
+                  onClick={async () => {
+                    await deleteSet(set.id);
+                    onSetDeleted();
+                  }}
+                  sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+                >
+                  <Delete fontSize="small" />
+                </IconButton>
+              </Stack>
+            </Stack>
+          </Box>
         ))}
-      </div>
+      </Box>
 
       {/* Add Set Button */}
       {!showAddSet ? (
-        <button
+        <Button
+          fullWidth
           onClick={() => setShowAddSet(true)}
-          className="w-full py-3 text-violet-400 hover:bg-neutral-800/50 transition-colors text-sm font-medium"
+          sx={{ color: 'primary.main', py: 1.5 }}
         >
           + Ajouter une série
-        </button>
+        </Button>
       ) : (
         <QuickSetInput
           exerciseId={exercise.id}
@@ -404,7 +516,7 @@ function ExerciseCard({
           }}
         />
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -443,46 +555,43 @@ function QuickSetInput({
   };
 
   return (
-    <div className="p-4 bg-neutral-800/50 border-t border-neutral-700">
-      <div className="flex gap-3 mb-3">
-        <div className="flex-1">
-          <label className="text-xs text-neutral-500 mb-1 block">Poids (kg)</label>
-          <input
-            type="number"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            className="w-full px-3 py-2 bg-neutral-900 rounded-lg text-center font-medium"
-            placeholder="0"
-            autoFocus
-          />
-        </div>
-        <div className="flex-1">
-          <label className="text-xs text-neutral-500 mb-1 block">Reps</label>
-          <input
-            type="number"
-            value={reps}
-            onChange={(e) => setReps(e.target.value)}
-            className="w-full px-3 py-2 bg-neutral-900 rounded-lg text-center font-medium"
-            placeholder="0"
-          />
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={onCancel}
-          className="flex-1 py-2 bg-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-600 transition-colors"
-        >
+    <Box sx={{ p: 2, bgcolor: 'action.hover', borderTop: 1, borderColor: 'divider' }}>
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+        <TextField
+          label="Poids (kg)"
+          type="number"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+          size="small"
+          fullWidth
+          autoFocus
+          InputProps={{ inputProps: { style: { textAlign: 'center' } } }}
+        />
+        <TextField
+          label="Reps"
+          type="number"
+          value={reps}
+          onChange={(e) => setReps(e.target.value)}
+          size="small"
+          fullWidth
+          InputProps={{ inputProps: { style: { textAlign: 'center' } } }}
+        />
+      </Stack>
+      <Stack direction="row" spacing={1}>
+        <Button fullWidth variant="outlined" onClick={onCancel}>
           Annuler
-        </button>
-        <button
+        </Button>
+        <Button
+          fullWidth
+          variant="contained"
           onClick={handleSubmit}
           disabled={!weight || !reps || isSubmitting}
-          className="flex-1 py-2 bg-violet-600 rounded-lg text-sm font-medium hover:bg-violet-500 disabled:opacity-50 transition-colors"
+          sx={{ background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)' }}
         >
           {isSubmitting ? '...' : 'Valider'}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Stack>
+    </Box>
   );
 }
 
@@ -508,80 +617,73 @@ function ExercisePicker({
   });
 
   return (
-    <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <div className="px-4 py-4 border-b border-neutral-800 flex items-center gap-4">
-        <button onClick={onClose} className="text-neutral-400 hover:text-white">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-        <h2 className="text-lg font-semibold">Choisir un exercice</h2>
-      </div>
+      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <IconButton onClick={onClose}>
+            <Close />
+          </IconButton>
+          <Typography variant="h6" fontWeight={600}>Choisir un exercice</Typography>
+        </Stack>
 
-      {/* Search */}
-      <div className="px-4 py-3">
-        <input
-          type="text"
+        {/* Search */}
+        <TextField
+          fullWidth
+          placeholder="Rechercher..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher..."
-          className="w-full px-4 py-3 bg-neutral-900 rounded-xl"
+          size="small"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search sx={{ color: 'text.secondary' }} />
+              </InputAdornment>
+            ),
+          }}
           autoFocus
         />
-      </div>
+      </Paper>
 
       {/* Muscle Filter */}
-      <div className="px-4 pb-3 flex gap-2 overflow-x-auto">
-        <button
-          onClick={() => setSelectedMuscle(null)}
-          className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
-            !selectedMuscle
-              ? 'bg-violet-600 text-white'
-              : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-          }`}
-        >
-          Tous
-        </button>
-        {muscleGroups.map((muscle) => (
-          <button
-            key={muscle}
-            onClick={() => setSelectedMuscle(muscle)}
-            className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap capitalize transition-colors ${
-              selectedMuscle === muscle
-                ? 'bg-violet-600 text-white'
-                : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-            }`}
-          >
-            {muscle}
-          </button>
-        ))}
-      </div>
+      <Box sx={{ px: 2, py: 1.5, overflowX: 'auto' }}>
+        <Stack direction="row" spacing={1}>
+          <Chip
+            label="Tous"
+            onClick={() => setSelectedMuscle(null)}
+            color={!selectedMuscle ? 'primary' : 'default'}
+            variant={!selectedMuscle ? 'filled' : 'outlined'}
+          />
+          {muscleGroups.map((muscle) => (
+            <Chip
+              key={muscle}
+              label={muscle}
+              onClick={() => setSelectedMuscle(muscle)}
+              color={selectedMuscle === muscle ? 'primary' : 'default'}
+              variant={selectedMuscle === muscle ? 'filled' : 'outlined'}
+              sx={{ textTransform: 'capitalize' }}
+            />
+          ))}
+        </Stack>
+      </Box>
 
       {/* Exercise List */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <div className="space-y-2">
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 2 }}>
+        <List disablePadding>
           {filteredExercises.map((exercise) => (
-            <button
-              key={exercise.id}
-              onClick={() => onSelect(exercise)}
-              className="w-full p-4 bg-neutral-900 rounded-xl text-left hover:bg-neutral-800 transition-colors"
-            >
-              <p className="font-medium">{exercise.nameFr}</p>
-              <p className="text-sm text-neutral-400 capitalize">{exercise.muscleGroup}</p>
-            </button>
+            <Card key={exercise.id} sx={{ mb: 1 }}>
+              <ListItemButton onClick={() => onSelect(exercise)} sx={{ borderRadius: 1 }}>
+                <ListItemText
+                  primary={exercise.nameFr}
+                  secondary={exercise.muscleGroup}
+                  secondaryTypographyProps={{ sx: { textTransform: 'capitalize' } }}
+                />
+              </ListItemButton>
+            </Card>
           ))}
-        </div>
-      </div>
-    </div>
+        </List>
+      </Box>
+    </Box>
   );
 }
 
@@ -638,100 +740,92 @@ function SetInputSheet({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-end">
-      <div className="w-full bg-neutral-900 rounded-t-3xl p-6 pb-8 animate-slide-up">
-        {/* Handle */}
-        <div className="w-12 h-1 bg-neutral-700 rounded-full mx-auto mb-6" />
+    <Box sx={{ p: 3 }}>
+      {/* Handle */}
+      <Box sx={{ width: 48, height: 4, bgcolor: 'action.hover', borderRadius: 2, mx: 'auto', mb: 3 }} />
 
-        {/* Exercise Name */}
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h3 className="text-lg font-semibold">{exercise.nameFr}</h3>
-            <p className="text-sm text-neutral-400">
-              {isWarmup ? 'Échauffement' : `Série ${setNumber}`}
-            </p>
-          </div>
-          <button onClick={onClose} className="text-neutral-400 p-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+      {/* Exercise Name */}
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 3 }}>
+        <Box>
+          <Typography variant="h6" fontWeight={600}>{exercise.nameFr}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {isWarmup ? 'Échauffement' : `Série ${setNumber}`}
+          </Typography>
+        </Box>
+        <IconButton onClick={onClose}>
+          <Close />
+        </IconButton>
+      </Stack>
 
-        {/* Previous Performance */}
-        {previousSets.length > 0 && (
-          <div className="mb-4 p-3 bg-neutral-800 rounded-xl">
-            <p className="text-xs text-neutral-500 mb-1">Dernière séance</p>
-            <p className="font-medium">
+      {/* Previous Performance */}
+      {previousSets.length > 0 && (
+        <Card sx={{ mb: 3, bgcolor: 'action.hover' }}>
+          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <Typography variant="caption" color="text.secondary">Dernière séance</Typography>
+            <Typography variant="body1" fontWeight={500}>
               {previousSets[0].weight}kg × {previousSets[0].reps} reps
-            </p>
-          </div>
-        )}
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Inputs */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div>
-            <label className="text-xs text-neutral-500 mb-2 block">Poids (kg)</label>
-            <input
-              type="number"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              className="w-full px-4 py-3 bg-neutral-800 rounded-xl text-center text-xl font-bold"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-neutral-500 mb-2 block">Reps</label>
-            <input
-              type="number"
-              value={reps}
-              onChange={(e) => setReps(e.target.value)}
-              className="w-full px-4 py-3 bg-neutral-800 rounded-xl text-center text-xl font-bold"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-neutral-500 mb-2 block">RPE</label>
-            <input
-              type="number"
-              value={rpe}
-              onChange={(e) => setRpe(e.target.value)}
-              min="1"
-              max="10"
-              className="w-full px-4 py-3 bg-neutral-800 rounded-xl text-center text-xl font-bold"
-              placeholder="-"
-            />
-          </div>
-        </div>
+      {/* Inputs */}
+      <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+        <TextField
+          label="Poids (kg)"
+          type="number"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+          fullWidth
+          InputProps={{ inputProps: { style: { textAlign: 'center', fontSize: '1.25rem', fontWeight: 700 } } }}
+        />
+        <TextField
+          label="Reps"
+          type="number"
+          value={reps}
+          onChange={(e) => setReps(e.target.value)}
+          fullWidth
+          InputProps={{ inputProps: { style: { textAlign: 'center', fontSize: '1.25rem', fontWeight: 700 } } }}
+        />
+        <TextField
+          label="RPE"
+          type="number"
+          value={rpe}
+          onChange={(e) => setRpe(e.target.value)}
+          fullWidth
+          InputProps={{ inputProps: { min: 1, max: 10, style: { textAlign: 'center', fontSize: '1.25rem', fontWeight: 700 } } }}
+        />
+      </Stack>
 
-        {/* Warmup Toggle */}
-        <label className="flex items-center gap-3 mb-6 cursor-pointer">
-          <input
-            type="checkbox"
+      {/* Warmup Toggle */}
+      <FormControlLabel
+        control={
+          <Checkbox
             checked={isWarmup}
             onChange={(e) => setIsWarmup(e.target.checked)}
-            className="w-5 h-5 rounded bg-neutral-800 border-neutral-700"
           />
-          <span className="text-neutral-300">C'est un échauffement</span>
-        </label>
+        }
+        label="C'est un échauffement"
+        sx={{ mb: 3 }}
+      />
 
-        {/* Submit Button */}
-        <button
-          onClick={handleSubmit}
-          disabled={!weight || !reps || isSubmitting}
-          className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-xl font-semibold transition-colors"
-        >
-          {isSubmitting ? 'Enregistrement...' : 'Valider la série'}
-        </button>
-      </div>
-    </div>
+      {/* Submit Button */}
+      <Button
+        fullWidth
+        variant="contained"
+        size="large"
+        onClick={handleSubmit}
+        disabled={!weight || !reps || isSubmitting}
+        sx={{
+          py: 1.5,
+          background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #7f67be 0%, #bb86fc 100%)',
+          },
+        }}
+      >
+        {isSubmitting ? 'Enregistrement...' : 'Valider la série'}
+      </Button>
+    </Box>
   );
 }

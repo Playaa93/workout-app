@@ -1,6 +1,15 @@
 'use client';
 
+import Link from 'next/link';
 import { type MorphotypeResult } from './actions';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import LinearProgress from '@mui/material/LinearProgress';
 
 type Props = {
   result: MorphotypeResult;
@@ -9,28 +18,28 @@ type Props = {
 
 const morphotypeInfo: Record<
   string,
-  { emoji: string; title: string; description: string; color: string }
+  { emoji: string; title: string; description: string; gradient: string }
 > = {
   ectomorph: {
     emoji: '🦒',
     title: 'Ectomorphe',
     description:
       'Silhouette longiligne, métabolisme rapide. Tu as naturellement du mal à prendre du poids, mais tu gardes facilement une définition musculaire.',
-    color: 'from-blue-500 to-cyan-500',
+    gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
   },
   mesomorph: {
     emoji: '🦁',
     title: 'Mésomorphe',
     description:
       'Le morphotype athlétique par excellence. Tu prends du muscle facilement et tu as une bonne force naturelle.',
-    color: 'from-amber-500 to-orange-500',
+    gradient: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
   },
   endomorph: {
     emoji: '🐻',
     title: 'Endomorphe',
     description:
       'Silhouette plus large, métabolisme lent. Tu as une grande force naturelle et tu prends du muscle facilement, mais le cardio est ton ami.',
-    color: 'from-emerald-500 to-green-500',
+    gradient: 'linear-gradient(135deg, #10b981 0%, #22c55e 100%)',
   },
 };
 
@@ -38,7 +47,6 @@ export function Results({ result, onRetake }: Props) {
   const primary = morphotypeInfo[result.primary];
   const secondary = result.secondary ? morphotypeInfo[result.secondary] : null;
 
-  // Calculate percentage for visualization
   const total = result.scores.ecto + result.scores.meso + result.scores.endo;
   const percentages = {
     ecto: total > 0 ? Math.round((result.scores.ecto / total) * 100) : 33,
@@ -47,131 +55,179 @@ export function Results({ result, onRetake }: Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <Stack spacing={3}>
       {/* Main Result Card */}
-      <div
-        className={`p-6 rounded-2xl bg-gradient-to-br ${primary.color} text-white`}
+      <Card
+        sx={{
+          background: primary.gradient,
+          color: 'white',
+          overflow: 'hidden',
+        }}
       >
-        <div className="flex items-center gap-4 mb-4">
-          <span className="text-5xl">{primary.emoji}</span>
-          <div>
-            <h2 className="text-2xl font-bold">{primary.title}</h2>
-            {secondary && (
-              <p className="text-white/80 text-sm">
-                avec tendance {secondary.title.toLowerCase()}
-              </p>
-            )}
-          </div>
-        </div>
-        <p className="text-white/90 leading-relaxed">{primary.description}</p>
-      </div>
+        <CardContent sx={{ py: 3 }}>
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+            <Typography variant="h2">{primary.emoji}</Typography>
+            <Box>
+              <Typography variant="h5" fontWeight={700}>{primary.title}</Typography>
+              {secondary && (
+                <Typography sx={{ opacity: 0.85 }}>
+                  avec tendance {secondary.title.toLowerCase()}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
+          <Typography sx={{ opacity: 0.9, lineHeight: 1.7 }}>{primary.description}</Typography>
+        </CardContent>
+      </Card>
 
       {/* Score Distribution */}
-      <div className="p-4 rounded-xl bg-neutral-900">
-        <h3 className="font-semibold mb-4">Répartition</h3>
-        <div className="space-y-3">
-          <ScoreBar label="Ectomorphe" value={percentages.ecto} color="bg-blue-500" />
-          <ScoreBar label="Mésomorphe" value={percentages.meso} color="bg-amber-500" />
-          <ScoreBar label="Endomorphe" value={percentages.endo} color="bg-emerald-500" />
-        </div>
-      </div>
+      <Card>
+        <CardContent>
+          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>Répartition</Typography>
+          <Stack spacing={2}>
+            <ScoreBar label="Ectomorphe" value={percentages.ecto} color="#3b82f6" />
+            <ScoreBar label="Mésomorphe" value={percentages.meso} color="#f59e0b" />
+            <ScoreBar label="Endomorphe" value={percentages.endo} color="#10b981" />
+          </Stack>
+        </CardContent>
+      </Card>
 
       {/* Strengths */}
-      <div className="p-4 rounded-xl bg-neutral-900">
-        <h3 className="font-semibold mb-3 flex items-center gap-2">
-          <span>💪</span> Tes points forts
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {result.strengths.map((strength) => (
-            <span
-              key={strength}
-              className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm"
-            >
-              {strength}
-            </span>
-          ))}
-        </div>
-      </div>
+      <Card>
+        <CardContent>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+            <Typography variant="h6">💪</Typography>
+            <Typography variant="subtitle1" fontWeight={600}>Tes points forts</Typography>
+          </Stack>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {result.strengths.map((strength) => (
+              <Chip
+                key={strength}
+                label={strength}
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(16,185,129,0.15)',
+                  color: 'success.main',
+                  border: 1,
+                  borderColor: 'success.main',
+                }}
+              />
+            ))}
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Weaknesses */}
-      <div className="p-4 rounded-xl bg-neutral-900">
-        <h3 className="font-semibold mb-3 flex items-center gap-2">
-          <span>🎯</span> Points à travailler
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {result.weaknesses.map((weakness) => (
-            <span
-              key={weakness}
-              className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm"
-            >
-              {weakness}
-            </span>
-          ))}
-        </div>
-      </div>
+      <Card>
+        <CardContent>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+            <Typography variant="h6">🎯</Typography>
+            <Typography variant="subtitle1" fontWeight={600}>Points à travailler</Typography>
+          </Stack>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {result.weaknesses.map((weakness) => (
+              <Chip
+                key={weakness}
+                label={weakness}
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(249,115,22,0.15)',
+                  color: 'warning.main',
+                  border: 1,
+                  borderColor: 'warning.main',
+                }}
+              />
+            ))}
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Recommended Exercises */}
-      <div className="p-4 rounded-xl bg-neutral-900">
-        <h3 className="font-semibold mb-3 flex items-center gap-2">
-          <span>✅</span> Exercices recommandés
-        </h3>
-        <ul className="space-y-2">
-          {result.recommendedExercises.map((exercise) => (
-            <li key={exercise} className="flex items-center gap-2 text-neutral-300">
-              <span className="w-1.5 h-1.5 bg-violet-500 rounded-full" />
-              {exercise}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <Card>
+        <CardContent>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+            <Typography variant="h6">✅</Typography>
+            <Typography variant="subtitle1" fontWeight={600}>Exercices recommandés</Typography>
+          </Stack>
+          <Stack spacing={1}>
+            {result.recommendedExercises.map((exercise) => (
+              <Stack key={exercise} direction="row" alignItems="center" spacing={1.5}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'primary.main' }} />
+                <Typography variant="body2" color="text.secondary">{exercise}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </CardContent>
+      </Card>
 
       {/* Exercises to Avoid */}
-      <div className="p-4 rounded-xl bg-neutral-900">
-        <h3 className="font-semibold mb-3 flex items-center gap-2">
-          <span>⚠️</span> À éviter
-        </h3>
-        <ul className="space-y-2">
-          {result.exercisesToAvoid.map((exercise) => (
-            <li key={exercise} className="flex items-center gap-2 text-neutral-400">
-              <span className="w-1.5 h-1.5 bg-neutral-600 rounded-full" />
-              {exercise}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <Card>
+        <CardContent>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+            <Typography variant="h6">⚠️</Typography>
+            <Typography variant="subtitle1" fontWeight={600}>À éviter</Typography>
+          </Stack>
+          <Stack spacing={1}>
+            {result.exercisesToAvoid.map((exercise) => (
+              <Stack key={exercise} direction="row" alignItems="center" spacing={1.5}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary">{exercise}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </CardContent>
+      </Card>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-4">
-        <a
+      <Stack direction="row" spacing={1.5} sx={{ pt: 2 }}>
+        <Button
+          component={Link}
           href="/"
-          className="flex-1 py-3 px-4 bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-xl text-center transition-colors"
+          variant="contained"
+          size="large"
+          sx={{
+            flex: 1,
+            py: 1.5,
+            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #7f67be 0%, #bb86fc 100%)',
+            },
+          }}
         >
-          Commencer à s'entraîner
-        </a>
-        <button
+          Commencer à s&apos;entraîner
+        </Button>
+        <Button
+          variant="outlined"
           onClick={onRetake}
-          className="py-3 px-4 border border-neutral-700 text-neutral-300 rounded-xl hover:bg-neutral-800 transition-colors"
+          sx={{ py: 1.5, px: 3 }}
         >
           Refaire
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Stack>
+    </Stack>
   );
 }
 
 function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="text-neutral-400">{label}</span>
-        <span className="text-neutral-300">{value}%</span>
-      </div>
-      <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full ${color} transition-all duration-500`}
-          style={{ width: `${value}%` }}
-        />
-      </div>
-    </div>
+    <Box>
+      <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+        <Typography variant="body2" color="text.secondary">{label}</Typography>
+        <Typography variant="body2">{value}%</Typography>
+      </Stack>
+      <LinearProgress
+        variant="determinate"
+        value={value}
+        sx={{
+          height: 8,
+          borderRadius: 4,
+          bgcolor: 'action.hover',
+          '& .MuiLinearProgress-bar': {
+            bgcolor: color,
+            borderRadius: 4,
+          },
+        }}
+      />
+    </Box>
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function middleware(_request: NextRequest) {
   // For now, just pass through all requests
   // Auth middleware will be added later
   return NextResponse.next();

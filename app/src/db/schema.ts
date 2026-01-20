@@ -207,6 +207,7 @@ export const workoutSessions = pgTable(
     endedAt: timestamp('ended_at', { withTimezone: true }),
     durationMinutes: integer('duration_minutes'),
     totalVolume: decimal('total_volume', { precision: 10, scale: 2 }),
+    caloriesBurned: integer('calories_burned'), // Estimated based on duration & intensity
     perceivedDifficulty: integer('perceived_difficulty'),
     energyLevel: integer('energy_level'),
     mood: varchar('mood', { length: 20 }),
@@ -343,6 +344,41 @@ export const nutritionDailySummary = pgTable(
     index('idx_nutrition_summary_user_date').on(table.userId, table.date),
   ]
 );
+
+export const nutritionGoalEnum = pgEnum('nutrition_goal', [
+  'bulk',      // Prise de masse
+  'maintain',  // Maintenance
+  'cut',       // Sèche
+]);
+
+export const activityLevelEnum = pgEnum('activity_level', [
+  'sedentary',    // Sédentaire (bureau)
+  'light',        // Légèrement actif (1-2x/sem)
+  'moderate',     // Modérément actif (3-4x/sem)
+  'active',       // Actif (5-6x/sem)
+  'very_active',  // Très actif (2x/jour ou physique)
+]);
+
+export const nutritionProfiles = pgTable('nutrition_profiles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .unique(),
+  goal: nutritionGoalEnum('goal').default('maintain'),
+  activityLevel: activityLevelEnum('activity_level').default('moderate'),
+  height: decimal('height', { precision: 5, scale: 1 }), // cm
+  weight: decimal('weight', { precision: 5, scale: 1 }), // kg
+  age: integer('age'),
+  isMale: boolean('is_male').default(true),
+  // Calculated values (stored for quick access)
+  tdee: integer('tdee'), // Total Daily Energy Expenditure
+  targetCalories: integer('target_calories'),
+  targetProtein: integer('target_protein'), // g
+  targetCarbs: integer('target_carbs'), // g
+  targetFat: integer('target_fat'), // g
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
 
 // =====================================================
 // 6. GAMIFICATION
@@ -534,6 +570,8 @@ export type FoodCraving = typeof foodCravings.$inferSelect;
 export type FoodEntry = typeof foodEntries.$inferSelect;
 export type NewFoodEntry = typeof foodEntries.$inferInsert;
 export type NutritionDailySummary = typeof nutritionDailySummary.$inferSelect;
+export type NutritionProfile = typeof nutritionProfiles.$inferSelect;
+export type NewNutritionProfile = typeof nutritionProfiles.$inferInsert;
 
 export type UserGamification = typeof userGamification.$inferSelect;
 export type XpTransaction = typeof xpTransactions.$inferSelect;

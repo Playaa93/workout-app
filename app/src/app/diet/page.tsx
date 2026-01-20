@@ -11,13 +11,38 @@ import {
   addQuickEntry,
   deleteEntry,
   getWeekHistory,
+  getNutritionProfile,
+  saveNutritionProfile,
   type CravingData,
   type FoodData,
   type FoodEntryData,
   type DailySummaryData,
+  type NutritionProfileData,
+  type NutritionGoal,
+  type ActivityLevel,
 } from './actions';
+import { getTodayWorkoutCalories } from '../workout/actions';
+import Link from 'next/link';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardActionArea from '@mui/material/CardActionArea';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Chip from '@mui/material/Chip';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
+import InputAdornment from '@mui/material/InputAdornment';
+import ArrowBack from '@mui/icons-material/ArrowBack';
+import Settings from '@mui/icons-material/Settings';
+import Search from '@mui/icons-material/Search';
+import Close from '@mui/icons-material/Close';
 
-type View = 'main' | 'cravings' | 'search' | 'quick';
+type View = 'main' | 'cravings' | 'search' | 'quick' | 'settings';
 
 export default function DietPage() {
   const [view, setView] = useState<View>('main');
@@ -25,20 +50,32 @@ export default function DietPage() {
   const [entries, setEntries] = useState<FoodEntryData[]>([]);
   const [summary, setSummary] = useState<{ today: DailySummaryData; avg7d: DailySummaryData } | null>(null);
   const [weekHistory, setWeekHistory] = useState<DailySummaryData[]>([]);
+  const [profile, setProfile] = useState<NutritionProfileData | null>(null);
+  const [workoutCalories, setWorkoutCalories] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = async () => {
-    const [cravingsData, entriesData, summaryData, historyData] = await Promise.all([
+    const [cravingsData, entriesData, summaryData, historyData, profileData, workoutCal] = await Promise.all([
       getCravings(),
       getTodayEntries(),
       getDailySummary(),
       getWeekHistory(),
+      getNutritionProfile(),
+      getTodayWorkoutCalories(),
     ]);
     setCravings(cravingsData);
     setEntries(entriesData);
     setSummary(summaryData);
     setWeekHistory(historyData);
+    setProfile(profileData);
+    setWorkoutCalories(workoutCal);
     setIsLoading(false);
+  };
+
+  const handleSaveProfile = async (data: Parameters<typeof saveNutritionProfile>[0]) => {
+    const newProfile = await saveNutritionProfile(data);
+    setProfile(newProfile);
+    setView('main');
   };
 
   useEffect(() => {
@@ -70,42 +107,50 @@ export default function DietPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-      </div>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
       {/* Header */}
-      <header className="px-4 py-4 border-b border-neutral-800 flex items-center gap-4">
-        <a href="/" className="text-neutral-400 hover:text-white transition-colors">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </a>
-        <h1 className="text-lg font-semibold">Nutrition</h1>
-      </header>
+      <Paper
+        elevation={0}
+        sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: 1,
+          borderColor: 'divider',
+          borderRadius: 0,
+          bgcolor: 'background.paper',
+        }}
+      >
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <IconButton component={Link} href="/" size="small">
+              <ArrowBack />
+            </IconButton>
+            <Typography variant="h6" fontWeight={600}>Nutrition</Typography>
+          </Stack>
+          <IconButton onClick={() => setView('settings')} size="small">
+            <Settings />
+          </IconButton>
+        </Stack>
+      </Paper>
 
       {view === 'main' && (
         <MainView
           summary={summary}
           entries={entries}
           weekHistory={weekHistory}
+          profile={profile}
+          workoutCalories={workoutCalories}
           onOpenCravings={() => setView('cravings')}
           onOpenSearch={() => setView('search')}
           onOpenQuick={() => setView('quick')}
+          onOpenSettings={() => setView('settings')}
           onDelete={handleDelete}
         />
       )}
@@ -131,7 +176,15 @@ export default function DietPage() {
           onClose={() => setView('main')}
         />
       )}
-    </main>
+
+      {view === 'settings' && (
+        <SettingsView
+          profile={profile}
+          onSave={handleSaveProfile}
+          onClose={() => setView('main')}
+        />
+      )}
+    </Box>
   );
 }
 
@@ -140,138 +193,250 @@ function MainView({
   summary,
   entries,
   weekHistory,
+  profile,
+  workoutCalories,
   onOpenCravings,
   onOpenSearch,
   onOpenQuick,
+  onOpenSettings,
   onDelete,
 }: {
   summary: { today: DailySummaryData; avg7d: DailySummaryData } | null;
   entries: FoodEntryData[];
   weekHistory: DailySummaryData[];
+  profile: NutritionProfileData | null;
+  workoutCalories: number;
   onOpenCravings: () => void;
   onOpenSearch: () => void;
   onOpenQuick: () => void;
+  onOpenSettings: () => void;
   onDelete: (id: string) => void;
 }) {
+  const goalLabels: Record<NutritionGoal, string> = {
+    bulk: 'Prise de masse',
+    maintain: 'Maintenance',
+    cut: 'Sèche',
+  };
+
+  const adjustedTarget = profile?.targetCalories
+    ? profile.targetCalories + workoutCalories
+    : null;
+
   return (
-    <div className="flex-1 p-4 pb-24 space-y-6">
-      {/* Quick Actions */}
-      <div className="grid grid-cols-3 gap-3">
-        <button
-          onClick={onOpenCravings}
-          className="p-4 bg-gradient-to-br from-pink-600/30 to-orange-600/30 rounded-xl border border-pink-500/30 hover:border-pink-500/50 transition-colors"
-        >
-          <span className="text-2xl block mb-1">🍕</span>
-          <span className="text-sm">J'ai envie de...</span>
-        </button>
-        <button
-          onClick={onOpenSearch}
-          className="p-4 bg-neutral-900 rounded-xl border border-neutral-800 hover:border-neutral-700 transition-colors"
-        >
-          <span className="text-2xl block mb-1">🔍</span>
-          <span className="text-sm">Chercher</span>
-        </button>
-        <button
-          onClick={onOpenQuick}
-          className="p-4 bg-neutral-900 rounded-xl border border-neutral-800 hover:border-neutral-700 transition-colors"
-        >
-          <span className="text-2xl block mb-1">⚡</span>
-          <span className="text-sm">Rapide</span>
-        </button>
-      </div>
+    <Box sx={{ flex: 1, p: 2, pb: 12 }}>
+      <Stack spacing={3}>
+        {/* Quick Actions */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
+          <Card
+            sx={{
+              background: (theme) => theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(233,30,99,0.2) 0%, rgba(255,152,0,0.15) 100%)'
+                : 'linear-gradient(135deg, rgba(233,30,99,0.15) 0%, rgba(255,152,0,0.1) 100%)',
+              border: 1,
+              borderColor: 'rgba(233,30,99,0.3)',
+            }}
+          >
+            <CardActionArea onClick={onOpenCravings} sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h5" sx={{ mb: 0.5 }}>🍕</Typography>
+              <Typography variant="caption">J&apos;ai envie de...</Typography>
+            </CardActionArea>
+          </Card>
+          <Card>
+            <CardActionArea onClick={onOpenSearch} sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h5" sx={{ mb: 0.5 }}>🔍</Typography>
+              <Typography variant="caption">Chercher</Typography>
+            </CardActionArea>
+          </Card>
+          <Card>
+            <CardActionArea onClick={onOpenQuick} sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h5" sx={{ mb: 0.5 }}>⚡</Typography>
+              <Typography variant="caption">Rapide</Typography>
+            </CardActionArea>
+          </Card>
+        </Box>
 
-      {/* 7-Day Average - The "invisible" tracking */}
-      {summary && summary.avg7d.totalCalories > 0 && (
-        <div className="p-4 bg-gradient-to-r from-emerald-600/20 to-teal-600/20 rounded-xl border border-emerald-500/30">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-xl">📊</span>
-            <h3 className="font-semibold">Moyenne 7 jours</h3>
-          </div>
-          <p className="text-3xl font-bold text-emerald-400 mb-1">
-            {Math.round(summary.avg7d.totalCalories)} kcal
-          </p>
-          <p className="text-sm text-neutral-400">
-            C'est ta vraie consommation. Les écarts d'un jour ne comptent pas.
-          </p>
-          <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
-            <div>
-              <p className="text-neutral-500">Protéines</p>
-              <p className="font-medium">{Math.round(summary.avg7d.totalProtein)}g</p>
-            </div>
-            <div>
-              <p className="text-neutral-500">Glucides</p>
-              <p className="font-medium">{Math.round(summary.avg7d.totalCarbs)}g</p>
-            </div>
-            <div>
-              <p className="text-neutral-500">Lipides</p>
-              <p className="font-medium">{Math.round(summary.avg7d.totalFat)}g</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Today's Summary */}
-      {summary && (
-        <div className="p-4 bg-neutral-900 rounded-xl">
-          <h3 className="text-sm text-neutral-400 mb-3">Aujourd'hui</h3>
-          <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-3xl font-bold">
-              {Math.round(summary.today.totalCalories)}
-            </span>
-            <span className="text-neutral-400">kcal</span>
-          </div>
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <MacroBar label="P" value={summary.today.totalProtein} color="bg-blue-500" />
-            <MacroBar label="G" value={summary.today.totalCarbs} color="bg-amber-500" />
-            <MacroBar label="L" value={summary.today.totalFat} color="bg-pink-500" />
-          </div>
-        </div>
-      )}
-
-      {/* Week Chart */}
-      {weekHistory.length > 1 && (
-        <div className="p-4 bg-neutral-900 rounded-xl">
-          <h3 className="text-sm text-neutral-400 mb-4">Cette semaine</h3>
-          <WeekChart data={weekHistory} />
-        </div>
-      )}
-
-      {/* Today's Entries */}
-      <div>
-        <h3 className="text-sm text-neutral-400 mb-3">
-          Journal du jour ({entries.length} entrées)
-        </h3>
-        {entries.length === 0 ? (
-          <div className="text-center py-8 text-neutral-500">
-            <p>Rien de loggé aujourd'hui</p>
-            <p className="text-sm mt-1">Et c'est OK 😊</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {entries.map((entry) => (
-              <EntryCard key={entry.id} entry={entry} onDelete={() => onDelete(entry.id)} />
-            ))}
-          </div>
+        {/* No profile configured */}
+        {!profile && (
+          <Card
+            sx={{
+              background: (theme) => theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(103,80,164,0.2) 0%, rgba(156,39,176,0.15) 100%)'
+                : 'linear-gradient(135deg, rgba(103,80,164,0.15) 0%, rgba(156,39,176,0.1) 100%)',
+              border: 1,
+              borderColor: 'primary.main',
+            }}
+          >
+            <CardActionArea onClick={onOpenSettings} sx={{ p: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Typography variant="h5">⚙️</Typography>
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={600}>Configure ton profil</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    On calcule tes besoins pour t&apos;aider à atteindre ton objectif
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardActionArea>
+          </Card>
         )}
-      </div>
-    </div>
+
+        {/* 7-Day Average */}
+        {summary && summary.avg7d.totalCalories > 0 && (
+          <Card
+            sx={{
+              background: (theme) => theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(6,182,212,0.15) 100%)'
+                : 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,182,212,0.1) 100%)',
+              border: 1,
+              borderColor: 'success.main',
+            }}
+          >
+            <CardContent>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography variant="h6">📊</Typography>
+                  <Typography variant="subtitle1" fontWeight={600}>Moyenne 7 jours</Typography>
+                </Stack>
+                {profile && (
+                  <Chip
+                    label={goalLabels[profile.goal]}
+                    size="small"
+                    color="success"
+                    sx={{ fontSize: '0.7rem' }}
+                  />
+                )}
+              </Stack>
+              <Typography variant="h4" fontWeight={700} color="success.main" sx={{ mb: 0.5 }}>
+                {Math.round(summary.avg7d.totalCalories)} kcal
+              </Typography>
+              {profile && profile.targetCalories && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Objectif : ~{profile.targetCalories} kcal/jour en moyenne
+                </Typography>
+              )}
+              {!profile && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  C&apos;est ta vraie consommation. Les écarts d&apos;un jour ne comptent pas.
+                </Typography>
+              )}
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Protéines</Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {Math.round(summary.avg7d.totalProtein)}g
+                    {profile?.targetProtein && (
+                      <Typography component="span" variant="caption" color="text.secondary"> / {profile.targetProtein}g</Typography>
+                    )}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Glucides</Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {Math.round(summary.avg7d.totalCarbs)}g
+                    {profile?.targetCarbs && (
+                      <Typography component="span" variant="caption" color="text.secondary"> / {profile.targetCarbs}g</Typography>
+                    )}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Lipides</Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {Math.round(summary.avg7d.totalFat)}g
+                    {profile?.targetFat && (
+                      <Typography component="span" variant="caption" color="text.secondary"> / {profile.targetFat}g</Typography>
+                    )}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Today's Summary */}
+        {summary && (
+          <Card>
+            <CardContent>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">Aujourd&apos;hui</Typography>
+                {workoutCalories > 0 && (
+                  <Chip
+                    label={`🏋️ +${workoutCalories} kcal brûlées`}
+                    size="small"
+                    color="warning"
+                    sx={{ fontSize: '0.7rem' }}
+                  />
+                )}
+              </Stack>
+              <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 1 }}>
+                <Typography variant="h4" fontWeight={700}>
+                  {Math.round(summary.today.totalCalories)}
+                </Typography>
+                <Typography color="text.secondary">kcal</Typography>
+                {adjustedTarget && (
+                  <Typography variant="body2" color="text.secondary">/ {adjustedTarget}</Typography>
+                )}
+              </Stack>
+              {workoutCalories > 0 && profile?.targetCalories && (
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                  Objectif ajusté : {profile.targetCalories} + {workoutCalories} (workout) = {adjustedTarget} kcal
+                </Typography>
+              )}
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mt: 2 }}>
+                <MacroBar label="P" value={summary.today.totalProtein} color="info" />
+                <MacroBar label="G" value={summary.today.totalCarbs} color="warning" />
+                <MacroBar label="L" value={summary.today.totalFat} color="error" />
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Week Chart */}
+        {weekHistory.length > 1 && (
+          <Card>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Cette semaine</Typography>
+              <WeekChart data={weekHistory} />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Today's Entries */}
+        <Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Journal du jour ({entries.length} entrées)
+          </Typography>
+          {entries.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography color="text.secondary">Rien de loggé aujourd&apos;hui</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Et c&apos;est OK 😊</Typography>
+            </Box>
+          ) : (
+            <Stack spacing={1}>
+              {entries.map((entry) => (
+                <EntryCard key={entry.id} entry={entry} onDelete={() => onDelete(entry.id)} />
+              ))}
+            </Stack>
+          )}
+        </Box>
+      </Stack>
+    </Box>
   );
 }
 
-function MacroBar({ label, value, color }: { label: string; value: number; color: string }) {
+function MacroBar({ label, value, color }: { label: string; value: number; color: 'info' | 'warning' | 'error' }) {
   return (
-    <div>
-      <div className="flex justify-between text-xs mb-1">
-        <span className="text-neutral-500">{label}</span>
-        <span>{Math.round(value)}g</span>
-      </div>
-      <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full ${color} transition-all`}
-          style={{ width: `${Math.min((value / 100) * 100, 100)}%` }}
-        />
-      </div>
-    </div>
+    <Box>
+      <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+        <Typography variant="caption" color="text.secondary">{label}</Typography>
+        <Typography variant="caption">{Math.round(value)}g</Typography>
+      </Stack>
+      <LinearProgress
+        variant="determinate"
+        value={Math.min((value / 100) * 100, 100)}
+        color={color}
+        sx={{ height: 6, borderRadius: 3 }}
+      />
+    </Box>
   );
 }
 
@@ -279,24 +444,33 @@ function WeekChart({ data }: { data: DailySummaryData[] }) {
   const maxCal = Math.max(...data.map((d) => d.totalCalories), 1);
 
   return (
-    <div className="flex items-end gap-2 h-24">
+    <Stack direction="row" spacing={0.5} sx={{ height: 96, alignItems: 'flex-end' }}>
       {data.map((day, i) => {
         const height = (day.totalCalories / maxCal) * 100;
         const dayName = new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'short' });
 
         return (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1">
-            <div className="w-full flex-1 flex items-end">
-              <div
-                className="w-full bg-violet-500/50 rounded-t transition-all"
-                style={{ height: `${height}%` }}
+          <Box key={i} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>
+              <Box
+                sx={{
+                  width: '100%',
+                  bgcolor: 'primary.main',
+                  opacity: 0.6,
+                  borderTopLeftRadius: 4,
+                  borderTopRightRadius: 4,
+                  height: `${height}%`,
+                  transition: 'height 0.3s ease',
+                }}
               />
-            </div>
-            <span className="text-[10px] text-neutral-500 capitalize">{dayName}</span>
-          </div>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem', textTransform: 'capitalize' }}>
+              {dayName}
+            </Typography>
+          </Box>
         );
       })}
-    </div>
+    </Stack>
   );
 }
 
@@ -306,32 +480,37 @@ function EntryCard({ entry, onDelete }: { entry: FoodEntryData; onDelete: () => 
     minute: '2-digit',
   });
 
+  const getIcon = () => {
+    if (entry.isCheat) return '🍕';
+    if (entry.mealType === 'breakfast') return '🌅';
+    if (entry.mealType === 'lunch') return '☀️';
+    if (entry.mealType === 'dinner') return '🌙';
+    return '🍎';
+  };
+
   return (
-    <div className="p-3 bg-neutral-900 rounded-xl flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <span className="text-xl">
-          {entry.isCheat ? '🍕' : entry.mealType === 'breakfast' ? '🌅' : entry.mealType === 'lunch' ? '☀️' : entry.mealType === 'dinner' ? '🌙' : '🍎'}
-        </span>
-        <div>
-          <p className="font-medium">{entry.customName || 'Aliment'}</p>
-          <p className="text-sm text-neutral-400">
-            {time} • {entry.calories ? `${Math.round(parseFloat(entry.calories))} kcal` : '--'}
-          </p>
-        </div>
-      </div>
-      <button
-        onClick={onDelete}
-        className="p-2 text-neutral-500 hover:text-red-400 transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
+    <Card>
+      <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography variant="h6">{getIcon()}</Typography>
+            <Box>
+              <Typography variant="body2" fontWeight={500}>{entry.customName || 'Aliment'}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {time} • {entry.calories ? `${Math.round(parseFloat(entry.calories))} kcal` : '--'}
+              </Typography>
+            </Box>
+          </Stack>
+          <IconButton size="small" onClick={onDelete} sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}>
+            <Close fontSize="small" />
+          </IconButton>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }
 
-// Cravings View - "J'ai envie de..."
+// Cravings View
 function CravingsView({
   cravings,
   onSelect,
@@ -341,7 +520,6 @@ function CravingsView({
   onSelect: (id: string) => void;
   onClose: () => void;
 }) {
-  // Group by category
   const byCategory = cravings.reduce((acc, c) => {
     const cat = c.category || 'other';
     if (!acc[cat]) acc[cat] = [];
@@ -361,50 +539,46 @@ function CravingsView({
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-neutral-800">
-        <div className="flex items-center gap-4 mb-2">
-          <button onClick={onClose} className="text-neutral-400 hover:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h2 className="text-xl font-bold">J'ai envie de...</h2>
-        </div>
-        <p className="text-neutral-400 text-sm">
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+          <IconButton onClick={onClose} size="small">
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h6" fontWeight={600}>J&apos;ai envie de...</Typography>
+        </Stack>
+        <Typography variant="body2" color="text.secondary">
           Pas de jugement. Log ce que tu manges vraiment.
-        </p>
-      </div>
+        </Typography>
+      </Paper>
 
-      {/* Categories */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {Object.entries(byCategory).map(([category, items]) => (
-          <div key={category}>
-            <h3 className="text-sm text-neutral-400 mb-3">
-              {categoryLabels[category] || category}
-            </h3>
-            <div className="grid grid-cols-3 gap-2">
-              {items.map((craving) => (
-                <button
-                  key={craving.id}
-                  onClick={() => onSelect(craving.id)}
-                  className="p-3 bg-neutral-900 rounded-xl hover:bg-neutral-800 transition-colors text-center"
-                >
-                  <span className="text-2xl block mb-1">{craving.icon || '🍽️'}</span>
-                  <span className="text-xs">{craving.nameFr}</span>
-                  {craving.estimatedCalories && (
-                    <span className="text-[10px] text-neutral-500 block">
-                      ~{craving.estimatedCalories} kcal
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+        <Stack spacing={3}>
+          {Object.entries(byCategory).map(([category, items]) => (
+            <Box key={category}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                {categoryLabels[category] || category}
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+                {items.map((craving) => (
+                  <Card key={craving.id}>
+                    <CardActionArea onClick={() => onSelect(craving.id)} sx={{ p: 1.5, textAlign: 'center' }}>
+                      <Typography variant="h5" sx={{ mb: 0.5 }}>{craving.icon || '🍽️'}</Typography>
+                      <Typography variant="caption" sx={{ display: 'block' }}>{craving.nameFr}</Typography>
+                      {craving.estimatedCalories && (
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                          ~{craving.estimatedCalories} kcal
+                        </Typography>
+                      )}
+                    </CardActionArea>
+                  </Card>
+                ))}
+              </Box>
+            </Box>
+          ))}
+        </Stack>
+      </Box>
+    </Box>
   );
 }
 
@@ -453,131 +627,140 @@ function SearchView({
     const calories = selectedFood.calories ? parseFloat(selectedFood.calories) * multiplier : 0;
 
     return (
-      <div className="flex-1 flex flex-col p-4">
-        <button onClick={() => setSelectedFood(null)} className="text-neutral-400 mb-4 flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={() => setSelectedFood(null)}
+          sx={{ alignSelf: 'flex-start', mb: 2, color: 'text.secondary' }}
+        >
           Retour
-        </button>
+        </Button>
 
-        <h2 className="text-xl font-bold mb-2">{selectedFood.nameFr}</h2>
+        <Typography variant="h6" fontWeight={600} sx={{ mb: 0.5 }}>{selectedFood.nameFr}</Typography>
         {selectedFood.brand && (
-          <p className="text-neutral-400 text-sm mb-4">{selectedFood.brand}</p>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>{selectedFood.brand}</Typography>
         )}
 
-        <div className="space-y-4 flex-1">
-          <div>
-            <label className="text-sm text-neutral-400 mb-2 block">Quantité (g)</label>
-            <input
-              type="number"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="w-full px-4 py-3 bg-neutral-900 rounded-xl"
-            />
-          </div>
+        <Stack spacing={3} sx={{ flex: 1 }}>
+          <TextField
+            label="Quantité (g)"
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            fullWidth
+          />
 
-          <div>
-            <label className="text-sm text-neutral-400 mb-2 block">Repas</label>
-            <div className="grid grid-cols-4 gap-2">
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Repas</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
               {[
                 { value: 'breakfast', label: '🌅 Petit-déj' },
                 { value: 'lunch', label: '☀️ Déjeuner' },
                 { value: 'dinner', label: '🌙 Dîner' },
                 { value: 'snack', label: '🍎 Snack' },
               ].map((meal) => (
-                <button
+                <Chip
                   key={meal.value}
+                  label={meal.label}
                   onClick={() => setMealType(meal.value)}
-                  className={`p-2 rounded-lg text-xs transition-colors ${
-                    mealType === meal.value
-                      ? 'bg-violet-600 text-white'
-                      : 'bg-neutral-800 text-neutral-400'
-                  }`}
-                >
-                  {meal.label}
-                </button>
+                  color={mealType === meal.value ? 'primary' : 'default'}
+                  variant={mealType === meal.value ? 'filled' : 'outlined'}
+                  size="small"
+                  sx={{ fontSize: '0.7rem' }}
+                />
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className="p-4 bg-neutral-900 rounded-xl">
-            <p className="text-2xl font-bold mb-2">{Math.round(calories)} kcal</p>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <p className="text-neutral-500">Protéines</p>
-                <p>{selectedFood.protein ? Math.round(parseFloat(selectedFood.protein) * multiplier) : 0}g</p>
-              </div>
-              <div>
-                <p className="text-neutral-500">Glucides</p>
-                <p>{selectedFood.carbohydrates ? Math.round(parseFloat(selectedFood.carbohydrates) * multiplier) : 0}g</p>
-              </div>
-              <div>
-                <p className="text-neutral-500">Lipides</p>
-                <p>{selectedFood.fat ? Math.round(parseFloat(selectedFood.fat) * multiplier) : 0}g</p>
-              </div>
-            </div>
-          </div>
-        </div>
+          <Card>
+            <CardContent>
+              <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>{Math.round(calories)} kcal</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Protéines</Typography>
+                  <Typography variant="body2">{selectedFood.protein ? Math.round(parseFloat(selectedFood.protein) * multiplier) : 0}g</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Glucides</Typography>
+                  <Typography variant="body2">{selectedFood.carbohydrates ? Math.round(parseFloat(selectedFood.carbohydrates) * multiplier) : 0}g</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Lipides</Typography>
+                  <Typography variant="body2">{selectedFood.fat ? Math.round(parseFloat(selectedFood.fat) * multiplier) : 0}g</Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Stack>
 
-        <button
+        <Button
+          fullWidth
+          variant="contained"
+          size="large"
           onClick={handleAdd}
-          className="w-full py-4 bg-violet-600 hover:bg-violet-500 rounded-xl font-semibold transition-colors"
+          sx={{
+            mt: 2,
+            py: 1.5,
+            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+          }}
         >
           Ajouter
-        </button>
-      </div>
+        </Button>
+      </Box>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="p-4 border-b border-neutral-800">
-        <div className="flex items-center gap-4 mb-4">
-          <button onClick={onClose} className="text-neutral-400 hover:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h2 className="text-lg font-semibold">Rechercher un aliment</h2>
-        </div>
-        <input
-          type="text"
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <IconButton onClick={onClose} size="small">
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h6" fontWeight={600}>Rechercher un aliment</Typography>
+        </Stack>
+        <TextField
+          fullWidth
+          placeholder="Ex: poulet, riz, pomme..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ex: poulet, riz, pomme..."
-          className="w-full px-4 py-3 bg-neutral-900 rounded-xl"
+          size="small"
           autoFocus
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search sx={{ color: 'text.secondary' }} />
+              </InputAdornment>
+            ),
+          }}
         />
-      </div>
+      </Paper>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         {isSearching ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress size={24} />
+          </Box>
         ) : results.length === 0 ? (
-          <div className="text-center py-8 text-neutral-500">
+          <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
             {query.length >= 2 ? 'Aucun résultat' : 'Tape au moins 2 caractères'}
-          </div>
+          </Typography>
         ) : (
-          <div className="space-y-2">
+          <Stack spacing={1}>
             {results.map((food) => (
-              <button
-                key={food.id}
-                onClick={() => setSelectedFood(food)}
-                className="w-full p-3 bg-neutral-900 rounded-xl text-left hover:bg-neutral-800 transition-colors"
-              >
-                <p className="font-medium">{food.nameFr}</p>
-                <p className="text-sm text-neutral-400">
-                  {food.calories ? `${food.calories} kcal/100g` : ''} {food.brand ? `• ${food.brand}` : ''}
-                </p>
-              </button>
+              <Card key={food.id}>
+                <CardActionArea onClick={() => setSelectedFood(food)} sx={{ p: 2 }}>
+                  <Typography variant="body2" fontWeight={500}>{food.nameFr}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {food.calories ? `${food.calories} kcal/100g` : ''} {food.brand ? `• ${food.brand}` : ''}
+                  </Typography>
+                </CardActionArea>
+              </Card>
             ))}
-          </div>
+          </Stack>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -598,73 +781,272 @@ function QuickEntryView({
   };
 
   return (
-    <div className="flex-1 flex flex-col p-4">
-      <div className="flex items-center gap-4 mb-6">
-        <button onClick={onClose} className="text-neutral-400 hover:text-white">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <h2 className="text-lg font-semibold">Entrée rapide</h2>
-      </div>
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
+      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+        <IconButton onClick={onClose} size="small">
+          <ArrowBack />
+        </IconButton>
+        <Typography variant="h6" fontWeight={600}>Entrée rapide</Typography>
+      </Stack>
 
-      <p className="text-neutral-400 text-sm mb-6">
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Tu sais pas exactement ce que tu manges ? Pas grave. Estime juste.
-      </p>
+      </Typography>
 
-      <div className="space-y-4 flex-1">
-        <div>
-          <label className="text-sm text-neutral-400 mb-2 block">C'est quoi ?</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Ex: sandwich, plat du resto..."
-            className="w-full px-4 py-3 bg-neutral-900 rounded-xl"
-            autoFocus
-          />
-        </div>
+      <Stack spacing={3} sx={{ flex: 1 }}>
+        <TextField
+          label="C'est quoi ?"
+          placeholder="Ex: sandwich, plat du resto..."
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          fullWidth
+          autoFocus
+        />
 
-        <div>
-          <label className="text-sm text-neutral-400 mb-2 block">Environ combien de calories ?</label>
-          <input
-            type="number"
-            value={calories}
-            onChange={(e) => setCalories(e.target.value)}
-            placeholder="500"
-            className="w-full px-4 py-3 bg-neutral-900 rounded-xl"
-          />
-        </div>
+        <TextField
+          label="Environ combien de calories ?"
+          type="number"
+          placeholder="500"
+          value={calories}
+          onChange={(e) => setCalories(e.target.value)}
+          fullWidth
+        />
 
-        {/* Quick estimates */}
-        <div>
-          <p className="text-xs text-neutral-500 mb-2">Estimations rapides</p>
-          <div className="flex flex-wrap gap-2">
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+            Estimations rapides
+          </Typography>
+          <Stack direction="row" flexWrap="wrap" gap={1}>
             {[
               { label: 'Petit repas', cal: 400 },
               { label: 'Repas moyen', cal: 600 },
               { label: 'Gros repas', cal: 900 },
               { label: 'Snack', cal: 200 },
             ].map((est) => (
-              <button
+              <Chip
                 key={est.label}
+                label={`${est.label} (~${est.cal})`}
                 onClick={() => setCalories(est.cal.toString())}
-                className="px-3 py-1 bg-neutral-800 rounded-full text-xs hover:bg-neutral-700 transition-colors"
-              >
-                {est.label} (~{est.cal})
-              </button>
+                variant="outlined"
+                size="small"
+              />
             ))}
-          </div>
-        </div>
-      </div>
+          </Stack>
+        </Box>
+      </Stack>
 
-      <button
+      <Button
+        fullWidth
+        variant="contained"
+        size="large"
         onClick={handleSubmit}
         disabled={!name || !calories}
-        className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-xl font-semibold transition-colors"
+        sx={{
+          py: 1.5,
+          background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+        }}
       >
         Ajouter
-      </button>
-    </div>
+      </Button>
+    </Box>
+  );
+}
+
+// Settings View
+function SettingsView({
+  profile,
+  onSave,
+  onClose,
+}: {
+  profile: NutritionProfileData | null;
+  onSave: (data: {
+    goal: NutritionGoal;
+    activityLevel: ActivityLevel;
+    height: number;
+    weight: number;
+    age: number;
+    isMale: boolean;
+  }) => void;
+  onClose: () => void;
+}) {
+  const [goal, setGoal] = useState<NutritionGoal>(profile?.goal || 'maintain');
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel>(profile?.activityLevel || 'moderate');
+  const [height, setHeight] = useState(profile?.height?.toString() || '');
+  const [weight, setWeight] = useState(profile?.weight?.toString() || '');
+  const [age, setAge] = useState(profile?.age?.toString() || '');
+  const [isMale, setIsMale] = useState(profile?.isMale ?? true);
+
+  const goals: { value: NutritionGoal; label: string; emoji: string; desc: string }[] = [
+    { value: 'bulk', label: 'Prise de masse', emoji: '💪', desc: '+300 kcal' },
+    { value: 'maintain', label: 'Maintenance', emoji: '⚖️', desc: 'Équilibre' },
+    { value: 'cut', label: 'Sèche', emoji: '🔥', desc: '-400 kcal' },
+  ];
+
+  const activityLevels: { value: ActivityLevel; label: string; desc: string }[] = [
+    { value: 'sedentary', label: 'Sédentaire', desc: 'Travail de bureau' },
+    { value: 'light', label: 'Légèrement actif', desc: '1-2x sport/sem' },
+    { value: 'moderate', label: 'Modérément actif', desc: '3-4x sport/sem' },
+    { value: 'active', label: 'Actif', desc: '5-6x sport/sem' },
+    { value: 'very_active', label: 'Très actif', desc: '2x/jour ou physique' },
+  ];
+
+  const isValid = height && weight && age;
+
+  const handleSave = () => {
+    if (!isValid) return;
+    onSave({
+      goal,
+      activityLevel,
+      height: parseFloat(height),
+      weight: parseFloat(weight),
+      age: parseInt(age),
+      isMale,
+    });
+  };
+
+  return (
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <IconButton onClick={onClose} size="small">
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h6" fontWeight={600}>Mon profil nutrition</Typography>
+        </Stack>
+      </Paper>
+
+      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+        <Stack spacing={3}>
+          {/* Goal Selection */}
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Mon objectif</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+              {goals.map((g) => (
+                <Card
+                  key={g.value}
+                  sx={{
+                    ...(goal === g.value && {
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                    }),
+                  }}
+                >
+                  <CardActionArea onClick={() => setGoal(g.value)} sx={{ p: 1.5, textAlign: 'center' }}>
+                    <Typography variant="h6" sx={{ mb: 0.5 }}>{g.emoji}</Typography>
+                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 500 }}>{g.label}</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.7, fontSize: '0.65rem' }}>{g.desc}</Typography>
+                  </CardActionArea>
+                </Card>
+              ))}
+            </Box>
+          </Box>
+
+          {/* Basic Info */}
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Mes infos</Typography>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  fullWidth
+                  variant={isMale ? 'contained' : 'outlined'}
+                  onClick={() => setIsMale(true)}
+                  sx={{ ...(isMale && { bgcolor: 'info.main' }) }}
+                >
+                  Homme
+                </Button>
+                <Button
+                  fullWidth
+                  variant={!isMale ? 'contained' : 'outlined'}
+                  onClick={() => setIsMale(false)}
+                  sx={{ ...(!isMale && { bgcolor: 'secondary.main' }) }}
+                >
+                  Femme
+                </Button>
+              </Stack>
+
+              <Stack direction="row" spacing={2}>
+                <TextField
+                  label="Âge"
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  size="small"
+                  fullWidth
+                  InputProps={{ inputProps: { style: { textAlign: 'center' } } }}
+                />
+                <TextField
+                  label="Taille (cm)"
+                  type="number"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  size="small"
+                  fullWidth
+                  InputProps={{ inputProps: { style: { textAlign: 'center' } } }}
+                />
+                <TextField
+                  label="Poids (kg)"
+                  type="number"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  size="small"
+                  fullWidth
+                  InputProps={{ inputProps: { style: { textAlign: 'center' } } }}
+                />
+              </Stack>
+            </Stack>
+          </Box>
+
+          {/* Activity Level */}
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Niveau d&apos;activité</Typography>
+            <Stack spacing={1}>
+              {activityLevels.map((level) => (
+                <Card
+                  key={level.value}
+                  sx={{
+                    ...(activityLevel === level.value && {
+                      bgcolor: 'rgba(103,80,164,0.15)',
+                      border: 1,
+                      borderColor: 'primary.main',
+                    }),
+                  }}
+                >
+                  <CardActionArea onClick={() => setActivityLevel(level.value)} sx={{ p: 1.5 }}>
+                    <Typography variant="body2" fontWeight={500}>{level.label}</Typography>
+                    <Typography variant="caption" color="text.secondary">{level.desc}</Typography>
+                  </CardActionArea>
+                </Card>
+              ))}
+            </Stack>
+          </Box>
+
+          {/* Info note */}
+          <Card sx={{ bgcolor: 'action.hover' }}>
+            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Typography variant="caption" color="text.secondary">
+                Ces infos servent à estimer tes besoins. C&apos;est une base de départ, pas un objectif strict.
+                Ce qui compte vraiment, c&apos;est ta moyenne sur 7 jours.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Stack>
+      </Box>
+
+      <Paper elevation={0} sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Button
+          fullWidth
+          variant="contained"
+          size="large"
+          onClick={handleSave}
+          disabled={!isValid}
+          sx={{
+            py: 1.5,
+            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+          }}
+        >
+          Enregistrer
+        </Button>
+      </Paper>
+    </Box>
   );
 }

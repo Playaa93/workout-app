@@ -1,25 +1,192 @@
 @import "tailwindcss";
 
+/* Tailwind v4 dark mode variant using data attribute */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ============================================
+   DESIGN TOKENS - 2026 Modern Fitness App
+   ============================================ */
+
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  /* Light Theme - Clean, energetic, minimal */
+  --background: #fafafa;
+  --background-secondary: #f4f4f5;
+  --background-tertiary: #e4e4e7;
+
+  --foreground: #18181b;
+  --foreground-secondary: #3f3f46;
+  --foreground-muted: #71717a;
+
+  --border: #e4e4e7;
+  --border-secondary: #d4d4d8;
+
+  --card: #ffffff;
+  --card-hover: #fafafa;
+
+  /* Brand colors */
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
+  --primary-foreground: #ffffff;
+
+  /* Semantic colors */
+  --success: #10b981;
+  --success-bg: #d1fae5;
+  --warning: #f59e0b;
+  --warning-bg: #fef3c7;
+  --error: #ef4444;
+  --error-bg: #fee2e2;
+  --info: #3b82f6;
+  --info-bg: #dbeafe;
+
+  /* Accent for gamification */
+  --accent-xp: #eab308;
+  --accent-pr: #ec4899;
+  --accent-streak: #f97316;
+
+  /* Glass effect */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.3);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+[data-theme="dark"] {
+  /* Dark Theme - Immersive, focused, premium */
+  --background: #09090b;
+  --background-secondary: #18181b;
+  --background-tertiary: #27272a;
+
+  --foreground: #fafafa;
+  --foreground-secondary: #d4d4d8;
+  --foreground-muted: #a1a1aa;
+
+  --border: #27272a;
+  --border-secondary: #3f3f46;
+
+  --card: #18181b;
+  --card-hover: #27272a;
+
+  /* Brand colors - slightly brighter for dark mode */
+  --primary: #8b5cf6;
+  --primary-hover: #a78bfa;
+  --primary-foreground: #ffffff;
+
+  /* Semantic colors - adjusted for dark */
+  --success: #34d399;
+  --success-bg: rgba(16, 185, 129, 0.15);
+  --warning: #fbbf24;
+  --warning-bg: rgba(245, 158, 11, 0.15);
+  --error: #f87171;
+  --error-bg: rgba(239, 68, 68, 0.15);
+  --info: #60a5fa;
+  --info-bg: rgba(59, 130, 246, 0.15);
+
+  /* Accent for gamification */
+  --accent-xp: #facc15;
+  --accent-pr: #f472b6;
+  --accent-streak: #fb923c;
+
+  /* Glass effect - dark glass */
+  --glass-bg: rgba(24, 24, 27, 0.8);
+  --glass-border: rgba(63, 63, 70, 0.5);
+
+  /* Shadows - glow effect for dark mode */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   TAILWIND THEME INTEGRATION
+   ============================================ */
 
 @theme inline {
   --color-background: var(--background);
+  --color-background-secondary: var(--background-secondary);
+  --color-background-tertiary: var(--background-tertiary);
+
   --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-muted: var(--foreground-muted);
+
+  --color-border: var(--border);
+  --color-border-secondary: var(--border-secondary);
+
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+
+  --color-accent-xp: var(--accent-xp);
+  --color-accent-pr: var(--accent-pr);
+  --color-accent-streak: var(--accent-streak);
+
   --font-sans: var(--font-inter);
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+html {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
-/* PWA - Safe area for notch */
+/* Smooth theme transitions for all elements */
+*, *::before, *::after {
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    fill var(--transition-fast),
+    stroke var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+/* Disable transitions during theme change to prevent flash */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: none !important;
+}
+
+/* ============================================
+   PWA SAFE AREAS
+   ============================================ */
+
 @supports (padding-top: env(safe-area-inset-top)) {
   body {
     padding-top: env(safe-area-inset-top);
@@ -29,12 +196,27 @@ body {
   }
 }
 
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Glass morphism */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
 /* Remove tap highlight on mobile */
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Animations */
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
 @keyframes slide-up {
   from {
     transform: translateY(100%);
@@ -46,9 +228,50 @@ body {
   }
 }
 
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--primary);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px var(--primary);
+  }
+}
+
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
 
 /* Number input - hide spinners */
 input[type="number"]::-webkit-inner-spin-button,
@@ -59,4 +282,29 @@ input[type="number"]::-webkit-outer-spin-button {
 
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground-muted);
+}
+
+/* Selection */
+::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
 }

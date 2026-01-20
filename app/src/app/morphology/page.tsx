@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Questionnaire } from './questionnaire';
 import { Results } from './results';
@@ -9,6 +10,16 @@ import {
   type MorphoQuestion,
   type MorphotypeResult,
 } from './actions';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import CircularProgress from '@mui/material/CircularProgress';
+import ArrowBack from '@mui/icons-material/ArrowBack';
 
 type ViewState = 'loading' | 'intro' | 'questionnaire' | 'results';
 
@@ -19,11 +30,9 @@ export default function MorphologyPage() {
 
   useEffect(() => {
     async function init() {
-      // Check if user already has a profile
       const existingProfile = await getMorphoProfile();
 
       if (existingProfile) {
-        // Convert profile to result format
         setResult({
           primary: existingProfile.primaryMorphotype as MorphotypeResult['primary'],
           secondary: existingProfile.secondaryMorphotype as MorphotypeResult['secondary'],
@@ -35,7 +44,6 @@ export default function MorphologyPage() {
         });
         setView('results');
       } else {
-        // Load questions for new users
         const qs = await getMorphoQuestions();
         setQuestions(qs);
         setView('intro');
@@ -66,33 +74,33 @@ export default function MorphologyPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
       {/* Header */}
-      <header className="px-4 py-4 border-b border-neutral-800 flex items-center gap-4">
-        <a href="/" className="text-neutral-400 hover:text-white transition-colors">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </a>
-        <h1 className="text-lg font-semibold">Analyse Morphologique</h1>
-      </header>
+      <Paper
+        elevation={0}
+        sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: 1,
+          borderColor: 'divider',
+          borderRadius: 0,
+          bgcolor: 'background.paper',
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <IconButton component={Link} href="/" size="small">
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h6" fontWeight={600}>Analyse Morphologique</Typography>
+        </Stack>
+      </Paper>
 
       {/* Content */}
-      <div className="flex-1 p-4">
+      <Box sx={{ flex: 1, p: 2 }}>
         {view === 'loading' && (
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+            <CircularProgress />
+          </Box>
         )}
 
         {view === 'intro' && <IntroView onStart={handleStartQuestionnaire} />}
@@ -104,47 +112,45 @@ export default function MorphologyPage() {
         {view === 'results' && result && (
           <Results result={result} onRetake={handleRetake} />
         )}
-      </div>
-    </main>
+      </Box>
+    </Box>
   );
 }
 
 function IntroView({ onStart }: { onStart: () => void }) {
   return (
-    <div className="flex flex-col items-center text-center py-8">
-      <span className="text-6xl mb-6">🧬</span>
-      <h2 className="text-2xl font-bold mb-4">Découvre ton morphotype</h2>
-      <p className="text-neutral-400 mb-8 max-w-md leading-relaxed">
-        Basé sur les travaux de <strong className="text-white">Delavier</strong> et{' '}
-        <strong className="text-white">Gundill</strong>, ce questionnaire analyse ta
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', py: 4 }}>
+      <Typography variant="h1" sx={{ mb: 3, fontSize: '4rem' }}>🧬</Typography>
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Découvre ton morphotype</Typography>
+      <Typography color="text.secondary" sx={{ mb: 4, maxWidth: 360, lineHeight: 1.7 }}>
+        Basé sur les travaux de <strong style={{ color: 'inherit' }}>Delavier</strong> et{' '}
+        <strong style={{ color: 'inherit' }}>Gundill</strong>, ce questionnaire analyse ta
         morphologie pour te recommander les exercices les plus adaptés à ton corps.
-      </p>
+      </Typography>
 
-      <div className="w-full max-w-md space-y-4 mb-8">
-        <InfoCard
-          emoji="⏱️"
-          title="2-3 minutes"
-          description="8 questions simples"
-        />
-        <InfoCard
-          emoji="🎯"
-          title="Personnalisé"
-          description="Exercices adaptés à ton corps"
-        />
-        <InfoCard
-          emoji="💪"
-          title="Scientifique"
-          description="Basé sur l'anatomie fonctionnelle"
-        />
-      </div>
+      <Stack spacing={1.5} sx={{ width: '100%', maxWidth: 360, mb: 4 }}>
+        <InfoCard emoji="⏱️" title="2-3 minutes" description="8 questions simples" />
+        <InfoCard emoji="🎯" title="Personnalisé" description="Exercices adaptés à ton corps" />
+        <InfoCard emoji="💪" title="Scientifique" description="Basé sur l'anatomie fonctionnelle" />
+      </Stack>
 
-      <button
+      <Button
+        variant="contained"
+        size="large"
         onClick={onStart}
-        className="w-full max-w-md py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all"
+        fullWidth
+        sx={{
+          maxWidth: 360,
+          py: 1.5,
+          background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #7f67be 0%, #bb86fc 100%)',
+          },
+        }}
       >
-        Commencer l'analyse
-      </button>
-    </div>
+        Commencer l&apos;analyse
+      </Button>
+    </Box>
   );
 }
 
@@ -158,12 +164,16 @@ function InfoCard({
   description: string;
 }) {
   return (
-    <div className="flex items-center gap-4 p-4 bg-neutral-900 rounded-xl text-left">
-      <span className="text-2xl">{emoji}</span>
-      <div>
-        <p className="font-semibold">{title}</p>
-        <p className="text-sm text-neutral-400">{description}</p>
-      </div>
-    </div>
+    <Card>
+      <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Typography variant="h5">{emoji}</Typography>
+          <Box>
+            <Typography variant="body1" fontWeight={600}>{title}</Typography>
+            <Typography variant="body2" color="text.secondary">{description}</Typography>
+          </Box>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }

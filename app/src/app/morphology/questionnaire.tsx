@@ -2,6 +2,14 @@
 
 import { useState } from 'react';
 import { type MorphoQuestion, type MorphotypeResult, calculateMorphotype, saveMorphoProfile } from './actions';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import LinearProgress from '@mui/material/LinearProgress';
+import CircularProgress from '@mui/material/CircularProgress';
 
 type Props = {
   questions: MorphoQuestion[];
@@ -21,10 +29,8 @@ export function Questionnaire({ questions, onComplete }: Props) {
     setAnswers(newAnswers);
 
     if (currentIndex < questions.length - 1) {
-      // Small delay for visual feedback
       setTimeout(() => setCurrentIndex(currentIndex + 1), 150);
     } else {
-      // Last question - calculate result
       setIsCalculating(true);
       try {
         const result = await calculateMorphotype(newAnswers);
@@ -45,10 +51,10 @@ export function Questionnaire({ questions, onComplete }: Props) {
 
   if (isCalculating) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <div className="w-16 h-16 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-neutral-400">Analyse en cours...</p>
-      </div>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 2 }}>
+        <CircularProgress size={64} />
+        <Typography color="text.secondary">Analyse en cours...</Typography>
+      </Box>
     );
   }
 
@@ -58,44 +64,61 @@ export function Questionnaire({ questions, onComplete }: Props) {
   }>;
 
   return (
-    <div className="flex flex-col min-h-[80vh]">
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '80vh' }}>
       {/* Progress bar */}
-      <div className="mb-8">
-        <div className="flex justify-between text-sm text-neutral-400 mb-2">
-          <span>Question {currentIndex + 1}/{questions.length}</span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-        <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
+      <Box sx={{ mb: 4 }}>
+        <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            Question {currentIndex + 1}/{questions.length}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {Math.round(progress)}%
+          </Typography>
+        </Stack>
+        <LinearProgress
+          variant="determinate"
+          value={progress}
+          sx={{
+            height: 8,
+            borderRadius: 4,
+            bgcolor: 'action.hover',
+            '& .MuiLinearProgress-bar': {
+              background: 'linear-gradient(90deg, #6750a4 0%, #9a67ea 100%)',
+              borderRadius: 4,
+            },
+          }}
+        />
+      </Box>
 
       {/* Question */}
-      <div className="flex-1">
-        <h2 className="text-xl font-semibold mb-6 leading-relaxed">
+      <Box sx={{ flex: 1 }}>
+        <Typography variant="h6" fontWeight={600} sx={{ mb: 3, lineHeight: 1.6 }}>
           {currentQuestion.questionTextFr}
-        </h2>
+        </Typography>
 
         {/* Options */}
-        <div className="space-y-3">
+        <Stack spacing={1.5}>
           {Array.isArray(options) &&
             options.map((option) => (
-              <button
+              <Card
                 key={option.value}
-                onClick={() => handleAnswer(option.value)}
-                className={`w-full p-4 text-left rounded-xl border-2 transition-all ${
-                  answers[currentQuestion.questionKey] === option.value
-                    ? 'border-violet-500 bg-violet-500/10'
-                    : 'border-neutral-700 bg-neutral-900 hover:border-neutral-600 hover:bg-neutral-800'
-                }`}
+                sx={{
+                  ...(answers[currentQuestion.questionKey] === option.value && {
+                    bgcolor: 'rgba(103,80,164,0.15)',
+                    border: 2,
+                    borderColor: 'primary.main',
+                  }),
+                }}
               >
-                {option.label}
-              </button>
+                <CardActionArea
+                  onClick={() => handleAnswer(option.value)}
+                  sx={{ p: 2 }}
+                >
+                  <Typography variant="body1">{option.label}</Typography>
+                </CardActionArea>
+              </Card>
             ))}
-        </div>
+        </Stack>
 
         {/* Measurement input for measurement type questions */}
         {currentQuestion.questionType === 'measurement' && (
@@ -105,20 +128,21 @@ export function Questionnaire({ questions, onComplete }: Props) {
             onChange={(value) => handleAnswer(value)}
           />
         )}
-      </div>
+      </Box>
 
       {/* Navigation */}
-      <div className="mt-8 flex gap-3">
+      <Box sx={{ mt: 4 }}>
         {currentIndex > 0 && (
-          <button
+          <Button
+            variant="outlined"
             onClick={handleBack}
-            className="px-6 py-3 rounded-xl border border-neutral-700 text-neutral-300 hover:bg-neutral-800 transition-colors"
+            sx={{ px: 4 }}
           >
             Retour
-          </button>
+          </Button>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -137,20 +161,23 @@ function MeasurementInput({
   };
 
   return (
-    <div className="space-y-3">
+    <Stack spacing={1.5}>
       {options.ranges.map((range) => (
-        <button
+        <Card
           key={range.value}
-          onClick={() => onChange(range.value)}
-          className={`w-full p-4 text-left rounded-xl border-2 transition-all ${
-            value === range.value
-              ? 'border-violet-500 bg-violet-500/10'
-              : 'border-neutral-700 bg-neutral-900 hover:border-neutral-600 hover:bg-neutral-800'
-          }`}
+          sx={{
+            ...(value === range.value && {
+              bgcolor: 'rgba(103,80,164,0.15)',
+              border: 2,
+              borderColor: 'primary.main',
+            }),
+          }}
         >
-          {range.label}
-        </button>
+          <CardActionArea onClick={() => onChange(range.value)} sx={{ p: 2 }}>
+            <Typography variant="body1">{range.label}</Typography>
+          </CardActionArea>
+        </Card>
       ))}
-    </div>
+    </Stack>
   );
 }

@@ -1,7 +1,14 @@
 'use server';
 
-import { db, foods, foodCravings, foodEntries, nutritionDailySummary, users } from '@/db';
+import { db, foods, foodCravings, foodEntries, nutritionDailySummary, nutritionProfiles, users, userGamification, xpTransactions } from '@/db';
 import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
+
+// XP rewards for diet actions
+const XP_REWARDS = {
+  FOOD_ENTRY: 5,      // Log a food entry
+  CRAVING_LOGGED: 10, // Log a craving ("J'ai envie de...")
+  FIRST_ENTRY_OF_DAY: 15, // First entry of the day bonus
+};
 
 export type FoodData = {
   id: string;
@@ -58,6 +65,58 @@ async function getUser() {
     user = [newUser];
   }
   return user[0];
+}
+
+// Award XP for diet actions
+async function awardDietXp(userId: string, amount: number, reason: string, referenceId?: string) {
+  // Add XP transaction
+  await db.insert(xpTransactions).values({
+    userId,
+    amount,
+    reason,
+    referenceType: 'food_entry',
+    referenceId,
+  });
+
+  // Update user gamification
+  const today = new Date().toISOString().split('T')[0];
+  await db
+    .insert(userGamification)
+    .values({
+      userId,
+      totalXp: amount,
+      lastActivityDate: today,
+      currentStreak: 1,
+    })
+    .onConflictDoUpdate({
+      target: userGamification.userId,
+      set: {
+        totalXp: sql`${userGamification.totalXp} + ${amount}`,
+        lastActivityDate: today,
+        updatedAt: new Date(),
+      },
+    });
+}
+
+// Check if this is the first entry of the day
+async function isFirstEntryOfDay(userId: string): Promise<boolean> {
+  const today = new Date().toISOString().split('T')[0];
+  const todayStart = new Date(today);
+  const todayEnd = new Date(today);
+  todayEnd.setDate(todayEnd.getDate() + 1);
+
+  const [existing] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(foodEntries)
+    .where(
+      and(
+        eq(foodEntries.userId, userId),
+        gte(foodEntries.loggedAt, todayStart),
+        lte(foodEntries.loggedAt, todayEnd)
+      )
+    );
+
+  return existing.count === 0;
 }
 
 // Get all cravings ("J'ai envie de...")
@@ -120,8 +179,11 @@ export async function getTodayEntries(): Promise<FoodEntryData[]> {
 }
 
 // Add food entry from craving
-export async function addCravingEntry(cravingId: string, notes?: string): Promise<string> {
+export async function addCravingEntry(cravingId: string, notes?: string): Promise<{ id: string; xpEarned: number }> {
   const user = await getUser();
+
+  // Check if first entry of day (before inserting)
+  const firstOfDay = await isFirstEntryOfDay(user.id);
 
   // Get craving details
   const [craving] = await db
@@ -149,7 +211,12 @@ export async function addCravingEntry(cravingId: string, notes?: string): Promis
   // Update daily summary
   await updateDailySummary(user.id);
 
-  return entry.id;
+  // Award XP - extra for craving log (honesty bonus)
+  let xpEarned = XP_REWARDS.CRAVING_LOGGED;
+  if (firstOfDay) xpEarned += XP_REWARDS.FIRST_ENTRY_OF_DAY;
+  await awardDietXp(user.id, xpEarned, 'Craving loggé 🎭', entry.id);
+
+  return { id: entry.id, xpEarned };
 }
 
 // Add food entry manually
@@ -163,8 +230,11 @@ export async function addFoodEntry(data: {
   carbohydrates?: number;
   fat?: number;
   notes?: string;
-}): Promise<string> {
+}): Promise<{ id: string; xpEarned: number }> {
   const user = await getUser();
+
+  // Check if first entry of day (before inserting)
+  const firstOfDay = await isFirstEntryOfDay(user.id);
 
   // If foodId provided, get food details
   let foodData: FoodData | null = null;
@@ -212,7 +282,12 @@ export async function addFoodEntry(data: {
   // Update daily summary
   await updateDailySummary(user.id);
 
-  return entry.id;
+  // Award XP
+  let xpEarned = XP_REWARDS.FOOD_ENTRY;
+  if (firstOfDay) xpEarned += XP_REWARDS.FIRST_ENTRY_OF_DAY;
+  await awardDietXp(user.id, xpEarned, 'Repas loggé 🍎', entry.id);
+
+  return { id: entry.id, xpEarned };
 }
 
 // Add quick entry (just name and estimated calories)
@@ -220,8 +295,11 @@ export async function addQuickEntry(
   name: string,
   estimatedCalories: number,
   mealType: string = 'snack'
-): Promise<string> {
+): Promise<{ id: string; xpEarned: number }> {
   const user = await getUser();
+
+  // Check if first entry of day (before inserting)
+  const firstOfDay = await isFirstEntryOfDay(user.id);
 
   const [entry] = await db
     .insert(foodEntries)
@@ -237,7 +315,12 @@ export async function addQuickEntry(
 
   await updateDailySummary(user.id);
 
-  return entry.id;
+  // Award XP
+  let xpEarned = XP_REWARDS.FOOD_ENTRY;
+  if (firstOfDay) xpEarned += XP_REWARDS.FIRST_ENTRY_OF_DAY;
+  await awardDietXp(user.id, xpEarned, 'Entrée rapide 📝', entry.id);
+
+  return { id: entry.id, xpEarned };
 }
 
 // Delete entry
@@ -421,4 +504,189 @@ export async function getWeekHistory(): Promise<DailySummaryData[]> {
     totalFat: parseFloat(s.totalFat || '0'),
     entriesCount: s.entriesCount || 0,
   }));
+}
+
+// =====================================================
+// NUTRITION PROFILE (Goals Configuration)
+// =====================================================
+
+export type NutritionGoal = 'bulk' | 'maintain' | 'cut';
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+
+export type NutritionProfileData = {
+  goal: NutritionGoal;
+  activityLevel: ActivityLevel;
+  height: number | null;
+  weight: number | null;
+  age: number | null;
+  isMale: boolean;
+  tdee: number | null;
+  targetCalories: number | null;
+  targetProtein: number | null;
+  targetCarbs: number | null;
+  targetFat: number | null;
+};
+
+// Activity level multipliers for TDEE calculation (Harris-Benedict)
+const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
+  sedentary: 1.2,
+  light: 1.375,
+  moderate: 1.55,
+  active: 1.725,
+  very_active: 1.9,
+};
+
+// Goal calorie adjustments
+const GOAL_ADJUSTMENTS: Record<NutritionGoal, number> = {
+  bulk: 300,    // +300 kcal surplus
+  maintain: 0,
+  cut: -400,    // -400 kcal deficit (moderate, sustainable)
+};
+
+// Calculate TDEE and macros
+function calculateNutritionTargets(
+  weight: number,
+  height: number,
+  age: number,
+  isMale: boolean,
+  activityLevel: ActivityLevel,
+  goal: NutritionGoal
+): { tdee: number; targetCalories: number; targetProtein: number; targetCarbs: number; targetFat: number } {
+  // Mifflin-St Jeor Equation (more accurate than Harris-Benedict)
+  let bmr: number;
+  if (isMale) {
+    bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+  } else {
+    bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+  }
+
+  const tdee = Math.round(bmr * ACTIVITY_MULTIPLIERS[activityLevel]);
+  const targetCalories = Math.round(tdee + GOAL_ADJUSTMENTS[goal]);
+
+  // Macro distribution based on goal
+  let proteinRatio: number;
+  let fatRatio: number;
+
+  if (goal === 'bulk') {
+    proteinRatio = 2.0; // 2g/kg for muscle building
+    fatRatio = 0.25;    // 25% from fat
+  } else if (goal === 'cut') {
+    proteinRatio = 2.2; // Higher protein to preserve muscle
+    fatRatio = 0.25;
+  } else {
+    proteinRatio = 1.8; // Moderate protein
+    fatRatio = 0.28;
+  }
+
+  const targetProtein = Math.round(weight * proteinRatio);
+  const targetFat = Math.round((targetCalories * fatRatio) / 9);
+  // Remaining calories from carbs
+  const carbCalories = targetCalories - (targetProtein * 4) - (targetFat * 9);
+  const targetCarbs = Math.round(carbCalories / 4);
+
+  return { tdee, targetCalories, targetProtein, targetCarbs, targetFat };
+}
+
+// Get nutrition profile
+export async function getNutritionProfile(): Promise<NutritionProfileData | null> {
+  try {
+    const user = await getUser();
+
+    const [profile] = await db
+      .select()
+      .from(nutritionProfiles)
+      .where(eq(nutritionProfiles.userId, user.id));
+
+    if (!profile) {
+      return null;
+    }
+
+    return {
+      goal: profile.goal as NutritionGoal,
+      activityLevel: profile.activityLevel as ActivityLevel,
+      height: profile.height ? parseFloat(profile.height) : null,
+      weight: profile.weight ? parseFloat(profile.weight) : null,
+      age: profile.age,
+      isMale: profile.isMale ?? true,
+      tdee: profile.tdee,
+      targetCalories: profile.targetCalories,
+      targetProtein: profile.targetProtein,
+      targetCarbs: profile.targetCarbs,
+      targetFat: profile.targetFat,
+    };
+  } catch (error) {
+    // Table might not exist yet - return null gracefully
+    console.error('Error fetching nutrition profile:', error);
+    return null;
+  }
+}
+
+// Save nutrition profile
+export async function saveNutritionProfile(data: {
+  goal: NutritionGoal;
+  activityLevel: ActivityLevel;
+  height: number;
+  weight: number;
+  age: number;
+  isMale: boolean;
+}): Promise<NutritionProfileData> {
+  const user = await getUser();
+
+  // Calculate targets
+  const targets = calculateNutritionTargets(
+    data.weight,
+    data.height,
+    data.age,
+    data.isMale,
+    data.activityLevel,
+    data.goal
+  );
+
+  const profileData = {
+    userId: user.id,
+    goal: data.goal,
+    activityLevel: data.activityLevel,
+    height: data.height.toString(),
+    weight: data.weight.toString(),
+    age: data.age,
+    isMale: data.isMale,
+    tdee: targets.tdee,
+    targetCalories: targets.targetCalories,
+    targetProtein: targets.targetProtein,
+    targetCarbs: targets.targetCarbs,
+    targetFat: targets.targetFat,
+    updatedAt: new Date(),
+  };
+
+  // Upsert profile
+  await db
+    .insert(nutritionProfiles)
+    .values(profileData)
+    .onConflictDoUpdate({
+      target: nutritionProfiles.userId,
+      set: {
+        goal: profileData.goal,
+        activityLevel: profileData.activityLevel,
+        height: profileData.height,
+        weight: profileData.weight,
+        age: profileData.age,
+        isMale: profileData.isMale,
+        tdee: profileData.tdee,
+        targetCalories: profileData.targetCalories,
+        targetProtein: profileData.targetProtein,
+        targetCarbs: profileData.targetCarbs,
+        targetFat: profileData.targetFat,
+        updatedAt: profileData.updatedAt,
+      },
+    });
+
+  return {
+    goal: data.goal,
+    activityLevel: data.activityLevel,
+    height: data.height,
+    weight: data.weight,
+    age: data.age,
+    isMale: data.isMale,
+    ...targets,
+  };
 }
