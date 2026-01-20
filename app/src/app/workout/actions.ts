@@ -1,6 +1,6 @@
 'use server';
 
-import { db, exercises, workoutSessions, workoutSets, users, userGamification, xpTransactions, personalRecords, morphoProfiles } from '@/db';
+import { db, exercises, workoutSessions, workoutSets, users, userGamification, xpTransactions, personalRecords, morphoProfiles, workoutTemplates, workoutTemplateExercises } from '@/db';
 import { eq, desc, and, sql, gte, lte } from 'drizzle-orm';
 import type { MorphotypeResult } from '@/app/morphology/types';
 
@@ -9,10 +9,31 @@ export type Exercise = {
   nameFr: string;
   nameEn: string | null;
   muscleGroup: string;
+  primaryMuscles: string[] | null;
   secondaryMuscles: string[] | null;
   equipment: string[] | null;
   difficulty: string | null;
   morphotypeRecommendations?: unknown;
+};
+
+export type TemplateExercise = {
+  exerciseId: string;
+  exerciseName: string;
+  orderIndex: number;
+  targetSets: number;
+  targetReps: string;
+  restSeconds: number;
+  notes: string | null;
+};
+
+export type WorkoutTemplate = {
+  id: string;
+  name: string;
+  description: string | null;
+  targetMuscles: string[];
+  estimatedDuration: number | null;
+  exercises: TemplateExercise[];
+  createdAt: Date;
 };
 
 export type WorkoutSession = {
@@ -50,6 +71,7 @@ export async function getExercises(): Promise<Exercise[]> {
       nameFr: exercises.nameFr,
       nameEn: exercises.nameEn,
       muscleGroup: exercises.muscleGroup,
+      primaryMuscles: exercises.primaryMuscles,
       secondaryMuscles: exercises.secondaryMuscles,
       equipment: exercises.equipment,
       difficulty: exercises.difficulty,
@@ -507,4 +529,267 @@ export async function getUserMorphotype(): Promise<MorphotypeResult | null> {
     recommendedExercises: stored.recommendedExercises || [],
     exercisesToAvoid: stored.exercisesToAvoid || [],
   };
+}
+
+// Get all workout templates for the user
+export async function getTemplates(): Promise<WorkoutTemplate[]> {
+  const user = await db.select().from(users).limit(1);
+  if (user.length === 0) return [];
+
+  const templates = await db
+    .select({
+      id: workoutTemplates.id,
+      name: workoutTemplates.name,
+      description: workoutTemplates.description,
+      targetMuscles: workoutTemplates.targetMuscles,
+      estimatedDuration: workoutTemplates.estimatedDuration,
+      createdAt: workoutTemplates.createdAt,
+    })
+    .from(workoutTemplates)
+    .where(eq(workoutTemplates.userId, user[0].id))
+    .orderBy(desc(workoutTemplates.createdAt));
+
+  // Get exercises for each template
+  const result: WorkoutTemplate[] = [];
+  for (const template of templates) {
+    const templateExercises = await db
+      .select({
+        exerciseId: workoutTemplateExercises.exerciseId,
+        exerciseName: exercises.nameFr,
+        orderIndex: workoutTemplateExercises.orderIndex,
+        targetSets: workoutTemplateExercises.targetSets,
+        targetReps: workoutTemplateExercises.targetReps,
+        restSeconds: workoutTemplateExercises.restSeconds,
+        notes: workoutTemplateExercises.notes,
+      })
+      .from(workoutTemplateExercises)
+      .leftJoin(exercises, eq(workoutTemplateExercises.exerciseId, exercises.id))
+      .where(eq(workoutTemplateExercises.templateId, template.id))
+      .orderBy(workoutTemplateExercises.orderIndex);
+
+    result.push({
+      ...template,
+      targetMuscles: template.targetMuscles || [],
+      createdAt: template.createdAt!,
+      exercises: templateExercises.map(e => ({
+        ...e,
+        exerciseName: e.exerciseName || 'Unknown',
+        targetSets: e.targetSets || 3,
+        targetReps: e.targetReps || '8-12',
+        restSeconds: e.restSeconds || 90,
+      })),
+    });
+  }
+
+  return result;
+}
+
+// Start a workout session from a template (pre-loads exercises)
+export async function startWorkoutFromTemplate(templateId: string): Promise<{ sessionId: string; exercises: TemplateExercise[] }> {
+  // Get or create user
+  let user = await db.select().from(users).limit(1);
+  if (user.length === 0) {
+    const [newUser] = await db
+      .insert(users)
+      .values({ email: 'demo@workout.app', displayName: 'haze' })
+      .returning();
+    user = [newUser];
+  }
+
+  // Get template exercises
+  const templateExercises = await db
+    .select({
+      exerciseId: workoutTemplateExercises.exerciseId,
+      exerciseName: exercises.nameFr,
+      orderIndex: workoutTemplateExercises.orderIndex,
+      targetSets: workoutTemplateExercises.targetSets,
+      targetReps: workoutTemplateExercises.targetReps,
+      restSeconds: workoutTemplateExercises.restSeconds,
+      notes: workoutTemplateExercises.notes,
+    })
+    .from(workoutTemplateExercises)
+    .leftJoin(exercises, eq(workoutTemplateExercises.exerciseId, exercises.id))
+    .where(eq(workoutTemplateExercises.templateId, templateId))
+    .orderBy(workoutTemplateExercises.orderIndex);
+
+  // Create session
+  const [session] = await db
+    .insert(workoutSessions)
+    .values({
+      userId: user[0].id,
+      templateId,
+      startedAt: new Date(),
+    })
+    .returning();
+
+  return {
+    sessionId: session.id,
+    exercises: templateExercises.map(e => ({
+      ...e,
+      exerciseName: e.exerciseName || 'Unknown',
+      targetSets: e.targetSets || 3,
+      targetReps: e.targetReps || '8-12',
+      restSeconds: e.restSeconds || 90,
+    })),
+  };
+}
+
+// Delete a workout template
+export async function deleteTemplate(templateId: string): Promise<void> {
+  // Delete exercises first (foreign key constraint)
+  await db.delete(workoutTemplateExercises).where(eq(workoutTemplateExercises.templateId, templateId));
+  // Then delete template
+  await db.delete(workoutTemplates).where(eq(workoutTemplates.id, templateId));
+}
+
+// Delete a workout session
+export async function deleteSession(sessionId: string): Promise<void> {
+  // Delete sets first (foreign key constraint)
+  await db.delete(workoutSets).where(eq(workoutSets.sessionId, sessionId));
+  // Then delete session
+  await db.delete(workoutSessions).where(eq(workoutSessions.id, sessionId));
+}
+
+// Get template exercises for a session (if session was started from a template)
+export async function getSessionTemplateExercises(sessionId: string): Promise<TemplateExercise[]> {
+  // Get session to find templateId
+  const [session] = await db
+    .select({ templateId: workoutSessions.templateId })
+    .from(workoutSessions)
+    .where(eq(workoutSessions.id, sessionId));
+
+  if (!session?.templateId) return [];
+
+  // Get template exercises
+  const templateExercises = await db
+    .select({
+      exerciseId: workoutTemplateExercises.exerciseId,
+      exerciseName: exercises.nameFr,
+      orderIndex: workoutTemplateExercises.orderIndex,
+      targetSets: workoutTemplateExercises.targetSets,
+      targetReps: workoutTemplateExercises.targetReps,
+      restSeconds: workoutTemplateExercises.restSeconds,
+      notes: workoutTemplateExercises.notes,
+    })
+    .from(workoutTemplateExercises)
+    .leftJoin(exercises, eq(workoutTemplateExercises.exerciseId, exercises.id))
+    .where(eq(workoutTemplateExercises.templateId, session.templateId))
+    .orderBy(workoutTemplateExercises.orderIndex);
+
+  return templateExercises.map(e => ({
+    ...e,
+    exerciseName: e.exerciseName || 'Unknown',
+    targetSets: e.targetSets || 3,
+    targetReps: e.targetReps || '8-12',
+    restSeconds: e.restSeconds || 90,
+  }));
+}
+
+// Get similar exercises (same primary muscles) for swapping
+export async function getSimilarExercises(exerciseId: string): Promise<Exercise[]> {
+  // Get the current exercise's primary muscles
+  const [currentExercise] = await db
+    .select({
+      muscleGroup: exercises.muscleGroup,
+      primaryMuscles: exercises.primaryMuscles,
+    })
+    .from(exercises)
+    .where(eq(exercises.id, exerciseId));
+
+  if (!currentExercise) return [];
+
+  const primaryMuscles = currentExercise.primaryMuscles || [];
+
+  // If no primary muscles data, fall back to muscle group matching
+  if (primaryMuscles.length === 0) {
+    const similarExercises = await db
+      .select({
+        id: exercises.id,
+        nameFr: exercises.nameFr,
+        nameEn: exercises.nameEn,
+        muscleGroup: exercises.muscleGroup,
+        secondaryMuscles: exercises.secondaryMuscles,
+        equipment: exercises.equipment,
+        difficulty: exercises.difficulty,
+        morphotypeRecommendations: exercises.morphotypeRecommendations,
+      })
+      .from(exercises)
+      .where(
+        and(
+          eq(exercises.muscleGroup, currentExercise.muscleGroup),
+          sql`${exercises.id} != ${exerciseId}`
+        )
+      )
+      .orderBy(exercises.nameFr);
+    return similarExercises;
+  }
+
+  // Get exercises that share at least one primary muscle
+  // Using array overlap operator &&
+  const primaryMusclesLiteral = `ARRAY[${primaryMuscles.map(m => `'${m}'`).join(',')}]::text[]`;
+  const similarExercises = await db
+    .select({
+      id: exercises.id,
+      nameFr: exercises.nameFr,
+      nameEn: exercises.nameEn,
+      muscleGroup: exercises.muscleGroup,
+      primaryMuscles: exercises.primaryMuscles,
+      secondaryMuscles: exercises.secondaryMuscles,
+      equipment: exercises.equipment,
+      difficulty: exercises.difficulty,
+      morphotypeRecommendations: exercises.morphotypeRecommendations,
+    })
+    .from(exercises)
+    .where(
+      and(
+        sql`${exercises.primaryMuscles} && ${sql.raw(primaryMusclesLiteral)}`,
+        sql`${exercises.id} != ${exerciseId}`
+      )
+    )
+    .orderBy(exercises.nameFr);
+
+  // Sort by number of shared primary muscles (most shared first)
+  return similarExercises.sort((a, b) => {
+    const aShared = (a.primaryMuscles || []).filter(m => primaryMuscles.includes(m)).length;
+    const bShared = (b.primaryMuscles || []).filter(m => primaryMuscles.includes(m)).length;
+    return bShared - aShared;
+  });
+}
+
+// Swap an exercise in a template (for a session)
+export async function swapTemplateExercise(
+  sessionId: string,
+  oldExerciseId: string,
+  newExerciseId: string
+): Promise<{ success: boolean }> {
+  // Get session to find templateId
+  const [session] = await db
+    .select({ templateId: workoutSessions.templateId })
+    .from(workoutSessions)
+    .where(eq(workoutSessions.id, sessionId));
+
+  if (!session?.templateId) {
+    return { success: false };
+  }
+
+  // Get the new exercise name for the notes
+  const [newExercise] = await db
+    .select({ nameFr: exercises.nameFr })
+    .from(exercises)
+    .where(eq(exercises.id, newExerciseId));
+
+  // Update the template exercise
+  await db
+    .update(workoutTemplateExercises)
+    .set({
+      exerciseId: newExerciseId,
+    })
+    .where(
+      and(
+        eq(workoutTemplateExercises.templateId, session.templateId),
+        eq(workoutTemplateExercises.exerciseId, oldExerciseId)
+      )
+    );
+
+  return { success: true };
 }

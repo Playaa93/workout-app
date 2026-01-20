@@ -151,26 +151,94 @@ export const progressPhotos = pgTable(
 // 4. TRAINING
 // =====================================================
 
+// Movement pattern enum for exercise classification
+export const movementPatternEnum = pgEnum('movement_pattern', [
+  'push',
+  'pull',
+  'squat',
+  'hinge',
+  'lunge',
+  'carry',
+  'rotation',
+  'isolation',
+]);
+
+// Exercise type enum
+export const exerciseTypeEnum = pgEnum('exercise_type', [
+  'compound',
+  'isolation',
+]);
+
+// Data source enum
+export const dataSourceEnum = pgEnum('data_source', [
+  'superphysique',
+  'delavier',
+  'manual',
+  'combined',
+]);
+
 export const exercises = pgTable(
   'exercises',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    // Identification
     nameFr: varchar('name_fr', { length: 100 }).notNull(),
     nameEn: varchar('name_en', { length: 100 }),
+    aliases: text('aliases').array().default([]),
     description: text('description'),
-    muscleGroup: varchar('muscle_group', { length: 50 }).notNull(),
-    secondaryMuscles: text('secondary_muscles').array(),
-    equipment: varchar('equipment', { length: 50 }).array(),
+
+    // Classification
+    movementPattern: movementPatternEnum('movement_pattern').default('isolation'),
+    exerciseType: exerciseTypeEnum('exercise_type').default('isolation'),
+    muscleGroup: varchar('muscle_group', { length: 50 }).notNull(), // Backward compat
+
+    // Muscles (anatomical precision - Delavier)
+    primaryMuscles: text('primary_muscles').array().default([]),
+    secondaryMuscles: text('secondary_muscles').array().default([]),
+    stabilizers: text('stabilizers').array().default([]),
+
+    // Equipment
+    equipment: varchar('equipment', { length: 50 }).array().default([]),
+    equipmentAlternatives: varchar('equipment_alternatives', { length: 50 }).array().default([]),
+
+    // Morphology (SuperPhysique/Delavier)
+    goodFor: jsonb('good_for').default({ morphotypes: [], conditions: [] }),
+    badFor: jsonb('bad_for').default({ morphotypes: [], conditions: [] }),
+    modifications: jsonb('modifications').default([]),
+
+    // Expert data (Gundill/Delavier methodology)
+    goalScores: jsonb('goal_scores'), // { strength, hypertrophy, athletic, rehab }
+    morphoProtocols: jsonb('morpho_protocols'), // { morphotype: { sets_modifier, reps, tempo, notes } }
+    programmingPriority: varchar('programming_priority', { length: 20 }), // primary, secondary, accessory, finisher
+    restModifiers: jsonb('rest_modifiers'), // { morphotype: multiplier }
+    tempoRecommendations: jsonb('tempo_recommendations'), // { goal: tempo }
+    synergies: text('synergies').array().default([]),
+    antagonists: text('antagonists').array().default([]),
+    contraindications: text('contraindications').array().default([]),
+    volumeLandmarks: jsonb('volume_landmarks'), // { MEV, MAV, MRV per muscle }
+
+    // Execution
     difficulty: varchar('difficulty', { length: 20 }).default('intermediate'),
-    morphotypeRecommendations: jsonb('morphotype_recommendations'),
+    techniqueCues: text('technique_cues').array().default([]),
+    commonMistakes: text('common_mistakes').array().default([]),
+    instructions: text('instructions').array().default([]),
+
+    // Metadata
+    source: dataSourceEnum('source').default('manual'),
     imageUrl: text('image_url'),
     videoUrl: text('video_url'),
-    instructions: text('instructions').array(),
     isCustom: boolean('is_custom').default(false),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+
+    // Legacy field for backward compatibility (will be deprecated)
+    morphotypeRecommendations: jsonb('morphotype_recommendations'),
   },
-  (table) => [index('idx_exercises_muscle').on(table.muscleGroup)]
+  (table) => [
+    index('idx_exercises_muscle').on(table.muscleGroup),
+    index('idx_exercises_pattern').on(table.movementPattern),
+    index('idx_exercises_type').on(table.exerciseType),
+  ]
 );
 
 export const workoutTemplates = pgTable('workout_templates', {
@@ -558,6 +626,10 @@ export type NewMeasurement = typeof measurements.$inferInsert;
 export type ProgressPhoto = typeof progressPhotos.$inferSelect;
 
 export type Exercise = typeof exercises.$inferSelect;
+export type NewExercise = typeof exercises.$inferInsert;
+export type MovementPattern = (typeof movementPatternEnum.enumValues)[number];
+export type ExerciseType = (typeof exerciseTypeEnum.enumValues)[number];
+export type DataSource = (typeof dataSourceEnum.enumValues)[number];
 export type WorkoutTemplate = typeof workoutTemplates.$inferSelect;
 export type WorkoutSession = typeof workoutSessions.$inferSelect;
 export type NewWorkoutSession = typeof workoutSessions.$inferInsert;

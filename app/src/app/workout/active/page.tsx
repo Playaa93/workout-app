@@ -10,9 +10,13 @@ import {
   endWorkoutSession,
   getLastSetsForExercise,
   getUserMorphotype,
+  getSessionTemplateExercises,
+  getSimilarExercises,
+  swapTemplateExercise,
   type Exercise,
   type WorkoutSet,
   type ActiveSession,
+  type TemplateExercise,
 } from '../actions';
 import type { MorphotypeResult } from '@/app/morphology/types';
 import { MorphoTipsPanel, MorphoScoreBadge } from '@/components/workout/MorphoTipsPanel';
@@ -52,6 +56,7 @@ import ArrowBack from '@mui/icons-material/ArrowBack';
 import Timer from '@mui/icons-material/Timer';
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import Search from '@mui/icons-material/Search';
+import SwapHoriz from '@mui/icons-material/SwapHoriz';
 
 function ActiveWorkoutContent() {
   const router = useRouter();
@@ -60,6 +65,7 @@ function ActiveWorkoutContent() {
 
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [templateExercises, setTemplateExercises] = useState<TemplateExercise[]>([]);
   const [morphotype, setMorphotype] = useState<MorphotypeResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
@@ -74,6 +80,11 @@ function ActiveWorkoutContent() {
   // Elapsed time
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  // Swap exercise state
+  const [swapExerciseId, setSwapExerciseId] = useState<string | null>(null);
+  const [similarExercises, setSimilarExercises] = useState<Exercise[]>([]);
+  const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
+
   const loadSession = useCallback(async () => {
     if (!sessionId) return;
     const data = await getActiveSession(sessionId);
@@ -83,16 +94,19 @@ function ActiveWorkoutContent() {
 
   useEffect(() => {
     async function init() {
-      const [exerciseData, , morphoData] = await Promise.all([
+      if (!sessionId) return;
+      const [exerciseData, , morphoData, templateData] = await Promise.all([
         getExercises(),
         loadSession(),
         getUserMorphotype(),
+        getSessionTemplateExercises(sessionId),
       ]);
       setExercises(exerciseData);
       setMorphotype(morphoData);
+      setTemplateExercises(templateData);
     }
     init();
-  }, [loadSession]);
+  }, [loadSession, sessionId]);
 
   // Elapsed time counter
   useEffect(() => {
@@ -149,6 +163,32 @@ function ActiveWorkoutContent() {
       router.push(`/workout/summary?xp=${result.xpEarned}&volume=${result.totalVolume}&duration=${result.duration}&prs=${result.prCount}`);
     } catch (error) {
       console.error('Error ending workout:', error);
+    }
+  };
+
+  const handleOpenSwap = async (exerciseId: string) => {
+    setSwapExerciseId(exerciseId);
+    setIsLoadingSimilar(true);
+    try {
+      const similar = await getSimilarExercises(exerciseId);
+      setSimilarExercises(similar);
+    } catch (error) {
+      console.error('Error loading similar exercises:', error);
+    }
+    setIsLoadingSimilar(false);
+  };
+
+  const handleSwapExercise = async (newExerciseId: string) => {
+    if (!sessionId || !swapExerciseId) return;
+    try {
+      await swapTemplateExercise(sessionId, swapExerciseId, newExerciseId);
+      // Reload template exercises
+      const templateData = await getSessionTemplateExercises(sessionId);
+      setTemplateExercises(templateData);
+      setSwapExerciseId(null);
+      setSimilarExercises([]);
+    } catch (error) {
+      console.error('Error swapping exercise:', error);
     }
   };
 
@@ -261,20 +301,118 @@ function ActiveWorkoutContent() {
       {/* Exercise Sets */}
       <Box sx={{ flex: 1, p: 2 }}>
         <Stack spacing={2}>
-          {Array.from(setsByExercise.entries()).map(([exerciseId, sets]) => {
-            const exercise = session?.exercises.get(exerciseId);
-            return (
-              <ExerciseCard
-                key={exerciseId}
-                exercise={exercise}
-                sets={sets}
-                sessionId={sessionId}
-                onSetAdded={loadSession}
-                onSetDeleted={loadSession}
-                onStartTimer={startTimer}
-              />
-            );
-          })}
+          {/* Template exercises (planned workout) */}
+          {templateExercises.length > 0 && (
+            <>
+              {templateExercises.map((templateEx, index) => {
+                const exerciseSets = setsByExercise.get(templateEx.exerciseId) || [];
+                const exercise = exercises.find(e => e.id === templateEx.exerciseId);
+                const completedSets = exerciseSets.filter(s => !s.isWarmup).length;
+                const targetSets = templateEx.targetSets;
+                const isComplete = completedSets >= targetSets;
+
+                return (
+                  <Card
+                    key={templateEx.exerciseId}
+                    sx={{
+                      border: isComplete ? 2 : 1,
+                      borderColor: isComplete ? 'success.main' : 'divider',
+                      opacity: isComplete ? 0.7 : 1,
+                    }}
+                  >
+                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                        <Box sx={{ flex: 1 }}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Chip
+                              label={index + 1}
+                              size="small"
+                              color={isComplete ? 'success' : 'primary'}
+                              sx={{ width: 24, height: 24, fontSize: '0.75rem' }}
+                            />
+                            <Typography variant="subtitle2" fontWeight={600}>
+                              {templateEx.exerciseName}
+                            </Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Objectif: {targetSets} × {templateEx.targetReps}
+                            </Typography>
+                            <Typography variant="caption" color={isComplete ? 'success.main' : 'text.secondary'}>
+                              Fait: {completedSets}/{targetSets} séries
+                            </Typography>
+                          </Stack>
+                          {templateEx.notes && (
+                            <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, display: 'block' }}>
+                              💡 {templateEx.notes.split(' | ')[0]}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Stack direction="row" spacing={0.5}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenSwap(templateEx.exerciseId)}
+                            sx={{ border: 1, borderColor: 'divider' }}
+                          >
+                            <SwapHoriz fontSize="small" />
+                          </IconButton>
+                          <Button
+                            size="small"
+                            variant={isComplete ? 'outlined' : 'contained'}
+                            onClick={() => {
+                              if (exercise) {
+                                setSelectedExercise(exercise);
+                              }
+                            }}
+                            disabled={!exercise}
+                          >
+                            {isComplete ? '+ série' : 'Ajouter'}
+                          </Button>
+                        </Stack>
+                      </Stack>
+
+                      {/* Show sets if any */}
+                      {exerciseSets.length > 0 && (
+                        <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: 'wrap', gap: 0.5 }}>
+                          {exerciseSets.map((set, i) => (
+                            <Chip
+                              key={set.id}
+                              label={`${set.weight}kg × ${set.reps}`}
+                              size="small"
+                              color={set.isPr ? 'warning' : 'default'}
+                              variant="outlined"
+                              onDelete={() => {
+                                deleteSet(set.id).then(loadSession);
+                              }}
+                              sx={{ fontSize: '0.7rem' }}
+                            />
+                          ))}
+                        </Stack>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </>
+          )}
+
+          {/* Sets from exercises not in template */}
+          {Array.from(setsByExercise.entries())
+            .filter(([exerciseId]) => !templateExercises.some(t => t.exerciseId === exerciseId))
+            .map(([exerciseId, sets]) => {
+              const exercise = session?.exercises.get(exerciseId);
+              return (
+                <ExerciseCard
+                  key={exerciseId}
+                  exercise={exercise}
+                  sets={sets}
+                  sessionId={sessionId}
+                  onSetAdded={loadSession}
+                  onSetDeleted={loadSession}
+                  onStartTimer={startTimer}
+                />
+              );
+            })}
 
           {/* Add Exercise Button */}
           <Button
@@ -360,6 +498,84 @@ function ActiveWorkoutContent() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Swap Exercise Drawer */}
+      <Drawer
+        anchor="bottom"
+        open={!!swapExerciseId}
+        onClose={() => {
+          setSwapExerciseId(null);
+          setSimilarExercises([]);
+        }}
+        PaperProps={{
+          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.paper', maxHeight: '70vh' },
+        }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Typography variant="h6" fontWeight={600}>
+              Remplacer l'exercice
+            </Typography>
+            <IconButton onClick={() => {
+              setSwapExerciseId(null);
+              setSimilarExercises([]);
+            }}>
+              <Close />
+            </IconButton>
+          </Stack>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Exercices ciblant le même groupe musculaire :
+          </Typography>
+
+          {isLoadingSimilar ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : similarExercises.length === 0 ? (
+            <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+              Aucun exercice similaire trouvé
+            </Typography>
+          ) : (
+            <List sx={{ maxHeight: '50vh', overflow: 'auto' }}>
+              {similarExercises
+                .map((ex) => {
+                  const rec = ex.morphotypeRecommendations as MorphoRecommendation | null;
+                  const exScore = morphotype ? scoreExercise(morphotype, rec || getCategoryDefault(ex.muscleGroup, ex.nameFr)) : null;
+                  return { ...ex, score: exScore?.score ?? 70 };
+                })
+                .sort((a, b) => b.score - a.score)
+                .map((ex) => (
+                  <ListItemButton
+                    key={ex.id}
+                    onClick={() => handleSwapExercise(ex.id)}
+                    sx={{
+                      borderRadius: 2,
+                      mb: 0.5,
+                      border: 1,
+                      borderColor: ex.score >= 75 ? 'success.main' : ex.score >= 50 ? 'divider' : 'warning.main',
+                      bgcolor: ex.score >= 75 ? 'rgba(16,185,129,0.05)' : 'transparent',
+                    }}
+                  >
+                    <MorphoScoreBadge score={ex.score} size="small" />
+                    <ListItemText
+                      sx={{ ml: 1.5 }}
+                      primary={ex.nameFr}
+                      secondary={
+                        <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+                          {ex.equipment?.slice(0, 2).map((eq, i) => (
+                            <Chip key={i} label={eq} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.65rem' }} />
+                          ))}
+                        </Stack>
+                      }
+                      secondaryTypographyProps={{ component: 'div' }}
+                    />
+                  </ListItemButton>
+                ))}
+            </List>
+          )}
+        </Box>
+      </Drawer>
 
       {/* Quick Add FAB */}
       {!selectedExercise && !showExercisePicker && (
@@ -611,6 +827,97 @@ function QuickSetInput({
   );
 }
 
+// Primary muscle translations
+const PRIMARY_MUSCLE_LABELS: Record<string, string> = {
+  // Pectoraux
+  pec_major_sternal: 'Pec. sternal',
+  pec_major_clavicular: 'Pec. claviculaire',
+  pec_major_abdominal: 'Pec. abdominal',
+  // Dos
+  latissimus_dorsi: 'Grand dorsal',
+  teres_major: 'Grand rond',
+  rhomboids: 'Rhomboïdes',
+  trapezius_mid: 'Trapèzes moyen',
+  trapezius_upper: 'Trapèzes supérieur',
+  erector_spinae: 'Érecteurs',
+  // Épaules
+  anterior_delt: 'Deltoïde ant.',
+  lateral_delt: 'Deltoïde lat.',
+  posterior_delt: 'Deltoïde post.',
+  infraspinatus: 'Infra-épineux',
+  // Jambes
+  quadriceps_rectus_femoris: 'Quadriceps',
+  quadriceps_vastus_lateralis: 'Vaste externe',
+  quadriceps_vastus_medialis: 'Vaste interne',
+  gluteus_maximus: 'Fessiers',
+  hamstrings_biceps_femoris: 'Ischios',
+  hamstrings_semitendinosus: 'Semi-tendineux',
+  calves_gastrocnemius: 'Mollets (gastro)',
+  calves_soleus: 'Mollets (soléaire)',
+  hip_flexors: 'Fléchisseurs hanche',
+  adductors: 'Adducteurs',
+  // Bras
+  biceps_long_head: 'Biceps long',
+  biceps_short_head: 'Biceps court',
+  brachialis: 'Brachial',
+  brachioradialis: 'Brachio-radial',
+  triceps_long_head: 'Triceps long',
+  triceps_lateral_head: 'Triceps latéral',
+  triceps_medial_head: 'Triceps médial',
+  forearm_flexors: 'Avant-bras fléch.',
+  forearm_extensors: 'Avant-bras ext.',
+  // Core
+  rectus_abdominis: 'Grand droit',
+  obliques: 'Obliques',
+  transverse_abdominis: 'Transverse',
+};
+
+// Muscle group translations
+const MUSCLE_GROUP_LABELS: Record<string, string> = {
+  chest: 'Pectoraux',
+  back: 'Dos',
+  shoulders: 'Épaules',
+  legs: 'Jambes',
+  arms: 'Bras',
+  core: 'Abdos',
+  full_body: 'Full Body',
+};
+
+// Subcategory groupings (simplified primary muscles)
+const SUBCATEGORY_GROUPS: Record<string, Record<string, string[]>> = {
+  legs: {
+    'Quadriceps': ['quadriceps_rectus_femoris', 'quadriceps_vastus_lateralis', 'quadriceps_vastus_medialis'],
+    'Fessiers': ['gluteus_maximus'],
+    'Ischios': ['hamstrings_biceps_femoris', 'hamstrings_semitendinosus'],
+    'Mollets': ['calves_gastrocnemius', 'calves_soleus'],
+    'Adducteurs': ['adductors', 'hip_flexors'],
+  },
+  arms: {
+    'Biceps': ['biceps_long_head', 'biceps_short_head', 'brachialis', 'brachioradialis'],
+    'Triceps': ['triceps_long_head', 'triceps_lateral_head', 'triceps_medial_head'],
+    'Avant-bras': ['forearm_flexors', 'forearm_extensors'],
+  },
+  shoulders: {
+    'Deltoïde ant.': ['anterior_delt'],
+    'Deltoïde lat.': ['lateral_delt'],
+    'Deltoïde post.': ['posterior_delt', 'infraspinatus'],
+  },
+  back: {
+    'Grand dorsal': ['latissimus_dorsi', 'teres_major'],
+    'Trapèzes': ['trapezius_mid', 'trapezius_upper', 'rhomboids'],
+    'Lombaires': ['erector_spinae'],
+  },
+  chest: {
+    'Pec. haut': ['pec_major_clavicular'],
+    'Pec. milieu': ['pec_major_sternal'],
+    'Pec. bas': ['pec_major_abdominal'],
+  },
+  core: {
+    'Abdos': ['rectus_abdominis', 'transverse_abdominis'],
+    'Obliques': ['obliques'],
+  },
+};
+
 // Exercise Picker Modal
 function ExercisePicker({
   exercises,
@@ -625,9 +932,13 @@ function ExercisePicker({
 }) {
   const [search, setSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
-  const [sortByScore, setSortByScore] = useState(false);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [sortByScore, setSortByScore] = useState(true);
 
   const muscleGroups = [...new Set(exercises.map((e) => e.muscleGroup))];
+
+  // Get subcategories for selected muscle group
+  const subcategories = selectedMuscle ? SUBCATEGORY_GROUPS[selectedMuscle] || {} : {};
 
   // Calculate scores for all exercises
   const exercisesWithScores = useMemo(() => {
@@ -645,7 +956,16 @@ function ExercisePicker({
     let filtered = exercisesWithScores.filter(({ exercise }) => {
       const matchesSearch = exercise.nameFr.toLowerCase().includes(search.toLowerCase());
       const matchesMuscle = !selectedMuscle || exercise.muscleGroup === selectedMuscle;
-      return matchesSearch && matchesMuscle;
+
+      // Subcategory filter
+      let matchesSubcategory = true;
+      if (selectedSubcategory && subcategories[selectedSubcategory]) {
+        const targetMuscles = subcategories[selectedSubcategory];
+        const exercisePrimaryMuscles = exercise.primaryMuscles || [];
+        matchesSubcategory = exercisePrimaryMuscles.some(m => targetMuscles.includes(m));
+      }
+
+      return matchesSearch && matchesMuscle && matchesSubcategory;
     });
 
     if (sortByScore) {
@@ -653,7 +973,12 @@ function ExercisePicker({
     }
 
     return filtered;
-  }, [exercisesWithScores, search, selectedMuscle, sortByScore]);
+  }, [exercisesWithScores, search, selectedMuscle, selectedSubcategory, subcategories, sortByScore]);
+
+  const handleMuscleSelect = (muscle: string | null) => {
+    setSelectedMuscle(muscle);
+    setSelectedSubcategory(null);
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -684,54 +1009,99 @@ function ExercisePicker({
         />
       </Paper>
 
-      {/* Muscle Filter + Sort Toggle */}
-      <Box sx={{ px: 2, py: 1.5 }}>
-        <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 1 }}>
+      {/* Muscle Filter */}
+      <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5 }}>
           <Chip
             label="Tous"
-            onClick={() => setSelectedMuscle(null)}
+            size="small"
+            onClick={() => handleMuscleSelect(null)}
             color={!selectedMuscle ? 'primary' : 'default'}
             variant={!selectedMuscle ? 'filled' : 'outlined'}
           />
           {muscleGroups.map((muscle) => (
             <Chip
               key={muscle}
-              label={muscle}
-              onClick={() => setSelectedMuscle(muscle)}
+              label={MUSCLE_GROUP_LABELS[muscle] || muscle}
+              size="small"
+              onClick={() => handleMuscleSelect(muscle)}
               color={selectedMuscle === muscle ? 'primary' : 'default'}
               variant={selectedMuscle === muscle ? 'filled' : 'outlined'}
-              sx={{ textTransform: 'capitalize' }}
             />
           ))}
         </Stack>
-        {morphotype && (
-          <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1 }}>
+      </Box>
+
+      {/* Subcategory Filter (when muscle selected) */}
+      {selectedMuscle && Object.keys(subcategories).length > 0 && (
+        <Box sx={{ px: 2, py: 1, bgcolor: 'action.hover' }}>
+          <Stack direction="row" spacing={0.5} sx={{ overflowX: 'auto', flexWrap: 'wrap', gap: 0.5 }}>
             <Chip
-              label={sortByScore ? '🧬 Trié par morpho' : '🧬 Trier par morpho'}
+              label="Tous"
+              size="small"
+              onClick={() => setSelectedSubcategory(null)}
+              color={!selectedSubcategory ? 'secondary' : 'default'}
+              variant={!selectedSubcategory ? 'filled' : 'outlined'}
+              sx={{ height: 24, fontSize: '0.7rem' }}
+            />
+            {Object.keys(subcategories).map((sub) => (
+              <Chip
+                key={sub}
+                label={sub}
+                size="small"
+                onClick={() => setSelectedSubcategory(sub)}
+                color={selectedSubcategory === sub ? 'secondary' : 'default'}
+                variant={selectedSubcategory === sub ? 'filled' : 'outlined'}
+                sx={{ height: 24, fontSize: '0.7rem' }}
+              />
+            ))}
+          </Stack>
+        </Box>
+      )}
+
+      {/* Sort Toggle */}
+      {morphotype && (
+        <Box sx={{ px: 2, py: 1 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="caption" color="text.secondary">
+              {filteredExercises.length} exercices
+            </Typography>
+            <Chip
+              label={sortByScore ? '🧬 Trié morpho' : '🧬 Trier morpho'}
               size="small"
               onClick={() => setSortByScore(!sortByScore)}
               color={sortByScore ? 'secondary' : 'default'}
               variant={sortByScore ? 'filled' : 'outlined'}
-              sx={{ fontSize: '0.75rem' }}
+              sx={{ fontSize: '0.7rem', height: 24 }}
             />
           </Stack>
-        )}
-      </Box>
+        </Box>
+      )}
 
       {/* Exercise List */}
       <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 2 }}>
         <List disablePadding>
           {filteredExercises.map(({ exercise, score }) => (
             <Card key={exercise.id} sx={{ mb: 1 }}>
-              <ListItemButton onClick={() => onSelect(exercise)} sx={{ borderRadius: 1 }}>
+              <ListItemButton onClick={() => onSelect(exercise)} sx={{ borderRadius: 1, py: 1 }}>
+                <MorphoScoreBadge score={score} size="small" />
                 <ListItemText
+                  sx={{ ml: 1.5 }}
                   primary={exercise.nameFr}
-                  secondary={exercise.muscleGroup}
-                  secondaryTypographyProps={{ sx: { textTransform: 'capitalize' } }}
+                  secondary={
+                    <Stack direction="row" spacing={0.5} sx={{ mt: 0.25 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                        {MUSCLE_GROUP_LABELS[exercise.muscleGroup] || exercise.muscleGroup}
+                      </Typography>
+                      {exercise.primaryMuscles && exercise.primaryMuscles.length > 0 && (
+                        <Typography variant="caption" color="primary.main">
+                          • {PRIMARY_MUSCLE_LABELS[exercise.primaryMuscles[0]] || exercise.primaryMuscles[0]}
+                        </Typography>
+                      )}
+                    </Stack>
+                  }
+                  secondaryTypographyProps={{ component: 'div' }}
                 />
-                {morphotype && (
-                  <MorphoScoreBadge score={score} size="small" />
-                )}
               </ListItemButton>
             </Card>
           ))}

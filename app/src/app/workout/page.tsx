@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getRecentSessions, startWorkoutSession, type WorkoutSession } from './actions';
+import {
+  getRecentSessions,
+  startWorkoutSession,
+  deleteSession,
+  type WorkoutSession,
+} from './actions';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -16,18 +21,26 @@ import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Skeleton from '@mui/material/Skeleton';
-import Divider from '@mui/material/Divider';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import FitnessCenter from '@mui/icons-material/FitnessCenter';
 import PlayArrow from '@mui/icons-material/PlayArrow';
 import AccessTime from '@mui/icons-material/AccessTime';
 import Scale from '@mui/icons-material/Scale';
+import Delete from '@mui/icons-material/Delete';
+import ListAlt from '@mui/icons-material/ListAlt';
 
 export default function WorkoutPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -49,6 +62,28 @@ export default function WorkoutPage() {
     }
   };
 
+  const handleDeleteClick = (sessionId: string) => {
+    setSessionToDelete(sessionId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!sessionToDelete) return;
+    try {
+      await deleteSession(sessionToDelete);
+      setSessions(sessions.filter(s => s.id !== sessionToDelete));
+    } catch (error) {
+      console.error('Error deleting session:', error);
+    }
+    setDeleteDialogOpen(false);
+    setSessionToDelete(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setSessionToDelete(null);
+  };
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
       {/* Header */}
@@ -63,13 +98,25 @@ export default function WorkoutPage() {
           bgcolor: 'background.paper',
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <IconButton component={Link} href="/" size="small">
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" fontWeight={600}>
-            Entraînement
-          </Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <IconButton component={Link} href="/" size="small">
+              <ArrowBack />
+            </IconButton>
+            <Typography variant="h6" fontWeight={600}>
+              Entraînement
+            </Typography>
+          </Stack>
+          <Button
+            component={Link}
+            href="/workout/programs"
+            size="small"
+            variant="text"
+            startIcon={<ListAlt fontSize="small" />}
+            sx={{ fontSize: '0.8rem', textTransform: 'none' }}
+          >
+            Programmes
+          </Button>
         </Stack>
       </Paper>
 
@@ -91,7 +138,7 @@ export default function WorkoutPage() {
             },
           }}
         >
-          {isStarting ? 'Démarrage...' : 'Nouvelle séance'}
+          {isStarting ? 'Démarrage...' : 'Séance libre'}
         </Button>
       </Box>
 
@@ -122,16 +169,44 @@ export default function WorkoutPage() {
         ) : (
           <Stack spacing={1.5}>
             {sessions.map((session) => (
-              <SessionCard key={session.id} session={session} />
+              <SessionCard
+                key={session.id}
+                session={session}
+                onDelete={() => handleDeleteClick(session.id)}
+              />
             ))}
           </Stack>
         )}
       </Box>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        PaperProps={{
+          sx: { borderRadius: 3 }
+        }}
+      >
+        <DialogTitle>Supprimer la séance ?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Cette action est irréversible. Toutes les données de cette séance seront perdues.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleDeleteCancel} color="inherit">
+            Annuler
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Supprimer
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
 
-function SessionCard({ session }: { session: WorkoutSession }) {
+function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete: () => void }) {
   const date = new Date(session.startedAt);
   const formattedDate = date.toLocaleDateString('fr-FR', {
     weekday: 'long',
@@ -149,17 +224,17 @@ function SessionCard({ session }: { session: WorkoutSession }) {
   return (
     <Card>
       {!isComplete ? (
-        <CardActionArea component={Link} href={`/workout/active?id=${session.id}`}>
-          <CardContent>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box>
-                <Typography variant="subtitle1" fontWeight={500} sx={{ textTransform: 'capitalize' }}>
-                  {formattedDate}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {formattedTime}
-                </Typography>
-              </Box>
+        <CardContent>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Box>
+              <Typography variant="subtitle1" fontWeight={500} sx={{ textTransform: 'capitalize' }}>
+                {formattedDate}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {formattedTime}
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={0.5} alignItems="center">
               <Chip
                 label="En cours"
                 size="small"
@@ -169,17 +244,24 @@ function SessionCard({ session }: { session: WorkoutSession }) {
                   fontWeight: 500,
                 }}
               />
+              <IconButton size="small" onClick={onDelete} sx={{ color: 'text.secondary' }}>
+                <Delete fontSize="small" />
+              </IconButton>
             </Stack>
+          </Stack>
+          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
             <Button
+              component={Link}
+              href={`/workout/active?id=${session.id}`}
               variant="contained"
               size="small"
               startIcon={<PlayArrow />}
-              sx={{ mt: 2 }}
+              sx={{ flex: 1 }}
             >
               Reprendre
             </Button>
-          </CardContent>
-        </CardActionArea>
+          </Stack>
+        </CardContent>
       ) : (
         <CardContent>
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -191,6 +273,9 @@ function SessionCard({ session }: { session: WorkoutSession }) {
                 {formattedTime}
               </Typography>
             </Box>
+            <IconButton size="small" onClick={onDelete} sx={{ color: 'text.secondary' }}>
+              <Delete fontSize="small" />
+            </IconButton>
           </Stack>
 
           <Stack direction="row" spacing={3} sx={{ mt: 2 }}>
