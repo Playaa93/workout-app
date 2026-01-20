@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getGamificationData, getUserStats, type GamificationData, type StatsData } from './profile/actions'
+import { getMorphoProfile } from './morphology/actions'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
@@ -24,9 +25,15 @@ import EmojiEvents from '@mui/icons-material/EmojiEvents'
 import LocalFireDepartment from '@mui/icons-material/LocalFireDepartment'
 import Link from 'next/link'
 
+type MorphoProfileData = {
+  primaryMorphotype: string
+  secondaryMorphotype: string | null
+} | null
+
 export default function HomePage() {
   const [gamification, setGamification] = useState<GamificationData | null>(null)
   const [stats, setStats] = useState<StatsData | null>(null)
+  const [morphoProfile, setMorphoProfile] = useState<MorphoProfileData>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -35,12 +42,14 @@ export default function HomePage() {
     }
 
     async function loadData() {
-      const [gamData, statsData] = await Promise.all([
+      const [gamData, statsData, morphoData] = await Promise.all([
         getGamificationData(),
         getUserStats(),
+        getMorphoProfile(),
       ])
       setGamification(gamData)
       setStats(statsData)
+      setMorphoProfile(morphoData)
       setLoading(false)
     }
     loadData()
@@ -175,56 +184,58 @@ export default function HomePage() {
         </Stack>
       </Box>
 
-      {/* Morphology CTA */}
-      <Box sx={{ px: 2, pt: 2.5 }}>
-        <Card
-          sx={{
-            background: 'linear-gradient(135deg, #6750a4 0%, #7f67be 50%, #9a67ea 100%)',
-            color: 'white',
-            overflow: 'hidden',
-            position: 'relative',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%)',
-            },
-          }}
-        >
-          <CardActionArea component={Link} href="/morphology" sx={{ textDecoration: 'none' }}>
-            <CardContent sx={{ py: 2.5, position: 'relative' }}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    bgcolor: 'rgba(255,255,255,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.75rem',
-                  }}
-                >
-                  🧬
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle1" fontWeight={600}>
-                    Analyse Morphologique
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.85 }}>
-                    Découvre tes exercices idéaux
-                  </Typography>
-                </Box>
-                <Box sx={{ opacity: 0.6 }}>→</Box>
-              </Stack>
-            </CardContent>
-          </CardActionArea>
-        </Card>
-      </Box>
+      {/* Morphology CTA - only if not defined */}
+      {!morphoProfile && (
+        <Box sx={{ px: 2, pt: 2.5 }}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #6750a4 0%, #7f67be 50%, #9a67ea 100%)',
+              color: 'white',
+              overflow: 'hidden',
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%)',
+              },
+            }}
+          >
+            <CardActionArea component={Link} href="/morphology" sx={{ textDecoration: 'none' }}>
+              <CardContent sx={{ py: 2.5, position: 'relative' }}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 2,
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.75rem',
+                    }}
+                  >
+                    🧬
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      Analyse Morphologique
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                      Découvre tes exercices idéaux
+                    </Typography>
+                  </Box>
+                  <Box sx={{ opacity: 0.6 }}>→</Box>
+                </Stack>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Box>
+      )}
 
       {/* Stats Overview */}
       <Box sx={{ px: 2, pt: 2.5, pb: 2, flex: 1 }}>
@@ -373,3 +384,4 @@ function StatCard({
     </Card>
   )
 }
+

@@ -15,6 +15,7 @@ import {
   type XpTransactionData,
   type StatsData,
 } from './actions';
+import { getMorphoProfile } from '../morphology/actions';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -40,6 +41,14 @@ import DarkMode from '@mui/icons-material/DarkMode';
 import SettingsBrightness from '@mui/icons-material/SettingsBrightness';
 import Check from '@mui/icons-material/Check';
 
+type MorphoProfileData = {
+  primaryMorphotype: string;
+  secondaryMorphotype: string | null;
+  strengths: string[] | null;
+  weaknesses: string[] | null;
+  recommendedExercises: string[] | null;
+} | null;
+
 export default function ProfilePage() {
   const [tab, setTab] = useState(0);
   const [profile, setProfile] = useState<UserProfileData | null>(null);
@@ -47,22 +56,25 @@ export default function ProfilePage() {
   const [achievements, setAchievements] = useState<AchievementData[]>([]);
   const [recentXp, setRecentXp] = useState<XpTransactionData[]>([]);
   const [stats, setStats] = useState<StatsData | null>(null);
+  const [morphoProfile, setMorphoProfile] = useState<MorphoProfileData>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      const [profileData, gamificationData, achievementsData, xpData, statsData] = await Promise.all([
+      const [profileData, gamificationData, achievementsData, xpData, statsData, morphoData] = await Promise.all([
         getUserProfile(),
         getGamificationData(),
         getAchievements(),
         getRecentXp(),
         getUserStats(),
+        getMorphoProfile(),
       ]);
       setProfile(profileData);
       setGamification(gamificationData);
       setAchievements(achievementsData);
       setRecentXp(xpData);
       setStats(statsData);
+      setMorphoProfile(morphoData);
       setIsLoading(false);
     }
     loadData();
@@ -220,7 +232,7 @@ export default function ProfilePage() {
 
       {/* Content */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-        {tab === 0 && stats && <StatsTab stats={stats} achievements={achievements} />}
+        {tab === 0 && stats && <StatsTab stats={stats} achievements={achievements} morphoProfile={morphoProfile} />}
         {tab === 1 && <AchievementsTab achievements={achievements} />}
         {tab === 2 && <HistoryTab transactions={recentXp} />}
         {tab === 3 && <SettingsTab />}
@@ -234,19 +246,97 @@ function getAvatarEmoji(stage: number): string {
   return avatars[Math.min(stage - 1, avatars.length - 1)];
 }
 
-function StatsTab({ stats, achievements }: { stats: StatsData; achievements: AchievementData[] }) {
+const morphotypeInfo: Record<string, { emoji: string; title: string; gradient: string }> = {
+  ectomorph: { emoji: '🦒', title: 'Ectomorphe', gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)' },
+  mesomorph: { emoji: '🦁', title: 'Mésomorphe', gradient: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)' },
+  endomorph: { emoji: '🐻', title: 'Endomorphe', gradient: 'linear-gradient(135deg, #10b981 0%, #22c55e 100%)' },
+  ecto_meso: { emoji: '🦅', title: 'Ecto-Méso', gradient: 'linear-gradient(135deg, #3b82f6 0%, #f59e0b 100%)' },
+  meso_endo: { emoji: '🦍', title: 'Méso-Endo', gradient: 'linear-gradient(135deg, #f59e0b 0%, #10b981 100%)' },
+  ecto_endo: { emoji: '🦎', title: 'Ecto-Endo', gradient: 'linear-gradient(135deg, #3b82f6 0%, #10b981 100%)' },
+};
+
+function StatsTab({ stats, achievements, morphoProfile }: { stats: StatsData; achievements: AchievementData[]; morphoProfile: MorphoProfileData }) {
   const unlockedCount = achievements.filter((a) => a.unlockedAt).length;
   const totalCount = achievements.length;
 
   return (
     <Stack spacing={3}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-        <StatCard icon="🏋️" label="Entraînements" value={stats.totalWorkouts} />
-        <StatCard icon="🍎" label="Repas loggés" value={stats.totalFoodEntries} />
-        <StatCard icon="📏" label="Mensurations" value={stats.totalMeasurements} />
-        <StatCard icon="🏆" label="Records (PR)" value={stats.totalPRs} />
-        <StatCard icon="🐉" label="Boss vaincus" value={stats.bossFightsWon} />
-        <StatCard icon="⭐" label="Succès" value={`${unlockedCount}/${totalCount}`} />
+      {/* Morphotype Section */}
+      {morphoProfile ? (
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Mon morphotype
+          </Typography>
+          <Card
+            sx={{
+              background: morphotypeInfo[morphoProfile.primaryMorphotype]?.gradient || morphotypeInfo.mesomorph.gradient,
+              color: 'white',
+            }}
+          >
+            <CardActionArea component={Link} href="/morphology">
+              <CardContent sx={{ py: 2 }}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Typography variant="h2">
+                    {morphotypeInfo[morphoProfile.primaryMorphotype]?.emoji || '🧬'}
+                  </Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" fontWeight={700}>
+                      {morphotypeInfo[morphoProfile.primaryMorphotype]?.title || 'Morphotype'}
+                    </Typography>
+                    {morphoProfile.strengths && morphoProfile.strengths.length > 0 && (
+                      <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
+                        {morphoProfile.strengths.slice(0, 2).map((s) => (
+                          <Chip
+                            key={s}
+                            label={s}
+                            size="small"
+                            sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontSize: '0.7rem' }}
+                          />
+                        ))}
+                      </Stack>
+                    )}
+                  </Box>
+                  <Typography sx={{ opacity: 0.7 }}>→</Typography>
+                </Stack>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Box>
+      ) : (
+        <Card
+          sx={{
+            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+            color: 'white',
+          }}
+        >
+          <CardActionArea component={Link} href="/morphology">
+            <CardContent sx={{ py: 2 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Typography variant="h4">🧬</Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body1" fontWeight={600}>Analyse Morphologique</Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.85 }}>Découvre ton morphotype</Typography>
+                </Box>
+                <Typography sx={{ opacity: 0.7 }}>→</Typography>
+              </Stack>
+            </CardContent>
+          </CardActionArea>
+        </Card>
+      )}
+
+      {/* Stats Grid */}
+      <Box>
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+          Statistiques
+        </Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+          <StatCard icon="🏋️" label="Entraînements" value={stats.totalWorkouts} />
+          <StatCard icon="🍎" label="Repas loggés" value={stats.totalFoodEntries} />
+          <StatCard icon="📏" label="Mensurations" value={stats.totalMeasurements} />
+          <StatCard icon="🏆" label="Records (PR)" value={stats.totalPRs} />
+          <StatCard icon="🐉" label="Boss vaincus" value={stats.bossFightsWon} />
+          <StatCard icon="⭐" label="Succès" value={`${unlockedCount}/${totalCount}`} />
+        </Box>
       </Box>
 
       {/* Recent Achievements */}
