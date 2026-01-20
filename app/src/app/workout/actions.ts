@@ -1,7 +1,8 @@
 'use server';
 
-import { db, exercises, workoutSessions, workoutSets, users, userGamification, xpTransactions, personalRecords } from '@/db';
+import { db, exercises, workoutSessions, workoutSets, users, userGamification, xpTransactions, personalRecords, morphoProfiles } from '@/db';
 import { eq, desc, and, sql, gte, lte } from 'drizzle-orm';
+import type { MorphotypeResult } from '@/app/morphology/types';
 
 export type Exercise = {
   id: string;
@@ -11,6 +12,7 @@ export type Exercise = {
   secondaryMuscles: string[] | null;
   equipment: string[] | null;
   difficulty: string | null;
+  morphotypeRecommendations?: unknown;
 };
 
 export type WorkoutSession = {
@@ -51,6 +53,7 @@ export async function getExercises(): Promise<Exercise[]> {
       secondaryMuscles: exercises.secondaryMuscles,
       equipment: exercises.equipment,
       difficulty: exercises.difficulty,
+      morphotypeRecommendations: exercises.morphotypeRecommendations,
     })
     .from(exercises)
     .orderBy(exercises.muscleGroup, exercises.nameFr);
@@ -437,4 +440,71 @@ export async function getLastSetsForExercise(exerciseId: string, limit = 5): Pro
     exerciseId: s.exerciseId!,
     exerciseName: s.exerciseName || 'Unknown',
   }));
+}
+
+// Get user's morphotype result for exercise scoring
+export async function getUserMorphotype(): Promise<MorphotypeResult | null> {
+  const user = await db.select().from(users).limit(1);
+  if (user.length === 0) return null;
+
+  const profile = await db
+    .select()
+    .from(morphoProfiles)
+    .where(eq(morphoProfiles.userId, user[0].id))
+    .limit(1);
+
+  if (profile.length === 0) return null;
+
+  // Reconstruct MorphotypeResult from stored profile
+  const stored = profile[0];
+  const scores = stored.morphotypeScore as Record<string, unknown> | null;
+
+  if (!scores) return null;
+
+  return {
+    globalType: (scores.globalType as 'longiligne' | 'breviligne' | 'balanced') || 'balanced',
+    structure: (scores.structure as MorphotypeResult['structure']) || {
+      frameSize: 'medium',
+      shoulderToHip: 'medium',
+      ribcageDepth: 'medium',
+    },
+    proportions: (scores.proportions as MorphotypeResult['proportions']) || {
+      torsoLength: stored.torsoProportion || 'medium',
+      armLength: stored.armProportion || 'medium',
+      femurLength: stored.legProportion || 'medium',
+      kneeValgus: 'none',
+    },
+    mobility: (scores.mobility as MorphotypeResult['mobility']) || {
+      ankleDorsiflexion: 'average',
+      posteriorChain: 'average',
+      wristMobility: 'none',
+    },
+    insertions: (scores.insertions as MorphotypeResult['insertions']) || {
+      biceps: 'medium',
+      calves: 'medium',
+      chest: 'medium',
+    },
+    metabolism: (scores.metabolism as MorphotypeResult['metabolism']) || {
+      weightTendency: 'balanced',
+      naturalStrength: 'average',
+      bestResponders: 'none',
+    },
+    // Legacy fields
+    squat: { exercise: 'Squat', advantages: [], disadvantages: [], variants: [], tips: [] },
+    deadlift: { exercise: 'Deadlift', advantages: [], disadvantages: [], variants: [], tips: [] },
+    bench: { exercise: 'Bench', advantages: [], disadvantages: [], variants: [], tips: [] },
+    curls: { exercise: 'Curls', advantages: [], disadvantages: [], variants: [], tips: [] },
+    mobilityWork: [],
+    primary: stored.primaryMorphotype,
+    secondary: stored.secondaryMorphotype,
+    scores: {
+      ecto: (scores.ecto as number) || 0,
+      meso: (scores.meso as number) || 0,
+      endo: (scores.endo as number) || 0,
+    },
+    strengths: stored.strengths || [],
+    weaknesses: stored.weaknesses || [],
+    recommendedExercises: stored.recommendedExercises || [],
+    exercisesToAvoid: stored.exercisesToAvoid || [],
+  };
 }

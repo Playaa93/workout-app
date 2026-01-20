@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { type MorphoQuestion, type MorphotypeResult, calculateMorphotype, saveMorphoProfile } from './actions';
+import type { MorphoQuestion, MorphotypeResult } from './types';
+import { calculateMorphotype, saveMorphoProfile } from './actions';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -10,10 +11,19 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import LinearProgress from '@mui/material/LinearProgress';
 import CircularProgress from '@mui/material/CircularProgress';
+import Chip from '@mui/material/Chip';
 
 type Props = {
   questions: MorphoQuestion[];
   onComplete: (result: MorphotypeResult) => void;
+};
+
+const categoryInfo: Record<string, { label: string; emoji: string; color: string }> = {
+  structure: { label: 'Structure', emoji: '🦴', color: '#6366f1' },
+  proportions: { label: 'Proportions', emoji: '📐', color: '#3b82f6' },
+  mobility: { label: 'Mobilité', emoji: '🤸', color: '#10b981' },
+  insertions: { label: 'Insertions', emoji: '🧬', color: '#f59e0b' },
+  metabolism: { label: 'Métabolisme', emoji: '🔥', color: '#ef4444' },
 };
 
 export function Questionnaire({ questions, onComplete }: Props) {
@@ -23,6 +33,7 @@ export function Questionnaire({ questions, onComplete }: Props) {
 
   const currentQuestion = questions[currentIndex];
   const progress = ((currentIndex + 1) / questions.length) * 100;
+  const category = categoryInfo[currentQuestion?.category] || categoryInfo.proportions;
 
   const handleAnswer = async (value: string) => {
     const newAnswers = { ...answers, [currentQuestion.questionKey]: value };
@@ -54,6 +65,9 @@ export function Questionnaire({ questions, onComplete }: Props) {
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 2 }}>
         <CircularProgress size={64} />
         <Typography color="text.secondary">Analyse en cours...</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 280, textAlign: 'center' }}>
+          Calcul de ton morphotype, proportions et potentiel musculaire
+        </Typography>
       </Box>
     );
   }
@@ -65,8 +79,22 @@ export function Questionnaire({ questions, onComplete }: Props) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '80vh' }}>
+      {/* Category Badge */}
+      <Box sx={{ mb: 2 }}>
+        <Chip
+          label={`${category.emoji} ${category.label}`}
+          size="small"
+          sx={{
+            bgcolor: `${category.color}20`,
+            color: category.color,
+            fontWeight: 600,
+            border: `1px solid ${category.color}40`,
+          }}
+        />
+      </Box>
+
       {/* Progress bar */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: 3 }}>
         <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
           <Typography variant="body2" color="text.secondary">
             Question {currentIndex + 1}/{questions.length}
@@ -83,11 +111,35 @@ export function Questionnaire({ questions, onComplete }: Props) {
             borderRadius: 4,
             bgcolor: 'action.hover',
             '& .MuiLinearProgress-bar': {
-              background: 'linear-gradient(90deg, #6750a4 0%, #9a67ea 100%)',
+              background: `linear-gradient(90deg, ${category.color} 0%, ${category.color}aa 100%)`,
               borderRadius: 4,
             },
           }}
         />
+        {/* Category progress dots */}
+        <Stack direction="row" spacing={0.5} sx={{ mt: 1.5, justifyContent: 'center' }}>
+          {Object.keys(categoryInfo).map((cat) => {
+            const catQuestions = questions.filter((q) => q.category === cat);
+            const catStart = questions.findIndex((q) => q.category === cat);
+            const isActive = currentQuestion.category === cat;
+            const isComplete = currentIndex > catStart + catQuestions.length - 1;
+            const isCurrent = currentIndex >= catStart && currentIndex < catStart + catQuestions.length;
+
+            return (
+              <Box
+                key={cat}
+                sx={{
+                  width: isCurrent ? 24 : 8,
+                  height: 8,
+                  borderRadius: 4,
+                  bgcolor: isComplete ? categoryInfo[cat].color : isActive ? categoryInfo[cat].color : 'action.hover',
+                  opacity: isComplete || isActive ? 1 : 0.4,
+                  transition: 'all 0.3s ease',
+                }}
+              />
+            );
+          })}
+        </Stack>
       </Box>
 
       {/* Question */}
@@ -104,9 +156,9 @@ export function Questionnaire({ questions, onComplete }: Props) {
                 key={option.value}
                 sx={{
                   ...(answers[currentQuestion.questionKey] === option.value && {
-                    bgcolor: 'rgba(103,80,164,0.15)',
+                    bgcolor: `${category.color}15`,
                     border: 2,
-                    borderColor: 'primary.main',
+                    borderColor: category.color,
                   }),
                 }}
               >
@@ -119,15 +171,6 @@ export function Questionnaire({ questions, onComplete }: Props) {
               </Card>
             ))}
         </Stack>
-
-        {/* Measurement input for measurement type questions */}
-        {currentQuestion.questionType === 'measurement' && (
-          <MeasurementInput
-            question={currentQuestion}
-            value={answers[currentQuestion.questionKey]}
-            onChange={(value) => handleAnswer(value)}
-          />
-        )}
       </Box>
 
       {/* Navigation */}
@@ -143,41 +186,5 @@ export function Questionnaire({ questions, onComplete }: Props) {
         )}
       </Box>
     </Box>
-  );
-}
-
-function MeasurementInput({
-  question,
-  value,
-  onChange,
-}: {
-  question: MorphoQuestion;
-  value: string | undefined;
-  onChange: (value: string) => void;
-}) {
-  const options = question.options as {
-    unit: string;
-    ranges: Array<{ label: string; value: string }>;
-  };
-
-  return (
-    <Stack spacing={1.5}>
-      {options.ranges.map((range) => (
-        <Card
-          key={range.value}
-          sx={{
-            ...(value === range.value && {
-              bgcolor: 'rgba(103,80,164,0.15)',
-              border: 2,
-              borderColor: 'primary.main',
-            }),
-          }}
-        >
-          <CardActionArea onClick={() => onChange(range.value)} sx={{ p: 2 }}>
-            <Typography variant="body1">{range.label}</Typography>
-          </CardActionArea>
-        </Card>
-      ))}
-    </Stack>
   );
 }

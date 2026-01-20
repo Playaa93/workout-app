@@ -4,12 +4,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Questionnaire } from './questionnaire';
 import { Results } from './results';
-import {
-  getMorphoQuestions,
-  getMorphoProfile,
-  type MorphoQuestion,
-  type MorphotypeResult,
-} from './actions';
+import type { MorphoQuestion, MorphotypeResult } from './types';
+import { getMorphoQuestions, getMorphoProfile } from './actions';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -33,15 +29,61 @@ export default function MorphologyPage() {
       const existingProfile = await getMorphoProfile();
 
       if (existingProfile) {
-        setResult({
-          primary: existingProfile.primaryMorphotype as MorphotypeResult['primary'],
-          secondary: existingProfile.secondaryMorphotype as MorphotypeResult['secondary'],
-          scores: existingProfile.morphotypeScore as MorphotypeResult['scores'],
-          strengths: existingProfile.strengths || [],
-          weaknesses: existingProfile.weaknesses || [],
-          recommendedExercises: existingProfile.recommendedExercises || [],
-          exercisesToAvoid: existingProfile.exercisesToAvoid || [],
-        });
+        const scoreData = existingProfile.morphotypeScore as {
+          ecto: number;
+          meso: number;
+          endo: number;
+          globalType?: MorphotypeResult['globalType'];
+          structure?: MorphotypeResult['structure'];
+          proportions?: MorphotypeResult['proportions'];
+          mobility?: MorphotypeResult['mobility'];
+          insertions?: MorphotypeResult['insertions'];
+          metabolism?: MorphotypeResult['metabolism'];
+        };
+
+        // If we have the new format with all segments, use it directly
+        if (scoreData.structure && scoreData.mobility && scoreData.metabolism) {
+          // Recalculate from stored answers to get full recommendations
+          const answers = existingProfile.questionnaireResponses as Record<string, string>;
+          if (answers && Object.keys(answers).length > 0) {
+            const { calculateMorphotype } = await import('./actions');
+            const recalculatedResult = await calculateMorphotype(answers);
+            setResult(recalculatedResult);
+          } else {
+            // Build result from stored data
+            setResult({
+              globalType: scoreData.globalType || 'balanced',
+              structure: scoreData.structure,
+              proportions: scoreData.proportions || {
+                torsoLength: (existingProfile.torsoProportion as 'short' | 'medium' | 'long') || 'medium',
+                armLength: (existingProfile.armProportion as 'short' | 'medium' | 'long') || 'medium',
+                femurLength: (existingProfile.legProportion as 'short' | 'medium' | 'long') || 'medium',
+                kneeValgus: 'none',
+              },
+              mobility: scoreData.mobility,
+              insertions: scoreData.insertions || { biceps: 'medium', calves: 'medium', chest: 'medium' },
+              metabolism: scoreData.metabolism,
+              squat: { exercise: 'Squat', advantages: [], disadvantages: [], variants: [], tips: [] },
+              deadlift: { exercise: 'Soulevé de terre', advantages: [], disadvantages: [], variants: [], tips: [] },
+              bench: { exercise: 'Développé couché', advantages: [], disadvantages: [], variants: [], tips: [] },
+              curls: { exercise: 'Curls biceps', advantages: [], disadvantages: [], variants: [], tips: [] },
+              mobilityWork: [],
+              primary: existingProfile.primaryMorphotype as MorphotypeResult['primary'],
+              secondary: null,
+              scores: { ecto: scoreData.ecto || 0, meso: scoreData.meso || 0, endo: scoreData.endo || 0 },
+              strengths: existingProfile.strengths || [],
+              weaknesses: existingProfile.weaknesses || [],
+              recommendedExercises: existingProfile.recommendedExercises || [],
+              exercisesToAvoid: existingProfile.exercisesToAvoid || [],
+            });
+          }
+        } else {
+          // Old format - prompt to retake the questionnaire
+          const qs = await getMorphoQuestions();
+          setQuestions(qs);
+          setView('intro');
+          return;
+        }
         setView('results');
       } else {
         const qs = await getMorphoQuestions();
@@ -97,6 +139,7 @@ export default function MorphologyPage() {
 
       {/* Content */}
       <Box sx={{ flex: 1, p: 2 }}>
+        <Box sx={{ width: '100%', maxWidth: 480, mx: 'auto' }}>
         {view === 'loading' && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
             <CircularProgress />
@@ -112,6 +155,7 @@ export default function MorphologyPage() {
         {view === 'results' && result && (
           <Results result={result} onRetake={handleRetake} />
         )}
+        </Box>
       </Box>
     </Box>
   );
@@ -121,17 +165,19 @@ function IntroView({ onStart }: { onStart: () => void }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', py: 4 }}>
       <Typography variant="h1" sx={{ mb: 3, fontSize: '4rem' }}>🧬</Typography>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Découvre ton morphotype</Typography>
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Analyse Morpho-Anatomique</Typography>
       <Typography color="text.secondary" sx={{ mb: 4, maxWidth: 360, lineHeight: 1.7 }}>
-        Basé sur les travaux de <strong style={{ color: 'inherit' }}>Delavier</strong> et{' '}
-        <strong style={{ color: 'inherit' }}>Gundill</strong>, ce questionnaire analyse ta
-        morphologie pour te recommander les exercices les plus adaptés à ton corps.
+        Basé sur les travaux de <strong style={{ color: 'inherit' }}>Delavier</strong>,{' '}
+        <strong style={{ color: 'inherit' }}>Gundill</strong> et{' '}
+        <strong style={{ color: 'inherit' }}>Rudy Coia</strong>, ce questionnaire analyse tes
+        proportions et insertions musculaires pour des recommandations vraiment personnalisées.
       </Typography>
 
       <Stack spacing={1.5} sx={{ width: '100%', maxWidth: 360, mb: 4 }}>
-        <InfoCard emoji="⏱️" title="2-3 minutes" description="8 questions simples" />
-        <InfoCard emoji="🎯" title="Personnalisé" description="Exercices adaptés à ton corps" />
-        <InfoCard emoji="💪" title="Scientifique" description="Basé sur l'anatomie fonctionnelle" />
+        <InfoCard emoji="⏱️" title="3-4 minutes" description="16 questions précises" />
+        <InfoCard emoji="📐" title="Proportions" description="Torse, bras, fémurs, valgus" />
+        <InfoCard emoji="🤸" title="Mobilité" description="Chevilles, poignets, souplesse" />
+        <InfoCard emoji="🏋️" title="Exercices" description="Squat, deadlift, bench, curls" />
       </Stack>
 
       <Button
@@ -165,14 +211,10 @@ function InfoCard({
 }) {
   return (
     <Card>
-      <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Typography variant="h5">{emoji}</Typography>
-          <Box>
-            <Typography variant="body1" fontWeight={600}>{title}</Typography>
-            <Typography variant="body2" color="text.secondary">{description}</Typography>
-          </Box>
-        </Stack>
+      <CardContent sx={{ py: 2, '&:last-child': { pb: 2 }, textAlign: 'center' }}>
+        <Typography variant="h4" sx={{ mb: 0.5 }}>{emoji}</Typography>
+        <Typography variant="body1" fontWeight={600}>{title}</Typography>
+        <Typography variant="body2" color="text.secondary">{description}</Typography>
       </CardContent>
     </Card>
   );

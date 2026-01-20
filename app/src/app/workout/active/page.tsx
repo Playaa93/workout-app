@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   getActiveSession,
@@ -9,10 +9,18 @@ import {
   deleteSet,
   endWorkoutSession,
   getLastSetsForExercise,
+  getUserMorphotype,
   type Exercise,
   type WorkoutSet,
   type ActiveSession,
 } from '../actions';
+import type { MorphotypeResult } from '@/app/morphology/types';
+import { MorphoTipsPanel, MorphoScoreBadge } from '@/components/workout/MorphoTipsPanel';
+import {
+  scoreExercise,
+  getCategoryDefault,
+  type MorphoRecommendation,
+} from '@/lib/morpho-exercise-scoring';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -52,6 +60,7 @@ function ActiveWorkoutContent() {
 
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [morphotype, setMorphotype] = useState<MorphotypeResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
@@ -74,8 +83,13 @@ function ActiveWorkoutContent() {
 
   useEffect(() => {
     async function init() {
-      const [exerciseData] = await Promise.all([getExercises(), loadSession()]);
+      const [exerciseData, , morphoData] = await Promise.all([
+        getExercises(),
+        loadSession(),
+        getUserMorphotype(),
+      ]);
       setExercises(exerciseData);
+      setMorphotype(morphoData);
     }
     init();
   }, [loadSession]);
@@ -295,6 +309,7 @@ function ActiveWorkoutContent() {
             exercise={selectedExercise}
             sessionId={sessionId}
             setNumber={(setsByExercise.get(selectedExercise.id)?.length || 0) + 1}
+            morphotype={morphotype}
             onClose={() => setSelectedExercise(null)}
             onSetAdded={() => {
               loadSession();
@@ -315,6 +330,7 @@ function ActiveWorkoutContent() {
       >
         <ExercisePicker
           exercises={exercises}
+          morphotype={morphotype}
           onSelect={handleSelectExercise}
           onClose={() => setShowExercisePicker(false)}
         />
@@ -598,23 +614,46 @@ function QuickSetInput({
 // Exercise Picker Modal
 function ExercisePicker({
   exercises,
+  morphotype,
   onSelect,
   onClose,
 }: {
   exercises: Exercise[];
+  morphotype: MorphotypeResult | null;
   onSelect: (exercise: Exercise) => void;
   onClose: () => void;
 }) {
   const [search, setSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
+  const [sortByScore, setSortByScore] = useState(false);
 
   const muscleGroups = [...new Set(exercises.map((e) => e.muscleGroup))];
 
-  const filteredExercises = exercises.filter((e) => {
-    const matchesSearch = e.nameFr.toLowerCase().includes(search.toLowerCase());
-    const matchesMuscle = !selectedMuscle || e.muscleGroup === selectedMuscle;
-    return matchesSearch && matchesMuscle;
-  });
+  // Calculate scores for all exercises
+  const exercisesWithScores = useMemo(() => {
+    if (!morphotype) return exercises.map((e) => ({ exercise: e, score: 70 }));
+
+    return exercises.map((exercise) => {
+      const rec = (exercise.morphotypeRecommendations as MorphoRecommendation | null)
+        || getCategoryDefault(exercise.muscleGroup, exercise.nameFr);
+      const result = scoreExercise(morphotype, rec);
+      return { exercise, score: result.score };
+    });
+  }, [exercises, morphotype]);
+
+  const filteredExercises = useMemo(() => {
+    let filtered = exercisesWithScores.filter(({ exercise }) => {
+      const matchesSearch = exercise.nameFr.toLowerCase().includes(search.toLowerCase());
+      const matchesMuscle = !selectedMuscle || exercise.muscleGroup === selectedMuscle;
+      return matchesSearch && matchesMuscle;
+    });
+
+    if (sortByScore) {
+      filtered = [...filtered].sort((a, b) => b.score - a.score);
+    }
+
+    return filtered;
+  }, [exercisesWithScores, search, selectedMuscle, sortByScore]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -645,9 +684,9 @@ function ExercisePicker({
         />
       </Paper>
 
-      {/* Muscle Filter */}
-      <Box sx={{ px: 2, py: 1.5, overflowX: 'auto' }}>
-        <Stack direction="row" spacing={1}>
+      {/* Muscle Filter + Sort Toggle */}
+      <Box sx={{ px: 2, py: 1.5 }}>
+        <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 1 }}>
           <Chip
             label="Tous"
             onClick={() => setSelectedMuscle(null)}
@@ -665,12 +704,24 @@ function ExercisePicker({
             />
           ))}
         </Stack>
+        {morphotype && (
+          <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1 }}>
+            <Chip
+              label={sortByScore ? '🧬 Trié par morpho' : '🧬 Trier par morpho'}
+              size="small"
+              onClick={() => setSortByScore(!sortByScore)}
+              color={sortByScore ? 'secondary' : 'default'}
+              variant={sortByScore ? 'filled' : 'outlined'}
+              sx={{ fontSize: '0.75rem' }}
+            />
+          </Stack>
+        )}
       </Box>
 
       {/* Exercise List */}
       <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 2 }}>
         <List disablePadding>
-          {filteredExercises.map((exercise) => (
+          {filteredExercises.map(({ exercise, score }) => (
             <Card key={exercise.id} sx={{ mb: 1 }}>
               <ListItemButton onClick={() => onSelect(exercise)} sx={{ borderRadius: 1 }}>
                 <ListItemText
@@ -678,6 +729,9 @@ function ExercisePicker({
                   secondary={exercise.muscleGroup}
                   secondaryTypographyProps={{ sx: { textTransform: 'capitalize' } }}
                 />
+                {morphotype && (
+                  <MorphoScoreBadge score={score} size="small" />
+                )}
               </ListItemButton>
             </Card>
           ))}
@@ -692,12 +746,14 @@ function SetInputSheet({
   exercise,
   sessionId,
   setNumber,
+  morphotype,
   onClose,
   onSetAdded,
 }: {
   exercise: Exercise;
   sessionId: string;
   setNumber: number;
+  morphotype: MorphotypeResult | null;
   onClose: () => void;
   onSetAdded: () => void;
 }) {
@@ -707,6 +763,7 @@ function SetInputSheet({
   const [isWarmup, setIsWarmup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previousSets, setPreviousSets] = useState<WorkoutSet[]>([]);
+  const [showMorphoTips, setShowMorphoTips] = useState(false);
 
   useEffect(() => {
     getLastSetsForExercise(exercise.id).then((sets) => {
@@ -740,7 +797,7 @@ function SetInputSheet({
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, maxHeight: '90vh', overflow: 'auto' }}>
       {/* Handle */}
       <Box sx={{ width: 48, height: 4, bgcolor: 'action.hover', borderRadius: 2, mx: 'auto', mb: 3 }} />
 
@@ -756,6 +813,35 @@ function SetInputSheet({
           <Close />
         </IconButton>
       </Stack>
+
+      {/* Morpho Tips Panel (collapsible) */}
+      {morphotype && (
+        <Card
+          sx={{
+            mb: 2,
+            bgcolor: 'action.hover',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            '&:hover': { bgcolor: 'action.selected' },
+          }}
+          onClick={() => setShowMorphoTips(!showMorphoTips)}
+        >
+          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <MorphoTipsPanel
+              exerciseName={exercise.nameFr}
+              muscleGroup={exercise.muscleGroup}
+              morphotype={morphotype}
+              morphoRecommendation={exercise.morphotypeRecommendations as MorphoRecommendation | null}
+              expanded={showMorphoTips}
+            />
+            {!showMorphoTips && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'center' }}>
+                Appuyer pour voir les conseils
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Previous Performance */}
       {previousSets.length > 0 && (

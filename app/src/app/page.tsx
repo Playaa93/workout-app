@@ -99,6 +99,59 @@ export default function HomePage() {
         </Stack>
       </Paper>
 
+      {/* Morphology CTA - First thing to do if not defined */}
+      {!morphoProfile && (
+        <Box sx={{ px: 2, pt: 2 }}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #6750a4 0%, #7f67be 50%, #9a67ea 100%)',
+              color: 'white',
+              overflow: 'hidden',
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%)',
+              },
+            }}
+          >
+            <CardActionArea component={Link} href="/morphology" sx={{ textDecoration: 'none' }}>
+              <CardContent sx={{ py: 2.5, position: 'relative' }}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 2,
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.75rem',
+                    }}
+                  >
+                    🧬
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      Commence par ton analyse
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                      Découvre ton morphotype et tes exercices idéaux
+                    </Typography>
+                  </Box>
+                  <Box sx={{ opacity: 0.6 }}>→</Box>
+                </Stack>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Box>
+      )}
+
       {/* Level & Streak Card */}
       <Box sx={{ px: 2, pt: 2 }}>
         <Fade in={!loading}>
@@ -183,59 +236,6 @@ export default function HomePage() {
           />
         </Stack>
       </Box>
-
-      {/* Morphology CTA - only if not defined */}
-      {!morphoProfile && (
-        <Box sx={{ px: 2, pt: 2.5 }}>
-          <Card
-            sx={{
-              background: 'linear-gradient(135deg, #6750a4 0%, #7f67be 50%, #9a67ea 100%)',
-              color: 'white',
-              overflow: 'hidden',
-              position: 'relative',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%)',
-              },
-            }}
-          >
-            <CardActionArea component={Link} href="/morphology" sx={{ textDecoration: 'none' }}>
-              <CardContent sx={{ py: 2.5, position: 'relative' }}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 2,
-                      bgcolor: 'rgba(255,255,255,0.2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '1.75rem',
-                    }}
-                  >
-                    🧬
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600}>
-                      Analyse Morphologique
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85 }}>
-                      Découvre tes exercices idéaux
-                    </Typography>
-                  </Box>
-                  <Box sx={{ opacity: 0.6 }}>→</Box>
-                </Stack>
-              </CardContent>
-            </CardActionArea>
-          </Card>
-        </Box>
-      )}
 
       {/* Stats Overview */}
       <Box sx={{ px: 2, pt: 2.5, pb: 2, flex: 1 }}>
