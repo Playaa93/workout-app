@@ -6,7 +6,10 @@
     "dev": "next dev -p 3015",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:seed": "npx tsx src/db/seed.ts",
+    "db:seed-exercises": "npx tsx src/db/seed-exercises.ts",
+    "db:migrate": "npx tsx -e \"require('fs').readFileSync('src/db/migrations/001_enrich_exercises.sql', 'utf-8')\""
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -24,6 +27,7 @@
     "next-themes": "^0.4.6",
     "postgres": "^3.4.8",
     "react": "19.2.3",
+    "react-body-highlighter": "^2.0.5",
     "react-dom": "19.2.3"
   },
   "devDependencies": {

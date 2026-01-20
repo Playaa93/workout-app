@@ -20,6 +20,7 @@ import {
 } from '../actions';
 import type { MorphotypeResult } from '@/app/morphology/types';
 import { MorphoTipsPanel, MorphoScoreBadge } from '@/components/workout/MorphoTipsPanel';
+import ExerciseDetailModal from '@/components/workout/ExerciseDetailModal';
 import {
   scoreExercise,
   getCategoryDefault,
@@ -60,6 +61,8 @@ import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import VolumeUp from '@mui/icons-material/VolumeUp';
 import VolumeOff from '@mui/icons-material/VolumeOff';
 import Vibration from '@mui/icons-material/Vibration';
+import ChevronRight from '@mui/icons-material/ChevronRight';
+import InfoOutlined from '@mui/icons-material/InfoOutlined';
 
 function ActiveWorkoutContent() {
   const router = useRouter();
@@ -249,6 +252,11 @@ function ActiveWorkoutContent() {
     setsByExercise.set(set.exerciseId, [...existing, set]);
   });
 
+  // Get last rest time used (from most recent set)
+  const lastRestTime = session?.sets.length
+    ? session.sets[session.sets.length - 1].restTaken ?? 90
+    : 90;
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', pb: 16, bgcolor: 'background.default' }}>
       {/* Header with timer */}
@@ -283,72 +291,116 @@ function ActiveWorkoutContent() {
         </Stack>
       </Paper>
 
-      {/* Rest Timer (sticky) */}
+      {/* Rest Timer (sticky) - Apple-style minimal */}
       {(isTimerRunning || restTimer > 0) && (
-        <Paper
+        <Box
           sx={{
-            px: 2,
-            py: 1.5,
-            bgcolor: 'rgba(103,80,164,0.2)',
-            borderBottom: 1,
-            borderColor: 'primary.dark',
             position: 'sticky',
             top: 56,
             zIndex: 10,
+            py: 2,
+            bgcolor: 'background.default',
+            borderBottom: 1,
+            borderColor: 'divider',
           }}
         >
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Timer sx={{ fontSize: 28, color: 'primary.main' }} />
-              <Box>
-                <Typography variant="caption" color="primary.light">Repos</Typography>
-                <Typography variant="h5" fontWeight={700} fontFamily="monospace">{formatTime(restTimer)}</Typography>
-              </Box>
-            </Stack>
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <IconButton
-                size="small"
-                onClick={() => setTimerSound(!timerSound)}
-                sx={{
-                  width: 28,
-                  height: 28,
-                  color: timerSound ? 'primary.light' : 'text.disabled',
-                  opacity: timerSound ? 1 : 0.5,
-                }}
-              >
-                {timerSound ? <VolumeUp sx={{ fontSize: 18 }} /> : <VolumeOff sx={{ fontSize: 18 }} />}
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => setTimerVibration(!timerVibration)}
-                sx={{
-                  width: 28,
-                  height: 28,
-                  color: timerVibration ? 'primary.light' : 'text.disabled',
-                  opacity: timerVibration ? 1 : 0.5,
-                }}
-              >
-                <Vibration sx={{ fontSize: 18 }} />
-              </IconButton>
-              <Button
-                size="small"
-                variant="contained"
-                onClick={() => setRestTimer((prev) => prev + 30)}
-                sx={{ bgcolor: 'primary.dark', minWidth: 44, height: 28, fontSize: '0.75rem' }}
-              >
-                +30s
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={stopTimer}
-                sx={{ minWidth: 44, height: 28, fontSize: '0.75rem' }}
-              >
-                Stop
-              </Button>
-            </Stack>
+          {/* Timer display - hero element */}
+          <Typography
+            sx={{
+              textAlign: 'center',
+              fontSize: '3rem',
+              fontWeight: 200,
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+              letterSpacing: '-0.02em',
+              color: restTimer <= 10 ? 'error.main' : 'text.primary',
+              transition: 'color 0.3s ease',
+            }}
+          >
+            {formatTime(restTimer)}
+          </Typography>
+
+          {/* Controls */}
+          <Stack direction="row" justifyContent="center" alignItems="center" spacing={3} sx={{ mt: 1 }}>
+            <Typography
+              onClick={() => setRestTimer((prev) => Math.max(0, prev - 30))}
+              sx={{
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: 500,
+                color: 'text.secondary',
+                opacity: 0.6,
+                '&:active': { opacity: 1 },
+              }}
+            >
+              −30
+            </Typography>
+
+            <Typography
+              onClick={() => setRestTimer((prev) => prev + 30)}
+              sx={{
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: 500,
+                color: 'text.secondary',
+                opacity: 0.6,
+                '&:active': { opacity: 1 },
+              }}
+            >
+              +30
+            </Typography>
+
+            <Typography
+              onClick={stopTimer}
+              sx={{
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: 500,
+                color: 'text.disabled',
+                '&:active': { color: 'error.main' },
+              }}
+            >
+              ✕
+            </Typography>
           </Stack>
-        </Paper>
+
+          {/* Sound/Vibration toggles - subtle icons */}
+          <Stack direction="row" justifyContent="center" spacing={3} sx={{ mt: 1.5 }}>
+            <Box
+              onClick={() => {
+                triggerHaptic('light');
+                setTimerSound(!timerSound);
+              }}
+              sx={{
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                color: timerSound ? 'text.secondary' : 'text.disabled',
+                opacity: timerSound ? 0.7 : 0.3,
+                transition: 'all 0.2s ease',
+                '&:active': { opacity: 1 },
+              }}
+            >
+              {timerSound ? <VolumeUp sx={{ fontSize: 20 }} /> : <VolumeOff sx={{ fontSize: 20 }} />}
+            </Box>
+            <Box
+              onClick={() => {
+                triggerHaptic('light');
+                setTimerVibration(!timerVibration);
+              }}
+              sx={{
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                color: timerVibration ? 'text.secondary' : 'text.disabled',
+                opacity: timerVibration ? 0.7 : 0.3,
+                transition: 'all 0.2s ease',
+                '&:active': { opacity: 1 },
+              }}
+            >
+              <Vibration sx={{ fontSize: 20 }} />
+            </Box>
+          </Stack>
+        </Box>
       )}
 
       {/* Exercise Sets */}
@@ -469,6 +521,7 @@ function ActiveWorkoutContent() {
                   exercise={exercise}
                   sets={sets}
                   sessionId={sessionId}
+                  defaultRestTime={lastRestTime}
                   onSetAdded={loadSession}
                   onSetDeleted={loadSession}
                   onStartTimer={startTimer}
@@ -510,6 +563,7 @@ function ActiveWorkoutContent() {
             sessionId={sessionId}
             setNumber={(setsByExercise.get(selectedExercise.id)?.length || 0) + 1}
             morphotype={morphotype}
+            defaultRestTime={lastRestTime}
             onClose={() => setSelectedExercise(null)}
             onSetAdded={(restDuration) => {
               loadSession();
@@ -639,19 +693,30 @@ function ActiveWorkoutContent() {
         </Box>
       </Drawer>
 
-      {/* Quick Add FAB */}
+      {/* Quick Add FAB - minimal style */}
       {!selectedExercise && !showExercisePicker && (
         <Fab
-          color="primary"
           onClick={() => setShowExercisePicker(true)}
           sx={{
             position: 'fixed',
             bottom: 24,
             right: 24,
-            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+            width: 56,
+            height: 56,
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+            border: 1,
+            borderColor: 'divider',
+            '&:hover': {
+              bgcolor: 'background.paper',
+            },
+            '&:active': {
+              transform: 'scale(0.95)',
+            },
           }}
         >
-          <Add />
+          <Add sx={{ fontSize: 28 }} />
         </Fab>
       )}
     </Box>
@@ -677,6 +742,7 @@ function ExerciseCard({
   exercise,
   sets,
   sessionId,
+  defaultRestTime = 90,
   onSetAdded,
   onSetDeleted,
   onStartTimer,
@@ -684,6 +750,7 @@ function ExerciseCard({
   exercise: Exercise | undefined;
   sets: WorkoutSet[];
   sessionId: string;
+  defaultRestTime?: number;
   onSetAdded: () => void;
   onSetDeleted: () => void;
   onStartTimer: (duration?: number) => void;
@@ -807,6 +874,7 @@ function ExerciseCard({
           setNumber={workingSets.length + 1}
           lastWeight={lastSet?.weight ? parseFloat(lastSet.weight) : undefined}
           lastReps={lastSet?.reps || undefined}
+          defaultRestTime={defaultRestTime}
           onCancel={() => setShowAddSet(false)}
           onAdd={(restDuration) => {
             setShowAddSet(false);
@@ -826,6 +894,7 @@ function QuickSetInput({
   setNumber,
   lastWeight,
   lastReps,
+  defaultRestTime = 90,
   onCancel,
   onAdd,
 }: {
@@ -834,12 +903,13 @@ function QuickSetInput({
   setNumber: number;
   lastWeight?: number;
   lastReps?: number;
+  defaultRestTime?: number;
   onCancel: () => void;
   onAdd: (restDuration: number) => void;
 }) {
   const [weight, setWeight] = useState(lastWeight || 0);
   const [reps, setReps] = useState(lastReps || 0);
-  const [restTime, setRestTime] = useState(90);
+  const [restTime, setRestTime] = useState(defaultRestTime);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -1020,7 +1090,7 @@ function getExerciseSubcategory(primaryMuscles: string[] | null): string | null 
   return MUSCLE_TO_SUBCATEGORY[primaryMuscles[0]] || null;
 }
 
-// Exercise Picker Modal
+// Exercise Picker Modal - Apple style
 function ExercisePicker({
   exercises,
   morphotype,
@@ -1036,6 +1106,7 @@ function ExercisePicker({
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [sortByScore, setSortByScore] = useState(true);
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
 
   const muscleGroups = [...new Set(exercises.map((e) => e.muscleGroup))].filter(g => g !== 'full_body');
 
@@ -1086,137 +1157,263 @@ function ExercisePicker({
   }, [exercisesWithScores, search, selectedMuscle, selectedSubcategory, sortByScore]);
 
   const handleMuscleSelect = (muscle: string | null) => {
+    triggerHaptic('light');
     setSelectedMuscle(muscle);
     setSelectedSubcategory(null);
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
-      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-          <IconButton onClick={onClose}>
-            <Close />
-          </IconButton>
-          <Typography variant="h6" fontWeight={600}>Choisir un exercice</Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default' }}>
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Box
+            onClick={onClose}
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <Close sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            Exercices
+          </Typography>
+          <Box sx={{ width: 32 }} /> {/* Spacer for centering */}
         </Stack>
+      </Box>
 
-        {/* Search */}
-        <TextField
-          fullWidth
-          placeholder="Rechercher..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search sx={{ color: 'text.secondary' }} />
-              </InputAdornment>
-            ),
+      {/* Search - clean */}
+      <Box sx={{ px: 2, pb: 1.5 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            bgcolor: 'action.hover',
+            borderRadius: 2,
+            px: 1.5,
+            py: 1,
           }}
-          autoFocus
-        />
-      </Paper>
-
-      {/* Muscle Filter */}
-      <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5 }}>
-          <Chip
-            label="Tous"
-            size="small"
-            onClick={() => handleMuscleSelect(null)}
-            color={!selectedMuscle ? 'primary' : 'default'}
-            variant={!selectedMuscle ? 'filled' : 'outlined'}
+        >
+          <Search sx={{ fontSize: 20, color: 'text.disabled', mr: 1 }} />
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoFocus
+            style={{
+              flex: 1,
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+              fontSize: '1rem',
+              color: 'inherit',
+            }}
           />
+        </Box>
+      </Box>
+
+      {/* Muscle Filter - text style */}
+      <Box sx={{ px: 2, pb: 1 }}>
+        <Stack direction="row" spacing={2} sx={{ overflowX: 'auto', pb: 0.5 }}>
+          <Typography
+            onClick={() => handleMuscleSelect(null)}
+            sx={{
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: !selectedMuscle ? 600 : 400,
+              color: !selectedMuscle ? 'text.primary' : 'text.disabled',
+              whiteSpace: 'nowrap',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            Tous
+          </Typography>
           {muscleGroups.map((muscle) => (
-            <Chip
+            <Typography
               key={muscle}
-              label={MUSCLE_GROUP_LABELS[muscle] || muscle}
-              size="small"
               onClick={() => handleMuscleSelect(muscle)}
-              color={selectedMuscle === muscle ? 'primary' : 'default'}
-              variant={selectedMuscle === muscle ? 'filled' : 'outlined'}
-            />
+              sx={{
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: selectedMuscle === muscle ? 600 : 400,
+                color: selectedMuscle === muscle ? 'text.primary' : 'text.disabled',
+                whiteSpace: 'nowrap',
+                '&:active': { opacity: 0.5 },
+              }}
+            >
+              {MUSCLE_GROUP_LABELS[muscle] || muscle}
+            </Typography>
           ))}
         </Stack>
       </Box>
 
-      {/* Subcategory Filter (when muscle selected) */}
+      {/* Subcategory Filter */}
       {selectedMuscle && subcategories.length > 0 && (
-        <Box sx={{ px: 2, py: 1, bgcolor: 'action.hover' }}>
-          <Stack direction="row" spacing={0.5} sx={{ overflowX: 'auto', flexWrap: 'wrap', gap: 0.5 }}>
-            <Chip
-              label="Tous"
-              size="small"
-              onClick={() => setSelectedSubcategory(null)}
-              color={!selectedSubcategory ? 'secondary' : 'default'}
-              variant={!selectedSubcategory ? 'filled' : 'outlined'}
-              sx={{ height: 24, fontSize: '0.7rem' }}
-            />
+        <Box sx={{ px: 2, pb: 1 }}>
+          <Stack direction="row" spacing={1.5} sx={{ overflowX: 'auto' }}>
+            <Typography
+              onClick={() => {
+                triggerHaptic('light');
+                setSelectedSubcategory(null);
+              }}
+              sx={{
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                fontWeight: !selectedSubcategory ? 600 : 400,
+                color: !selectedSubcategory ? 'primary.main' : 'text.disabled',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Tous
+            </Typography>
             {subcategories.map((sub) => (
-              <Chip
+              <Typography
                 key={sub}
-                label={sub}
-                size="small"
-                onClick={() => setSelectedSubcategory(sub)}
-                color={selectedSubcategory === sub ? 'secondary' : 'default'}
-                variant={selectedSubcategory === sub ? 'filled' : 'outlined'}
-                sx={{ height: 24, fontSize: '0.7rem' }}
-              />
+                onClick={() => {
+                  triggerHaptic('light');
+                  setSelectedSubcategory(sub);
+                }}
+                sx={{
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontWeight: selectedSubcategory === sub ? 600 : 400,
+                  color: selectedSubcategory === sub ? 'primary.main' : 'text.disabled',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {sub}
+              </Typography>
             ))}
           </Stack>
         </Box>
       )}
 
-      {/* Sort Toggle */}
-      {morphotype && (
-        <Box sx={{ px: 2, py: 1 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="caption" color="text.secondary">
-              {filteredExercises.length} exercices
+      {/* Count + Sort */}
+      <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="caption" color="text.disabled">
+            {filteredExercises.length} exercices
+          </Typography>
+          {morphotype && (
+            <Typography
+              onClick={() => {
+                triggerHaptic('light');
+                setSortByScore(!sortByScore);
+              }}
+              sx={{
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                color: sortByScore ? 'primary.main' : 'text.disabled',
+                fontWeight: sortByScore ? 600 : 400,
+              }}
+            >
+              {sortByScore ? '✓ Morpho' : 'Morpho'}
             </Typography>
-            <Chip
-              label={sortByScore ? '🧬 Trié morpho' : '🧬 Trier morpho'}
-              size="small"
-              onClick={() => setSortByScore(!sortByScore)}
-              color={sortByScore ? 'secondary' : 'default'}
-              variant={sortByScore ? 'filled' : 'outlined'}
-              sx={{ fontSize: '0.7rem', height: 24 }}
-            />
-          </Stack>
-        </Box>
-      )}
+          )}
+        </Stack>
+      </Box>
 
       {/* Exercise List */}
-      <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 2 }}>
-        <List disablePadding>
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2, py: 1 }}>
+        <Stack spacing={1}>
           {filteredExercises.map(({ exercise, score }) => (
-            <Card key={exercise.id} sx={{ mb: 1 }}>
-              <ListItemButton onClick={() => onSelect(exercise)} sx={{ borderRadius: 1, py: 1 }}>
-                <MorphoScoreBadge score={score} size="small" />
-                <ListItemText
-                  sx={{ ml: 1.5 }}
-                  primary={exercise.nameFr}
-                  secondary={
-                    <Stack direction="row" spacing={0.5} sx={{ mt: 0.25 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {MUSCLE_GROUP_LABELS[exercise.muscleGroup] || exercise.muscleGroup}
-                      </Typography>
-                      {getExerciseSubcategory(exercise.primaryMuscles) && (
-                        <Typography variant="caption" color="primary.main">
-                          • {getExerciseSubcategory(exercise.primaryMuscles)}
-                        </Typography>
-                      )}
-                    </Stack>
-                  }
-                  secondaryTypographyProps={{ component: 'div' }}
-                />
-              </ListItemButton>
-            </Card>
+            <Box
+              key={exercise.id}
+              onClick={() => {
+                triggerHaptic('light');
+                onSelect(exercise);
+              }}
+              sx={{
+                px: 2,
+                py: 1.5,
+                cursor: 'pointer',
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'all 0.15s ease',
+                '&:active': {
+                  bgcolor: 'action.hover',
+                  transform: 'scale(0.98)',
+                },
+              }}
+            >
+              {/* Score badge */}
+              <MorphoScoreBadge score={score} size="small" />
+
+              <Box sx={{ flex: 1, minWidth: 0, ml: 1.5 }}>
+                <Typography
+                  sx={{
+                    fontWeight: 500,
+                    fontSize: '0.95rem',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {exercise.nameFr}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: '0.8rem',
+                    color: 'text.disabled',
+                    mt: 0.25,
+                  }}
+                >
+                  {getExerciseSubcategory(exercise.primaryMuscles) || MUSCLE_GROUP_LABELS[exercise.muscleGroup] || exercise.muscleGroup}
+                </Typography>
+              </Box>
+
+              {/* Info button */}
+              <Box
+                onClick={(e) => {
+                  e.stopPropagation();
+                  triggerHaptic('light');
+                  setDetailExercise(exercise);
+                }}
+                sx={{
+                  p: 0.75,
+                  mr: 0.5,
+                  borderRadius: 1,
+                  color: 'text.disabled',
+                  '&:active': { bgcolor: 'action.hover' },
+                }}
+              >
+                <InfoOutlined sx={{ fontSize: 18 }} />
+              </Box>
+
+              <ChevronRight sx={{ fontSize: 20, color: 'text.disabled', opacity: 0.5 }} />
+            </Box>
           ))}
-        </List>
+        </Stack>
       </Box>
+
+      {/* Exercise Detail Modal */}
+      <ExerciseDetailModal
+        exercise={detailExercise ? {
+          id: detailExercise.id,
+          nameFr: detailExercise.nameFr,
+          nameEn: detailExercise.nameEn,
+          muscleGroup: detailExercise.muscleGroup,
+          primaryMuscles: detailExercise.primaryMuscles,
+          secondaryMuscles: detailExercise.secondaryMuscles,
+          equipment: detailExercise.equipment,
+          difficulty: detailExercise.difficulty,
+        } : null}
+        open={!!detailExercise}
+        onClose={() => setDetailExercise(null)}
+        onSelect={() => {
+          if (detailExercise) {
+            onSelect(detailExercise);
+          }
+        }}
+      />
     </Box>
   );
 }
@@ -1421,6 +1618,7 @@ function SetInputSheet({
   sessionId,
   setNumber,
   morphotype,
+  defaultRestTime = 90,
   onClose,
   onSetAdded,
 }: {
@@ -1428,13 +1626,14 @@ function SetInputSheet({
   sessionId: string;
   setNumber: number;
   morphotype: MorphotypeResult | null;
+  defaultRestTime?: number;
   onClose: () => void;
   onSetAdded: (restDuration: number) => void;
 }) {
   const [weight, setWeight] = useState(0);
   const [reps, setReps] = useState(0);
   const [rpe, setRpe] = useState(0);
-  const [restTime, setRestTime] = useState(90);
+  const [restTime, setRestTime] = useState(defaultRestTime);
   const [isWarmup, setIsWarmup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previousSets, setPreviousSets] = useState<WorkoutSet[]>([]);
