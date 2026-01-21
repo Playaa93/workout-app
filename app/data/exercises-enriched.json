@@ -1,0 +1,4213 @@
+{
+  "version": "1.0.0",
+  "source": "SuperPhysique/Delavier methodology",
+  "exercises": [
+    {
+      "id": "bench-press-barbell",
+      "name_fr": "Développé couché barre",
+      "name_en": "Barbell Bench Press",
+      "aliases": ["bench press", "DC barre"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "pec_major_clavicular"],
+      "secondary_muscles": ["anterior_delt", "triceps_lateral_head", "triceps_medial_head"],
+      "stabilizers": ["serratus_anterior", "rotator_cuff"],
+      "equipment": ["barbell", "bench_flat"],
+      "equipment_alternatives": ["smith_machine"],
+      "good_for": {
+        "morphotypes": ["arm_length_short", "wide_ribcage", "wide_clavicles"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": ["arm_length_long", "narrow_ribcage"],
+        "conditions": ["shoulder_pain", "wrist_pain"]
+      },
+      "modifications": [
+        {"condition": "arm_length_long", "adjustment": "Arc dorsal prononcé obligatoire, préférer haltères"},
+        {"condition": "narrow_ribcage", "adjustment": "Travailler l'arc dorsal pour compenser"},
+        {"condition": "shoulder_pain", "adjustment": "Limiter la descente, utiliser une barre de sécurité"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Omoplates serrées et basses",
+        "Arc dorsal naturel",
+        "Pieds ancrés au sol",
+        "Barre au niveau des mamelons"
+      ],
+      "common_mistakes": [
+        "Rebond sur la poitrine",
+        "Coudes trop écartés (90°)",
+        "Fesses décollées du banc",
+        "Arc dorsal excessif"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "bench-press-dumbbell",
+      "name_fr": "Développé couché haltères",
+      "name_en": "Dumbbell Bench Press",
+      "aliases": ["DC haltères", "dumbbell press"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "pec_major_clavicular"],
+      "secondary_muscles": ["anterior_delt", "triceps_lateral_head"],
+      "stabilizers": ["serratus_anterior", "rotator_cuff", "biceps_short_head"],
+      "equipment": ["dumbbell", "bench_flat"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long", "narrow_ribcage"],
+        "conditions": ["wrist_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [
+        {"condition": "arm_length_long", "adjustment": "Amplitude personnalisable - excellent choix"},
+        {"condition": "wrist_pain", "adjustment": "Prise neutre possible"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Contrôle la descente",
+        "Haltères se touchent en haut",
+        "Coudes à 45° du corps"
+      ],
+      "common_mistakes": [
+        "Descente trop rapide",
+        "Haltères trop écartés en bas"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "incline-press-barbell",
+      "name_fr": "Développé incliné barre",
+      "name_en": "Incline Barbell Press",
+      "aliases": ["DI barre", "incline bench"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_clavicular"],
+      "secondary_muscles": ["anterior_delt", "triceps_lateral_head"],
+      "stabilizers": ["serratus_anterior"],
+      "equipment": ["barbell", "bench_incline"],
+      "equipment_alternatives": ["smith_machine"],
+      "good_for": {
+        "morphotypes": ["arm_length_short", "wide_clavicles"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [
+        {"condition": "arm_length_long", "adjustment": "Angle 30° max, préférer haltères"},
+        {"condition": "shoulder_pain", "adjustment": "Réduire l'angle à 15-20°"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Angle 30-45°",
+        "Barre au niveau des clavicules",
+        "Omoplates fixes"
+      ],
+      "common_mistakes": [
+        "Angle trop élevé (devient épaules)",
+        "Rebond sur les clavicules"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "incline-press-dumbbell",
+      "name_fr": "Développé incliné haltères",
+      "name_en": "Incline Dumbbell Press",
+      "aliases": ["DI haltères"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_clavicular"],
+      "secondary_muscles": ["anterior_delt", "triceps_lateral_head"],
+      "stabilizers": ["serratus_anterior", "rotator_cuff"],
+      "equipment": ["dumbbell", "bench_incline"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long", "narrow_ribcage"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Angle 30° optimal",
+        "Rotation des haltères en haut",
+        "Étirement contrôlé en bas"
+      ],
+      "common_mistakes": [
+        "Angle trop élevé"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "decline-press",
+      "name_fr": "Développé décliné",
+      "name_en": "Decline Press",
+      "aliases": ["DD"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "pec_major_abdominal"],
+      "secondary_muscles": ["triceps_lateral_head"],
+      "stabilizers": [],
+      "equipment": ["barbell", "bench_decline"],
+      "equipment_alternatives": ["dumbbell"],
+      "good_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Barre vers le bas de la poitrine",
+        "Contrôle la remontée"
+      ],
+      "common_mistakes": [
+        "Angle trop prononcé"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "dips-chest",
+      "name_fr": "Dips pectoraux",
+      "name_en": "Chest Dips",
+      "aliases": ["dips pecs"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "pec_major_abdominal"],
+      "secondary_muscles": ["anterior_delt", "triceps_long_head", "triceps_lateral_head"],
+      "stabilizers": ["serratus_anterior"],
+      "equipment": ["dip_bars"],
+      "equipment_alternatives": ["machine"],
+      "good_for": {
+        "morphotypes": ["arm_length_short", "wide_ribcage"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": ["shoulder_pain", "wrist_pain"]
+      },
+      "modifications": [
+        {"condition": "arm_length_long", "adjustment": "Limiter la descente à 90°"},
+        {"condition": "shoulder_pain", "adjustment": "Éviter ou utiliser machine assistée"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Buste penché en avant",
+        "Coudes écartés",
+        "Descendre jusqu'à sentir l'étirement"
+      ],
+      "common_mistakes": [
+        "Buste trop droit (devient triceps)",
+        "Descente trop profonde"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "fly-dumbbell",
+      "name_fr": "Écarté couché haltères",
+      "name_en": "Dumbbell Fly",
+      "aliases": ["écarté plat", "fly"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal"],
+      "secondary_muscles": ["anterior_delt"],
+      "stabilizers": ["biceps_short_head"],
+      "equipment": ["dumbbell", "bench_flat"],
+      "equipment_alternatives": ["cable"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [
+        {"condition": "shoulder_pain", "adjustment": "Limiter l'amplitude, coudes plus fléchis"}
+      ],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Coudes légèrement fléchis",
+        "Arc de cercle",
+        "Contracter en haut"
+      ],
+      "common_mistakes": [
+        "Bras trop tendus",
+        "Descente trop basse"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "cable-crossover",
+      "name_fr": "Poulie vis-à-vis",
+      "name_en": "Cable Crossover",
+      "aliases": ["crossover", "vis-à-vis"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal"],
+      "secondary_muscles": ["anterior_delt"],
+      "stabilizers": ["serratus_anterior"],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Un pied en avant pour la stabilité",
+        "Croiser les mains en bas",
+        "Tension constante"
+      ],
+      "common_mistakes": [
+        "Utiliser l'élan"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "pushup",
+      "name_fr": "Pompes",
+      "name_en": "Push-ups",
+      "aliases": ["push-up"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "pec_major_clavicular"],
+      "secondary_muscles": ["anterior_delt", "triceps_lateral_head"],
+      "stabilizers": ["rectus_abdominis", "serratus_anterior"],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain"]
+      },
+      "modifications": [
+        {"condition": "wrist_pain", "adjustment": "Utiliser des poignées ou faire sur les poings"}
+      ],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Corps gainé",
+        "Coudes à 45°",
+        "Poitrine frôle le sol"
+      ],
+      "common_mistakes": [
+        "Dos cambré",
+        "Fesses en l'air"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "pec-deck",
+      "name_fr": "Pec deck machine",
+      "name_en": "Pec Deck Machine",
+      "aliases": ["butterfly"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Coudes à hauteur d'épaules",
+        "Contracter en fin de mouvement"
+      ],
+      "common_mistakes": [
+        "Amplitude trop grande"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "pullup",
+      "name_fr": "Tractions pronation",
+      "name_en": "Pull-ups",
+      "aliases": ["tractions", "pull-up"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "teres_major"],
+      "secondary_muscles": ["biceps_long_head", "biceps_short_head", "brachialis", "rhomboids"],
+      "stabilizers": ["rotator_cuff", "rectus_abdominis"],
+      "equipment": ["pull_up_bar"],
+      "equipment_alternatives": ["machine"],
+      "good_for": {
+        "morphotypes": ["arm_length_long", "wide_clavicles", "longiligne"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [
+        {"condition": "arm_length_long", "adjustment": "Excellent - grande amplitude"},
+        {"condition": "shoulder_pain", "adjustment": "Prise neutre ou supination"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Omoplates vers les poches arrière",
+        "Tirer avec les coudes",
+        "Poitrine vers la barre"
+      ],
+      "common_mistakes": [
+        "Utiliser l'élan (kipping)",
+        "Amplitude incomplète",
+        "Épaules haussées"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "chinup",
+      "name_fr": "Tractions supination",
+      "name_en": "Chin-ups",
+      "aliases": ["chin-up"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "biceps_long_head", "biceps_short_head"],
+      "secondary_muscles": ["teres_major", "brachialis"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["pull_up_bar"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain"]
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Prise largeur d'épaules",
+        "Menton au-dessus de la barre"
+      ],
+      "common_mistakes": [
+        "Amplitude incomplète"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "lat-pulldown",
+      "name_fr": "Tirage vertical poulie haute",
+      "name_en": "Lat Pulldown",
+      "aliases": ["tirage poulie haute", "pulldown"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "teres_major"],
+      "secondary_muscles": ["biceps_long_head", "rhomboids"],
+      "stabilizers": [],
+      "equipment": ["cable", "machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Barre vers le haut de la poitrine",
+        "Omoplates serrées",
+        "Léger arc dorsal"
+      ],
+      "common_mistakes": [
+        "Tirer derrière la nuque",
+        "Se balancer"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "barbell-row",
+      "name_fr": "Rowing barre",
+      "name_en": "Barbell Row",
+      "aliases": ["rowing", "bent-over row"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "rhomboids", "trapezius_mid"],
+      "secondary_muscles": ["biceps_long_head", "posterior_delt", "erector_spinae"],
+      "stabilizers": ["rectus_abdominis", "gluteus_maximus"],
+      "equipment": ["barbell"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long", "torso_length_short"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": ["torso_length_long"],
+        "conditions": ["lower_back_pain"]
+      },
+      "modifications": [
+        {"condition": "torso_length_long", "adjustment": "Utiliser un appui poitrine ou seal row"},
+        {"condition": "lower_back_pain", "adjustment": "Chest-supported row ou machine"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Buste à 45°",
+        "Tirer vers le nombril",
+        "Serrer les omoplates en haut"
+      ],
+      "common_mistakes": [
+        "Dos arrondi",
+        "Utiliser l'élan",
+        "Buste trop relevé"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "dumbbell-row",
+      "name_fr": "Rowing haltère",
+      "name_en": "Dumbbell Row",
+      "aliases": ["rowing un bras"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "rhomboids"],
+      "secondary_muscles": ["biceps_long_head", "posterior_delt"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["dumbbell", "bench_flat"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Genou et main sur le banc",
+        "Dos plat",
+        "Tirer vers la hanche"
+      ],
+      "common_mistakes": [
+        "Rotation du buste"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "seated-cable-row",
+      "name_fr": "Tirage horizontal poulie basse",
+      "name_en": "Seated Cable Row",
+      "aliases": ["tirage poulie basse", "seated row"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "rhomboids", "trapezius_mid"],
+      "secondary_muscles": ["biceps_long_head", "posterior_delt"],
+      "stabilizers": ["erector_spinae"],
+      "equipment": ["cable", "machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Poitrine haute",
+        "Tirer vers le nombril",
+        "Étirer les bras en avant"
+      ],
+      "common_mistakes": [
+        "Se balancer d'avant en arrière"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "deadlift",
+      "name_fr": "Soulevé de terre",
+      "name_en": "Deadlift",
+      "aliases": ["SDT", "deadlift conventionnel"],
+      "movement_pattern": "hinge",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["erector_spinae", "gluteus_maximus", "hamstrings_biceps_femoris"],
+      "secondary_muscles": ["latissimus_dorsi", "trapezius_upper", "quadriceps_vastus_lateralis", "forearm_flexors"],
+      "stabilizers": ["rectus_abdominis", "obliques_external"],
+      "equipment": ["barbell"],
+      "equipment_alternatives": ["trap_bar"],
+      "good_for": {
+        "morphotypes": ["arm_length_long", "torso_length_short"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": ["arm_length_short", "torso_length_long"],
+        "conditions": ["lower_back_pain"]
+      },
+      "modifications": [
+        {"condition": "arm_length_short", "adjustment": "Préférer sumo ou trap bar"},
+        {"condition": "torso_length_long", "adjustment": "Sumo plus adapté"},
+        {"condition": "lower_back_pain", "adjustment": "Trap bar ou rack pulls"}
+      ],
+      "difficulty": "advanced",
+      "technique_cues": [
+        "Barre contre les tibias",
+        "Pousser le sol avec les jambes",
+        "Verrouiller hanches et genoux ensemble",
+        "Dos neutre tout le mouvement"
+      ],
+      "common_mistakes": [
+        "Dos arrondi",
+        "Barre trop loin du corps",
+        "Hanches montent avant les épaules"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "tbar-row",
+      "name_fr": "Rowing T-bar",
+      "name_en": "T-Bar Row",
+      "aliases": ["t-bar"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "rhomboids", "trapezius_mid"],
+      "secondary_muscles": ["biceps_long_head", "posterior_delt"],
+      "stabilizers": ["erector_spinae"],
+      "equipment": ["landmine", "barbell"],
+      "equipment_alternatives": ["machine"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "modifications": [
+        {"condition": "lower_back_pain", "adjustment": "Version chest-supported"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Genoux fléchis",
+        "Tirer vers le sternum"
+      ],
+      "common_mistakes": [
+        "Dos arrondi"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "shrugs",
+      "name_fr": "Shrugs haltères",
+      "name_en": "Dumbbell Shrugs",
+      "aliases": ["haussements d'épaules"],
+      "movement_pattern": "pull",
+      "exercise_type": "isolation",
+      "muscle_group": "back",
+      "primary_muscles": ["trapezius_upper"],
+      "secondary_muscles": [],
+      "stabilizers": ["forearm_flexors"],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": ["barbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Monter les épaules vers les oreilles",
+        "Tenir 1-2 sec en haut"
+      ],
+      "common_mistakes": [
+        "Rouler les épaules"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "pullover",
+      "name_fr": "Pullover haltère",
+      "name_en": "Dumbbell Pullover",
+      "aliases": ["pullover"],
+      "movement_pattern": "pull",
+      "exercise_type": "isolation",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "pec_major_sternal"],
+      "secondary_muscles": ["triceps_long_head", "serratus_anterior"],
+      "stabilizers": [],
+      "equipment": ["dumbbell", "bench_flat"],
+      "equipment_alternatives": ["cable"],
+      "good_for": {
+        "morphotypes": ["narrow_ribcage"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Coudes légèrement fléchis",
+        "Étirement contrôlé",
+        "Haltère derrière la tête"
+      ],
+      "common_mistakes": [
+        "Coudes trop fléchis",
+        "Hanches qui montent"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "overhead-press",
+      "name_fr": "Développé militaire",
+      "name_en": "Overhead Press",
+      "aliases": ["OHP", "military press", "développé épaules debout"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["anterior_delt", "lateral_delt"],
+      "secondary_muscles": ["triceps_lateral_head", "triceps_long_head", "trapezius_upper"],
+      "stabilizers": ["rectus_abdominis", "erector_spinae"],
+      "equipment": ["barbell"],
+      "equipment_alternatives": ["dumbbell"],
+      "good_for": {
+        "morphotypes": ["arm_length_short", "wide_clavicles"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": ["shoulder_pain", "lower_back_pain"]
+      },
+      "modifications": [
+        {"condition": "arm_length_long", "adjustment": "Préférer haltères ou version assise"},
+        {"condition": "shoulder_pain", "adjustment": "Version haltères avec prise neutre"},
+        {"condition": "lower_back_pain", "adjustment": "Version assise avec dossier"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Abdos et fessiers contractés",
+        "Barre part des clavicules",
+        "Passer la tête sous la barre",
+        "Verrouiller bras tendus"
+      ],
+      "common_mistakes": [
+        "Cambrer excessivement le dos",
+        "Pousser devant soi"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "seated-dumbbell-press",
+      "name_fr": "Développé haltères assis",
+      "name_en": "Seated Dumbbell Press",
+      "aliases": ["développé assis"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["anterior_delt", "lateral_delt"],
+      "secondary_muscles": ["triceps_lateral_head"],
+      "stabilizers": ["rotator_cuff"],
+      "equipment": ["dumbbell", "bench_incline"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Dossier à 80-90°",
+        "Coudes sous les poignets",
+        "Haltères se touchent en haut"
+      ],
+      "common_mistakes": [
+        "Coudes trop en arrière"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "lateral-raise",
+      "name_fr": "Élévations latérales",
+      "name_en": "Lateral Raises",
+      "aliases": ["élévations latérales", "side raises"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["lateral_delt"],
+      "secondary_muscles": ["trapezius_upper"],
+      "stabilizers": [],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": ["cable"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [
+        {"condition": "shoulder_pain", "adjustment": "Limiter à 60° de hauteur, pencher le buste légèrement"}
+      ],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Coudes légèrement fléchis",
+        "Monter jusqu'à hauteur d'épaules",
+        "Contrôler la descente",
+        "Petit doigt vers le haut (optionnel)"
+      ],
+      "common_mistakes": [
+        "Charges trop lourdes",
+        "Utiliser l'élan",
+        "Hausser les épaules"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "front-raise",
+      "name_fr": "Élévations frontales",
+      "name_en": "Front Raises",
+      "aliases": ["élévations frontales"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["anterior_delt"],
+      "secondary_muscles": ["pec_major_clavicular"],
+      "stabilizers": [],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": ["cable", "barbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Bras légèrement fléchis",
+        "Alterner ou simultané"
+      ],
+      "common_mistakes": [
+        "Élan du corps"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "rear-delt-fly",
+      "name_fr": "Oiseau (rear delt fly)",
+      "name_en": "Rear Delt Fly",
+      "aliases": ["oiseau", "reverse fly"],
+      "movement_pattern": "pull",
+      "exercise_type": "isolation",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["posterior_delt"],
+      "secondary_muscles": ["rhomboids", "trapezius_mid"],
+      "stabilizers": [],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": ["cable", "machine"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Buste penché à 90°",
+        "Ouvrir les bras sur les côtés",
+        "Contracter les omoplates"
+      ],
+      "common_mistakes": [
+        "Buste pas assez penché",
+        "Charges trop lourdes"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "face-pull",
+      "name_fr": "Face pull",
+      "name_en": "Face Pull",
+      "aliases": ["tirage visage"],
+      "movement_pattern": "pull",
+      "exercise_type": "isolation",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["posterior_delt", "infraspinatus"],
+      "secondary_muscles": ["rhomboids", "trapezius_mid", "teres_minor"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": ["resistance_band"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Tirer vers le front",
+        "Écarter les mains en fin de mouvement",
+        "Rotation externe des épaules"
+      ],
+      "common_mistakes": [
+        "Tirer trop bas",
+        "Utiliser l'élan"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "arnold-press",
+      "name_fr": "Arnold press",
+      "name_en": "Arnold Press",
+      "aliases": ["arnold"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["anterior_delt", "lateral_delt"],
+      "secondary_muscles": ["triceps_lateral_head"],
+      "stabilizers": [],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Rotation pendant la montée",
+        "Commencer paumes vers soi",
+        "Finir paumes vers l'avant"
+      ],
+      "common_mistakes": [
+        "Rotation trop rapide"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "upright-row",
+      "name_fr": "Rowing menton",
+      "name_en": "Upright Row",
+      "aliases": ["tirage menton"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["lateral_delt", "trapezius_upper"],
+      "secondary_muscles": ["biceps_short_head", "anterior_delt"],
+      "stabilizers": [],
+      "equipment": ["barbell"],
+      "equipment_alternatives": ["dumbbell", "cable"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [
+        {"condition": "shoulder_pain", "adjustment": "Éviter ou prise très large uniquement"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Prise large (2x largeur d'épaules)",
+        "Coudes toujours au-dessus des poignets",
+        "Ne pas monter au-dessus du menton"
+      ],
+      "common_mistakes": [
+        "Prise trop serrée (risque épaule)",
+        "Monter trop haut"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "squat-barbell",
+      "name_fr": "Squat barre",
+      "name_en": "Barbell Squat",
+      "aliases": ["back squat", "squat arrière"],
+      "movement_pattern": "squat",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "quadriceps_vastus_lateralis", "quadriceps_vastus_medialis", "gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris", "adductors", "erector_spinae"],
+      "stabilizers": ["rectus_abdominis", "obliques_external"],
+      "equipment": ["barbell", "squat_rack"],
+      "equipment_alternatives": ["smith_machine"],
+      "good_for": {
+        "morphotypes": ["femur_length_short", "torso_length_long"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": ["femur_length_long", "torso_length_short"],
+        "conditions": ["limited_ankle_mobility", "knee_valgus", "lower_back_pain"]
+      },
+      "modifications": [
+        {"condition": "femur_length_long", "adjustment": "Écarter les pieds, talonnettes, box squat"},
+        {"condition": "limited_ankle_mobility", "adjustment": "Talonnettes obligatoires, travailler la dorsiflexion"},
+        {"condition": "knee_valgus", "adjustment": "Élastique autour des genoux, travail de correction"},
+        {"condition": "lower_back_pain", "adjustment": "Ceinture, front squat ou leg press"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Pieds largeur d'épaules ou plus",
+        "Pointes légèrement vers l'extérieur",
+        "Casser les hanches et les genoux ensemble",
+        "Genoux dans l'axe des pieds",
+        "Dos neutre, poitrine haute"
+      ],
+      "common_mistakes": [
+        "Genoux qui rentrent (valgus)",
+        "Dos arrondi",
+        "Talons qui décollent",
+        "Descente incomplète"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "front-squat",
+      "name_fr": "Squat avant (front squat)",
+      "name_en": "Front Squat",
+      "aliases": ["front squat"],
+      "movement_pattern": "squat",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "quadriceps_vastus_lateralis", "quadriceps_vastus_medialis"],
+      "secondary_muscles": ["gluteus_maximus", "erector_spinae"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["barbell", "squat_rack"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["femur_length_long", "torso_length_short"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain", "limited_thoracic_mobility"]
+      },
+      "modifications": [
+        {"condition": "wrist_pain", "adjustment": "Prise croisée ou sangles"},
+        {"condition": "limited_thoracic_mobility", "adjustment": "Travailler la mobilité, commencer léger"}
+      ],
+      "difficulty": "advanced",
+      "technique_cues": [
+        "Coudes hauts",
+        "Barre sur les deltoïdes",
+        "Buste plus vertical",
+        "Core gainé"
+      ],
+      "common_mistakes": [
+        "Coudes qui tombent",
+        "Buste trop penché"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "leg-press",
+      "name_fr": "Presse à cuisses",
+      "name_en": "Leg Press",
+      "aliases": ["leg press"],
+      "movement_pattern": "squat",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "quadriceps_vastus_lateralis", "gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris", "adductors"],
+      "stabilizers": [],
+      "equipment": ["leg_press_machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["femur_length_long"],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [
+        {"condition": "femur_length_long", "adjustment": "Pieds hauts sur la plateforme"}
+      ],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Dos plaqué au dossier",
+        "Ne pas verrouiller les genoux",
+        "Pieds selon l'objectif"
+      ],
+      "common_mistakes": [
+        "Fesses qui décollent",
+        "Verrouillage genoux",
+        "Amplitude trop faible"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "hack-squat",
+      "name_fr": "Hack squat",
+      "name_en": "Hack Squat",
+      "aliases": ["hack"],
+      "movement_pattern": "squat",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "quadriceps_vastus_lateralis", "quadriceps_vastus_medialis"],
+      "secondary_muscles": ["gluteus_maximus"],
+      "stabilizers": [],
+      "equipment": ["hack_squat_machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["femur_length_long"],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Dos contre le dossier",
+        "Pieds bas pour quadriceps"
+      ],
+      "common_mistakes": [
+        "Genoux qui dépassent trop"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "lunge-forward",
+      "name_fr": "Fentes avant",
+      "name_en": "Forward Lunges",
+      "aliases": ["fentes"],
+      "movement_pattern": "lunge",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris", "adductors"],
+      "stabilizers": ["rectus_abdominis", "gluteus_medius"],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": ["dumbbell", "barbell"],
+      "good_for": {
+        "morphotypes": ["femur_length_short"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": ["femur_length_long"],
+        "conditions": ["limited_ankle_mobility", "knee_valgus"]
+      },
+      "modifications": [
+        {"condition": "femur_length_long", "adjustment": "Pas plus court, fentes arrière"},
+        {"condition": "limited_ankle_mobility", "adjustment": "Talonnette pied avant"}
+      ],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Grand pas en avant",
+        "Genou arrière vers le sol",
+        "Buste droit"
+      ],
+      "common_mistakes": [
+        "Genou avant dépasse le pied",
+        "Perte d'équilibre"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "bulgarian-split-squat",
+      "name_fr": "Squat bulgare",
+      "name_en": "Bulgarian Split Squat",
+      "aliases": ["split squat bulgare"],
+      "movement_pattern": "lunge",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris", "adductors"],
+      "stabilizers": ["gluteus_medius", "rectus_abdominis"],
+      "equipment": ["dumbbell", "bench_flat"],
+      "equipment_alternatives": ["bodyweight", "barbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Pied arrière sur le banc",
+        "Descendre verticalement",
+        "Genou avant ne dépasse pas les orteils"
+      ],
+      "common_mistakes": [
+        "Pied trop proche du banc",
+        "Buste trop penché"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "goblet-squat",
+      "name_fr": "Goblet squat",
+      "name_en": "Goblet Squat",
+      "aliases": ["goblet"],
+      "movement_pattern": "squat",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "quadriceps_vastus_lateralis", "gluteus_maximus"],
+      "secondary_muscles": ["adductors"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": ["kettlebell"],
+      "good_for": {
+        "morphotypes": ["femur_length_long"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Haltère contre la poitrine",
+        "Coudes entre les genoux",
+        "Descendre profond"
+      ],
+      "common_mistakes": [
+        "Haltère trop loin du corps"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "romanian-deadlift",
+      "name_fr": "Soulevé de terre jambes tendues",
+      "name_en": "Romanian Deadlift",
+      "aliases": ["RDL", "soulevé roumain"],
+      "movement_pattern": "hinge",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["hamstrings_biceps_femoris", "hamstrings_semitendinosus", "gluteus_maximus"],
+      "secondary_muscles": ["erector_spinae"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["barbell"],
+      "equipment_alternatives": ["dumbbell"],
+      "good_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "modifications": [
+        {"condition": "lower_back_pain", "adjustment": "Limiter l'amplitude, utiliser haltères"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Jambes quasi tendues",
+        "Pousser les hanches en arrière",
+        "Barre près du corps",
+        "Dos neutre"
+      ],
+      "common_mistakes": [
+        "Dos arrondi",
+        "Genoux trop fléchis",
+        "Barre trop loin"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "leg-curl-lying",
+      "name_fr": "Leg curl couché",
+      "name_en": "Lying Leg Curl",
+      "aliases": ["leg curl"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["hamstrings_biceps_femoris", "hamstrings_semitendinosus"],
+      "secondary_muscles": ["calves_gastrocnemius"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Hanches plaquées",
+        "Flexion complète",
+        "Contrôler la descente"
+      ],
+      "common_mistakes": [
+        "Hanches qui se lèvent",
+        "Amplitude partielle"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "leg-extension",
+      "name_fr": "Leg extension",
+      "name_en": "Leg Extension",
+      "aliases": ["extension jambes"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "quadriceps_vastus_lateralis", "quadriceps_vastus_medialis"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Extension complète",
+        "Contracter en haut",
+        "Contrôler la descente"
+      ],
+      "common_mistakes": [
+        "Élan",
+        "Amplitude partielle"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "hip-thrust",
+      "name_fr": "Hip thrust",
+      "name_en": "Hip Thrust",
+      "aliases": ["pont fessiers"],
+      "movement_pattern": "hinge",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris", "quadriceps_rectus_femoris"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["barbell", "bench_flat"],
+      "equipment_alternatives": ["bodyweight", "dumbbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Dos contre le banc",
+        "Menton rentré",
+        "Contracter les fessiers en haut",
+        "Pieds à plat"
+      ],
+      "common_mistakes": [
+        "Hyper-extension lombaire",
+        "Pieds trop loin"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "calf-raise-standing",
+      "name_fr": "Mollets debout",
+      "name_en": "Standing Calf Raise",
+      "aliases": ["extension mollets"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["calves_gastrocnemius"],
+      "secondary_muscles": ["calves_soleus"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": ["dumbbell", "bodyweight"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Jambes quasi tendues",
+        "Monter sur la pointe",
+        "Amplitude complète",
+        "Pause en haut"
+      ],
+      "common_mistakes": [
+        "Amplitude partielle",
+        "Rebond en bas"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "calf-raise-seated",
+      "name_fr": "Mollets assis",
+      "name_en": "Seated Calf Raise",
+      "aliases": [],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["calves_soleus"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Genoux à 90°",
+        "Amplitude complète"
+      ],
+      "common_mistakes": [
+        "Rebond"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "barbell-curl",
+      "name_fr": "Curl barre",
+      "name_en": "Barbell Curl",
+      "aliases": ["curl"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["biceps_long_head", "biceps_short_head"],
+      "secondary_muscles": ["brachialis", "brachioradialis"],
+      "stabilizers": [],
+      "equipment": ["barbell"],
+      "equipment_alternatives": ["ez_bar"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain"]
+      },
+      "modifications": [
+        {"condition": "wrist_pain", "adjustment": "Utiliser barre EZ obligatoire"}
+      ],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Coudes fixes au corps",
+        "Flexion complète",
+        "Contrôler la descente"
+      ],
+      "common_mistakes": [
+        "Élan du corps",
+        "Coudes qui avancent",
+        "Amplitude partielle"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "dumbbell-curl",
+      "name_fr": "Curl haltères",
+      "name_en": "Dumbbell Curl",
+      "aliases": ["curl alternés"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["biceps_long_head", "biceps_short_head"],
+      "secondary_muscles": ["brachialis"],
+      "stabilizers": [],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Supination pendant la montée",
+        "Contracter en haut"
+      ],
+      "common_mistakes": [
+        "Élan"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "hammer-curl",
+      "name_fr": "Curl marteau",
+      "name_en": "Hammer Curl",
+      "aliases": ["marteau"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["brachialis", "brachioradialis"],
+      "secondary_muscles": ["biceps_long_head"],
+      "stabilizers": [],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Prise neutre (marteau)",
+        "Coudes fixes"
+      ],
+      "common_mistakes": [
+        "Rotation des poignets"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "incline-curl",
+      "name_fr": "Curl incliné",
+      "name_en": "Incline Curl",
+      "aliases": ["curl scott incliné"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["biceps_long_head"],
+      "secondary_muscles": ["biceps_short_head"],
+      "stabilizers": [],
+      "equipment": ["dumbbell", "bench_incline"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Banc à 45°",
+        "Bras pendants",
+        "Étirement en bas"
+      ],
+      "common_mistakes": [
+        "Angle trop redressé"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "preacher-curl",
+      "name_fr": "Curl pupitre (Larry Scott)",
+      "name_en": "Preacher Curl",
+      "aliases": ["curl scott"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["biceps_short_head"],
+      "secondary_muscles": ["brachialis"],
+      "stabilizers": [],
+      "equipment": ["ez_bar", "preacher_bench"],
+      "equipment_alternatives": ["dumbbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Bras sur le pupitre",
+        "Ne pas hyper-étendre"
+      ],
+      "common_mistakes": [
+        "Extension complète (risque tendon)"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "tricep-pushdown",
+      "name_fr": "Extension triceps poulie haute",
+      "name_en": "Tricep Pushdown",
+      "aliases": ["pushdown"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["triceps_lateral_head", "triceps_medial_head"],
+      "secondary_muscles": ["triceps_long_head"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Coudes fixes au corps",
+        "Extension complète",
+        "Contrôler la remontée"
+      ],
+      "common_mistakes": [
+        "Coudes qui bougent",
+        "Se pencher sur la barre"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "rope-pushdown",
+      "name_fr": "Extension triceps corde",
+      "name_en": "Rope Pushdown",
+      "aliases": ["pushdown corde"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["triceps_lateral_head", "triceps_medial_head"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Écarter les mains en bas",
+        "Coudes fixes"
+      ],
+      "common_mistakes": [
+        "Ne pas écarter"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "skull-crusher",
+      "name_fr": "Barre au front",
+      "name_en": "Skull Crusher",
+      "aliases": ["french press", "extension nuque"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["triceps_long_head", "triceps_lateral_head"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["ez_bar", "bench_flat"],
+      "equipment_alternatives": ["dumbbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain"]
+      },
+      "modifications": [
+        {"condition": "wrist_pain", "adjustment": "Utiliser haltères prise neutre"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Barre vers le front ou derrière la tête",
+        "Coudes fixes",
+        "Contrôle total"
+      ],
+      "common_mistakes": [
+        "Coudes qui s'écartent",
+        "Élan"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "overhead-tricep-extension",
+      "name_fr": "Extension triceps haltère",
+      "name_en": "Overhead Tricep Extension",
+      "aliases": ["extension nuque haltère"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["triceps_long_head"],
+      "secondary_muscles": ["triceps_lateral_head", "triceps_medial_head"],
+      "stabilizers": [],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": ["cable", "ez_bar"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Haltère derrière la tête",
+        "Coudes près des oreilles",
+        "Extension complète"
+      ],
+      "common_mistakes": [
+        "Coudes qui s'écartent"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "dips-triceps",
+      "name_fr": "Dips triceps",
+      "name_en": "Tricep Dips",
+      "aliases": ["dips bras"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "arms",
+      "primary_muscles": ["triceps_long_head", "triceps_lateral_head"],
+      "secondary_muscles": ["pec_major_sternal", "anterior_delt"],
+      "stabilizers": [],
+      "equipment": ["dip_bars"],
+      "equipment_alternatives": ["bench_flat"],
+      "good_for": {
+        "morphotypes": ["arm_length_short"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [
+        {"condition": "arm_length_long", "adjustment": "Limiter l'amplitude"},
+        {"condition": "shoulder_pain", "adjustment": "Éviter ou dips banc"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Buste droit (vertical)",
+        "Coudes près du corps",
+        "Descente à 90°"
+      ],
+      "common_mistakes": [
+        "Buste penché (devient pecs)"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "close-grip-bench",
+      "name_fr": "Développé couché prise serrée",
+      "name_en": "Close Grip Bench Press",
+      "aliases": ["DC serré"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "arms",
+      "primary_muscles": ["triceps_long_head", "triceps_lateral_head", "triceps_medial_head"],
+      "secondary_muscles": ["pec_major_sternal", "anterior_delt"],
+      "stabilizers": [],
+      "equipment": ["barbell", "bench_flat"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain"]
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Prise largeur d'épaules",
+        "Coudes près du corps",
+        "Barre vers le bas de la poitrine"
+      ],
+      "common_mistakes": [
+        "Prise trop serrée (poignets)",
+        "Coudes écartés"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "crunch",
+      "name_fr": "Crunch",
+      "name_en": "Crunch",
+      "aliases": ["abdos"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "core",
+      "primary_muscles": ["rectus_abdominis"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Bas du dos au sol",
+        "Enrouler le buste",
+        "Regard vers le plafond"
+      ],
+      "common_mistakes": [
+        "Tirer sur la nuque",
+        "Amplitude trop grande"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "plank",
+      "name_fr": "Planche",
+      "name_en": "Plank",
+      "aliases": ["gainage"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "core",
+      "primary_muscles": ["rectus_abdominis", "transverse_abdominis"],
+      "secondary_muscles": ["obliques_external", "erector_spinae"],
+      "stabilizers": ["anterior_delt"],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Corps aligné",
+        "Fessiers contractés",
+        "Regarder le sol"
+      ],
+      "common_mistakes": [
+        "Fesses en l'air",
+        "Dos creusé"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "hanging-leg-raise",
+      "name_fr": "Relevé de jambes suspendu",
+      "name_en": "Hanging Leg Raise",
+      "aliases": ["relevé jambes"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "core",
+      "primary_muscles": ["rectus_abdominis", "hip_flexors"],
+      "secondary_muscles": ["obliques_external"],
+      "stabilizers": ["forearm_flexors"],
+      "equipment": ["pull_up_bar"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Éviter le balancement",
+        "Monter les genoux ou jambes tendues",
+        "Enrouler le bassin"
+      ],
+      "common_mistakes": [
+        "Élan",
+        "Hip flexors uniquement"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "cable-crunch",
+      "name_fr": "Crunch câble",
+      "name_en": "Cable Crunch",
+      "aliases": ["crunch poulie"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "core",
+      "primary_muscles": ["rectus_abdominis"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "À genoux",
+        "Enrouler vers les cuisses",
+        "Corde derrière la tête"
+      ],
+      "common_mistakes": [
+        "Flexion de hanches au lieu d'enroulement"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "russian-twist",
+      "name_fr": "Russian twist",
+      "name_en": "Russian Twist",
+      "aliases": ["twist russe"],
+      "movement_pattern": "rotation",
+      "exercise_type": "isolation",
+      "muscle_group": "core",
+      "primary_muscles": ["obliques_external", "obliques_internal"],
+      "secondary_muscles": ["rectus_abdominis"],
+      "stabilizers": [],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": ["dumbbell", "kettlebell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Assis, pieds au sol ou levés",
+        "Rotation du buste",
+        "Toucher le sol de chaque côté"
+      ],
+      "common_mistakes": [
+        "Rotation des hanches au lieu du buste"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "ab-wheel",
+      "name_fr": "Ab wheel rollout",
+      "name_en": "Ab Wheel Rollout",
+      "aliases": ["roue abdominale"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "core",
+      "primary_muscles": ["rectus_abdominis", "transverse_abdominis"],
+      "secondary_muscles": ["latissimus_dorsi", "anterior_delt"],
+      "stabilizers": ["erector_spinae"],
+      "equipment": ["ab_wheel"],
+      "equipment_alternatives": ["barbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "modifications": [
+        {"condition": "lower_back_pain", "adjustment": "Version à genoux uniquement, amplitude réduite"}
+      ],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Core serré",
+        "Dos neutre",
+        "Revenir avec les abdos"
+      ],
+      "common_mistakes": [
+        "Dos creusé",
+        "Flexion de hanches"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "kettlebell-swing",
+      "name_fr": "Kettlebell swing",
+      "name_en": "Kettlebell Swing",
+      "aliases": ["swing"],
+      "movement_pattern": "hinge",
+      "exercise_type": "compound",
+      "muscle_group": "full_body",
+      "primary_muscles": ["gluteus_maximus", "hamstrings_biceps_femoris"],
+      "secondary_muscles": ["erector_spinae", "anterior_delt", "rectus_abdominis"],
+      "stabilizers": ["forearm_flexors"],
+      "equipment": ["kettlebell"],
+      "equipment_alternatives": ["dumbbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Hip hinge, pas squat",
+        "Propulsion des hanches",
+        "Bras passifs",
+        "Core gainé"
+      ],
+      "common_mistakes": [
+        "Squatter",
+        "Tirer avec les bras",
+        "Dos arrondi"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "burpee",
+      "name_fr": "Burpees",
+      "name_en": "Burpees",
+      "aliases": ["burpee"],
+      "movement_pattern": "squat",
+      "exercise_type": "compound",
+      "muscle_group": "full_body",
+      "primary_muscles": ["quadriceps_rectus_femoris", "gluteus_maximus", "pec_major_sternal"],
+      "secondary_muscles": ["anterior_delt", "triceps_lateral_head", "rectus_abdominis"],
+      "stabilizers": [],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain", "lower_back_pain"]
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Squat - pompe - saut",
+        "Core gainé",
+        "Rythme soutenu"
+      ],
+      "common_mistakes": [
+        "Dos creusé en pompe"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "clean-and-press",
+      "name_fr": "Clean & Press",
+      "name_en": "Clean and Press",
+      "aliases": ["épaulé jeté"],
+      "movement_pattern": "hinge",
+      "exercise_type": "compound",
+      "muscle_group": "full_body",
+      "primary_muscles": ["gluteus_maximus", "quadriceps_rectus_femoris", "anterior_delt", "trapezius_upper"],
+      "secondary_muscles": ["erector_spinae", "triceps_lateral_head", "hamstrings_biceps_femoris"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["barbell"],
+      "equipment_alternatives": ["dumbbell", "kettlebell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain", "wrist_pain", "lower_back_pain"]
+      },
+      "modifications": [],
+      "difficulty": "advanced",
+      "technique_cues": [
+        "Triple extension",
+        "Réception rack position",
+        "Press strict ou push press"
+      ],
+      "common_mistakes": [
+        "Tirer avec les bras",
+        "Réception sur les poignets"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "walking-lunge",
+      "name_fr": "Fentes marchées",
+      "name_en": "Walking Lunges",
+      "aliases": ["fentes marche"],
+      "movement_pattern": "lunge",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris", "adductors"],
+      "stabilizers": ["gluteus_medius", "rectus_abdominis"],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": ["dumbbell", "barbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": ["femur_length_long"],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Grand pas",
+        "Genou arrière vers le sol",
+        "Buste droit"
+      ],
+      "common_mistakes": [
+        "Pas trop court"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "sumo-deadlift",
+      "name_fr": "Soulevé de terre sumo",
+      "name_en": "Sumo Deadlift",
+      "aliases": ["SDT sumo"],
+      "movement_pattern": "hinge",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["gluteus_maximus", "quadriceps_vastus_lateralis", "adductors"],
+      "secondary_muscles": ["hamstrings_biceps_femoris", "erector_spinae"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["barbell"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_short", "femur_length_long", "torso_length_long"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["limited_hip_mobility"]
+      },
+      "modifications": [],
+      "difficulty": "advanced",
+      "technique_cues": [
+        "Pieds très écartés",
+        "Pointes vers l'extérieur",
+        "Genoux dans l'axe des pieds",
+        "Pousser le sol"
+      ],
+      "common_mistakes": [
+        "Hanches qui montent d'abord",
+        "Genoux qui rentrent"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "floor-press",
+      "name_fr": "Floor press",
+      "name_en": "Floor Press",
+      "aliases": ["développé au sol"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "triceps_lateral_head"],
+      "secondary_muscles": ["anterior_delt"],
+      "stabilizers": [],
+      "equipment": ["barbell"],
+      "equipment_alternatives": ["dumbbell"],
+      "good_for": {
+        "morphotypes": ["arm_length_long", "narrow_ribcage"],
+        "conditions": ["shoulder_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Allongé au sol",
+        "Coudes touchent le sol",
+        "Amplitude réduite"
+      ],
+      "common_mistakes": [
+        "Rebond des coudes"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "pendlay-row",
+      "name_fr": "Rowing Pendlay",
+      "name_en": "Pendlay Row",
+      "aliases": ["pendlay"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "rhomboids", "trapezius_mid"],
+      "secondary_muscles": ["biceps_long_head", "erector_spinae"],
+      "stabilizers": [],
+      "equipment": ["barbell"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Buste parallèle au sol",
+        "Barre part du sol à chaque rep",
+        "Explosif vers le sternum"
+      ],
+      "common_mistakes": [
+        "Buste qui se relève"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "meadows-row",
+      "name_fr": "Rowing Meadows",
+      "name_en": "Meadows Row",
+      "aliases": ["meadows"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "teres_major"],
+      "secondary_muscles": ["biceps_long_head", "posterior_delt"],
+      "stabilizers": [],
+      "equipment": ["landmine", "barbell"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Position en fente",
+        "Tirer vers la hanche",
+        "Étirement en bas"
+      ],
+      "common_mistakes": [
+        "Rotation excessive du buste"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "reverse-grip-pulldown",
+      "name_fr": "Tirage poulie prise supination",
+      "name_en": "Reverse Grip Pulldown",
+      "aliases": ["tirage supination"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "biceps_long_head"],
+      "secondary_muscles": ["teres_major", "rhomboids"],
+      "stabilizers": [],
+      "equipment": ["cable", "machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Prise supination",
+        "Tirer vers le sternum",
+        "Squeeze omoplates"
+      ],
+      "common_mistakes": [
+        "Se balancer"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "landmine-press",
+      "name_fr": "Landmine press",
+      "name_en": "Landmine Press",
+      "aliases": ["développé landmine"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["anterior_delt", "pec_major_clavicular"],
+      "secondary_muscles": ["triceps_lateral_head", "serratus_anterior"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["landmine", "barbell"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Une ou deux mains",
+        "Pousser en arc",
+        "Core gainé"
+      ],
+      "common_mistakes": [
+        "Élan du corps"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-lateral-raise",
+      "name_fr": "Élévations latérales poulie",
+      "name_en": "Cable Lateral Raise",
+      "aliases": ["élév lat câble"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["lateral_delt"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Tension constante",
+        "Contrôle la descente",
+        "Léger angle du buste"
+      ],
+      "common_mistakes": [
+        "Élan"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "concentration-curl",
+      "name_fr": "Curl concentré",
+      "name_en": "Concentration Curl",
+      "aliases": ["curl concentration"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["biceps_short_head", "biceps_long_head"],
+      "secondary_muscles": ["brachialis"],
+      "stabilizers": [],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Coude contre la cuisse",
+        "Isolation totale",
+        "Contracter en haut"
+      ],
+      "common_mistakes": [
+        "Élan du corps"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "reverse-curl",
+      "name_fr": "Curl inversé",
+      "name_en": "Reverse Curl",
+      "aliases": ["curl pronation"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["brachioradialis", "forearm_extensors"],
+      "secondary_muscles": ["biceps_long_head"],
+      "stabilizers": [],
+      "equipment": ["barbell"],
+      "equipment_alternatives": ["ez_bar", "dumbbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain"]
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Prise pronation",
+        "Coudes fixes"
+      ],
+      "common_mistakes": [
+        "Élan"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "tricep-kickback",
+      "name_fr": "Kickback triceps",
+      "name_en": "Tricep Kickback",
+      "aliases": ["kickback"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["triceps_lateral_head", "triceps_long_head"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": ["cable"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Bras parallèle au sol",
+        "Extension complète",
+        "Squeeze en haut"
+      ],
+      "common_mistakes": [
+        "Amplitude partielle",
+        "Bras qui tombe"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "good-morning",
+      "name_fr": "Good morning",
+      "name_en": "Good Morning",
+      "aliases": ["bonjour"],
+      "movement_pattern": "hinge",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["hamstrings_biceps_femoris", "erector_spinae"],
+      "secondary_muscles": ["gluteus_maximus"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["barbell"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Barre sur les trapèzes",
+        "Hip hinge",
+        "Dos neutre"
+      ],
+      "common_mistakes": [
+        "Dos arrondi",
+        "Descendre trop bas"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "glute-bridge",
+      "name_fr": "Pont fessiers",
+      "name_en": "Glute Bridge",
+      "aliases": ["bridge"],
+      "movement_pattern": "hinge",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris"],
+      "stabilizers": [],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": ["barbell"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Dos au sol",
+        "Pieds à plat",
+        "Contracter les fessiers en haut"
+      ],
+      "common_mistakes": [
+        "Hyper-extension lombaire"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "adductor-machine",
+      "name_fr": "Adducteurs machine",
+      "name_en": "Adductor Machine",
+      "aliases": ["adducteurs"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["adductors"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Contrôle le mouvement",
+        "Pause en contraction"
+      ],
+      "common_mistakes": [
+        "Élan"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "abductor-machine",
+      "name_fr": "Abducteurs machine",
+      "name_en": "Abductor Machine",
+      "aliases": ["abducteurs"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["gluteus_medius", "tensor_fasciae_latae"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Contrôle le mouvement",
+        "Écarter lentement"
+      ],
+      "common_mistakes": [
+        "Élan"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "cable-curl",
+      "name_fr": "Curl poulie basse",
+      "name_en": "Cable Curl",
+      "aliases": ["curl câble"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["biceps_long_head", "biceps_short_head"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Tension constante",
+        "Coudes fixes"
+      ],
+      "common_mistakes": [
+        "Élan"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "side-plank",
+      "name_fr": "Planche latérale",
+      "name_en": "Side Plank",
+      "aliases": ["gainage latéral"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "core",
+      "primary_muscles": ["obliques_external", "obliques_internal"],
+      "secondary_muscles": ["transverse_abdominis", "gluteus_medius"],
+      "stabilizers": [],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Corps aligné",
+        "Hanches hautes"
+      ],
+      "common_mistakes": [
+        "Hanches qui s'affaissent"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "dead-bug",
+      "name_fr": "Dead bug",
+      "name_en": "Dead Bug",
+      "aliases": [],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "core",
+      "primary_muscles": ["transverse_abdominis", "rectus_abdominis"],
+      "secondary_muscles": ["hip_flexors"],
+      "stabilizers": [],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Dos plaqué au sol",
+        "Mouvement opposé bras/jambe",
+        "Contrôle"
+      ],
+      "common_mistakes": [
+        "Dos qui se creuse"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "mountain-climber",
+      "name_fr": "Mountain climbers",
+      "name_en": "Mountain Climbers",
+      "aliases": ["grimpeur"],
+      "movement_pattern": "isolation",
+      "exercise_type": "compound",
+      "muscle_group": "core",
+      "primary_muscles": ["rectus_abdominis", "hip_flexors"],
+      "secondary_muscles": ["anterior_delt", "quadriceps_rectus_femoris"],
+      "stabilizers": [],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["wrist_pain"]
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Position pompe",
+        "Genoux vers la poitrine",
+        "Rythme rapide ou contrôlé"
+      ],
+      "common_mistakes": [
+        "Hanches qui montent"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "trap-bar-deadlift",
+      "name_fr": "Soulevé de terre trap bar",
+      "name_en": "Trap Bar Deadlift",
+      "aliases": ["hex bar deadlift"],
+      "movement_pattern": "hinge",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["gluteus_maximus", "quadriceps_vastus_lateralis", "hamstrings_biceps_femoris"],
+      "secondary_muscles": ["erector_spinae", "trapezius_upper"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["trap_bar"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_short", "torso_length_long"],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Poignées sur les côtés",
+        "Dos neutre",
+        "Pousser le sol"
+      ],
+      "common_mistakes": [
+        "Se pencher en avant"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "reverse-fly-machine",
+      "name_fr": "Oiseau machine",
+      "name_en": "Reverse Fly Machine",
+      "aliases": ["rear delt machine"],
+      "movement_pattern": "pull",
+      "exercise_type": "isolation",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["posterior_delt"],
+      "secondary_muscles": ["rhomboids", "trapezius_mid"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Poitrine contre le dossier",
+        "Ouvrir les bras",
+        "Contracter les omoplates"
+      ],
+      "common_mistakes": [
+        "Charges trop lourdes"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "smith-squat",
+      "name_fr": "Squat Smith machine",
+      "name_en": "Smith Machine Squat",
+      "aliases": ["squat guidé"],
+      "movement_pattern": "squat",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "quadriceps_vastus_lateralis", "gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris"],
+      "stabilizers": [],
+      "equipment": ["smith_machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Pieds légèrement en avant",
+        "Dos contre la barre",
+        "Descente contrôlée"
+      ],
+      "common_mistakes": [
+        "Pieds sous la barre"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "bench-press-machine",
+      "name_fr": "Développé couché machine",
+      "name_en": "Machine Chest Press",
+      "aliases": ["chest press"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "pec_major_clavicular"],
+      "secondary_muscles": ["anterior_delt", "triceps_lateral_head"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Dos contre le dossier",
+        "Poignées à hauteur de poitrine",
+        "Extension complète"
+      ],
+      "common_mistakes": [
+        "Amplitude partielle"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "seated-leg-curl",
+      "name_fr": "Leg curl assis",
+      "name_en": "Seated Leg Curl",
+      "aliases": [],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["hamstrings_biceps_femoris", "hamstrings_semitendinosus"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Cuisses contre le coussin",
+        "Flexion complète"
+      ],
+      "common_mistakes": [
+        "Élan"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "reverse-crunch",
+      "name_fr": "Crunch inversé",
+      "name_en": "Reverse Crunch",
+      "aliases": [],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "core",
+      "primary_muscles": ["rectus_abdominis"],
+      "secondary_muscles": ["hip_flexors"],
+      "stabilizers": [],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Genoux vers la poitrine",
+        "Décoller le bassin",
+        "Contrôler la descente"
+      ],
+      "common_mistakes": [
+        "Élan des jambes"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "face-away-cable-curl",
+      "name_fr": "Curl poulie haute dos à la machine",
+      "name_en": "Face Away Cable Curl",
+      "aliases": ["curl bayesian"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["biceps_long_head"],
+      "secondary_muscles": ["biceps_short_head"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Dos à la poulie haute",
+        "Étirement maximal",
+        "Flexion complète"
+      ],
+      "common_mistakes": [
+        "Coude qui avance"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "sissy-squat",
+      "name_fr": "Sissy squat",
+      "name_en": "Sissy Squat",
+      "aliases": [],
+      "movement_pattern": "squat",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris"],
+      "secondary_muscles": ["quadriceps_vastus_lateralis", "quadriceps_vastus_medialis"],
+      "stabilizers": [],
+      "equipment": ["bodyweight"],
+      "equipment_alternatives": ["machine"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Sur la pointe des pieds",
+        "Genoux en avant",
+        "Buste en arrière"
+      ],
+      "common_mistakes": [
+        "Perdre l'équilibre"
+      ],
+      "source": "delavier"
+    },
+    {
+      "id": "chest-supported-row",
+      "name_fr": "Rowing support poitrine",
+      "name_en": "Chest Supported Row",
+      "aliases": ["seal row"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "rhomboids", "trapezius_mid"],
+      "secondary_muscles": ["biceps_long_head", "posterior_delt"],
+      "stabilizers": [],
+      "equipment": ["dumbbell", "bench_incline"],
+      "equipment_alternatives": ["machine"],
+      "good_for": {
+        "morphotypes": ["torso_length_long"],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Poitrine contre le banc",
+        "Tirer vers les hanches",
+        "Squeeze omoplates"
+      ],
+      "common_mistakes": [
+        "Décoller la poitrine"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "single-leg-rdl",
+      "name_fr": "RDL unilateral",
+      "name_en": "Single Leg Romanian Deadlift",
+      "aliases": ["RDL une jambe"],
+      "movement_pattern": "hinge",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["hamstrings_biceps_femoris", "gluteus_maximus"],
+      "secondary_muscles": ["gluteus_medius", "erector_spinae"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["dumbbell"],
+      "equipment_alternatives": ["kettlebell", "bodyweight"],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Jambe arrière alignée avec le buste",
+        "Hanches carrées",
+        "Équilibre"
+      ],
+      "common_mistakes": [
+        "Rotation des hanches",
+        "Genou qui plie"
+      ],
+      "source": "combined"
+    },
+    {
+      "id": "convergent-bench-press",
+      "name_fr": "Développé couché convergent",
+      "name_en": "Convergent Bench Press",
+      "aliases": ["hammer strength chest press", "presse convergente pectoraux"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "pec_major_clavicular"],
+      "secondary_muscles": ["anterior_delt", "triceps_lateral_head"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long", "narrow_ribcage"],
+        "conditions": ["shoulder_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Dos plaqué au dossier",
+        "Omoplates serrées",
+        "Contraction maximale en haut"
+      ],
+      "common_mistakes": [
+        "Épaules qui avancent",
+        "Charge trop lourde"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "convergent-incline-press",
+      "name_fr": "Développé incliné convergent",
+      "name_en": "Convergent Incline Press",
+      "aliases": ["hammer strength incline", "presse inclinée convergente"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_clavicular"],
+      "secondary_muscles": ["anterior_delt", "triceps_lateral_head"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": ["shoulder_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Haut des pectoraux ciblé",
+        "Contraction en haut du mouvement",
+        "Descente contrôlée"
+      ],
+      "common_mistakes": [
+        "Épaules qui montent"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "convergent-decline-press",
+      "name_fr": "Développé décliné convergent",
+      "name_en": "Convergent Decline Press",
+      "aliases": ["hammer strength decline"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "pec_major_abdominal"],
+      "secondary_muscles": ["anterior_delt", "triceps_lateral_head"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": ["shoulder_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Bas des pectoraux ciblé",
+        "Ne pas décoller le dos"
+      ],
+      "common_mistakes": [
+        "Arc dorsal excessif"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "convergent-shoulder-press",
+      "name_fr": "Développé épaules convergent",
+      "name_en": "Convergent Shoulder Press",
+      "aliases": ["hammer strength shoulder press"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["anterior_delt", "lateral_delt"],
+      "secondary_muscles": ["triceps_lateral_head", "trapezius_upper"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": ["shoulder_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Dos bien calé",
+        "Ne pas verrouiller les coudes",
+        "Mouvement fluide"
+      ],
+      "common_mistakes": [
+        "Arc lombaire",
+        "Verrouillage des coudes"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "convergent-row",
+      "name_fr": "Rowing convergent",
+      "name_en": "Convergent Row",
+      "aliases": ["hammer strength row", "tirage convergent"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "rhomboids", "trapezius_mid"],
+      "secondary_muscles": ["biceps_long_head", "posterior_delt"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long", "torso_length_long"],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Poitrine contre le support",
+        "Tirer vers les hanches",
+        "Serrer les omoplates"
+      ],
+      "common_mistakes": [
+        "Utiliser l'élan"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "convergent-lat-pulldown",
+      "name_fr": "Tirage vertical convergent",
+      "name_en": "Convergent Lat Pulldown",
+      "aliases": ["hammer strength pulldown"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "teres_major"],
+      "secondary_muscles": ["biceps_long_head", "rhomboids"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Tirer vers la poitrine",
+        "Coudes vers l'arrière",
+        "Contraction en bas"
+      ],
+      "common_mistakes": [
+        "Tirer trop bas"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-pullover",
+      "name_fr": "Pull over poulie haute",
+      "name_en": "Cable Pullover",
+      "aliases": ["pullover câble"],
+      "movement_pattern": "pull",
+      "exercise_type": "isolation",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "teres_major"],
+      "secondary_muscles": ["pec_major_sternal", "triceps_long_head"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["arm_length_long"],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Bras tendus ou légèrement fléchis",
+        "Tirer vers les cuisses",
+        "Contrôler la remontée"
+      ],
+      "common_mistakes": [
+        "Plier les coudes",
+        "Utiliser l'élan"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "low-cable-pullover",
+      "name_fr": "Pull over poulie basse",
+      "name_en": "Low Cable Pullover",
+      "aliases": [],
+      "movement_pattern": "pull",
+      "exercise_type": "isolation",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal"],
+      "secondary_muscles": ["latissimus_dorsi", "triceps_long_head"],
+      "stabilizers": [],
+      "equipment": ["cable", "bench_flat"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Allongé sur un banc",
+        "Bras tendus derrière la tête",
+        "Ramener au-dessus de la poitrine"
+      ],
+      "common_mistakes": [
+        "Amplitude excessive"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "high-cable-fly",
+      "name_fr": "Écarté poulie haute",
+      "name_en": "High Cable Fly",
+      "aliases": ["cable crossover haut", "écarté vis-à-vis haut"],
+      "movement_pattern": "push",
+      "exercise_type": "isolation",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "pec_major_abdominal"],
+      "secondary_muscles": ["anterior_delt"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Poulies en position haute",
+        "Ramener les mains vers le bas",
+        "Légère flexion des coudes"
+      ],
+      "common_mistakes": [
+        "Coudes trop fléchis",
+        "Épaules qui montent"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "low-cable-fly",
+      "name_fr": "Écarté poulie basse",
+      "name_en": "Low Cable Fly",
+      "aliases": ["cable crossover bas", "écarté vis-à-vis bas"],
+      "movement_pattern": "push",
+      "exercise_type": "isolation",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_clavicular"],
+      "secondary_muscles": ["anterior_delt"],
+      "stabilizers": ["rectus_abdominis"],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Poulies en position basse",
+        "Ramener les mains vers le haut",
+        "Cibler le haut des pecs"
+      ],
+      "common_mistakes": [
+        "Trop de poids"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-rear-delt-fly",
+      "name_fr": "Oiseau poulie",
+      "name_en": "Cable Rear Delt Fly",
+      "aliases": ["rear delt cable", "oiseau câble"],
+      "movement_pattern": "pull",
+      "exercise_type": "isolation",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["posterior_delt"],
+      "secondary_muscles": ["rhomboids", "trapezius_mid"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Poulies croisées",
+        "Bras tendus",
+        "Écarter vers l'arrière"
+      ],
+      "common_mistakes": [
+        "Utiliser les trapèzes"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-l-fly",
+      "name_fr": "L-Fly poulie",
+      "name_en": "Cable L-Fly",
+      "aliases": ["rotation externe poulie", "external rotation"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["infraspinatus"],
+      "secondary_muscles": ["posterior_delt"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["shoulder_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Coude à 90° fixé au corps",
+        "Rotation externe uniquement",
+        "Mouvement lent et contrôlé"
+      ],
+      "common_mistakes": [
+        "Bouger le coude",
+        "Trop de poids"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-front-raise",
+      "name_fr": "Élévations frontales poulie",
+      "name_en": "Cable Front Raise",
+      "aliases": [],
+      "movement_pattern": "push",
+      "exercise_type": "isolation",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["anterior_delt"],
+      "secondary_muscles": ["pec_major_clavicular"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Poulie derrière soi",
+        "Bras tendu devant",
+        "Monter à hauteur d'épaule"
+      ],
+      "common_mistakes": [
+        "Élan du corps"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-hammer-curl",
+      "name_fr": "Curl marteau poulie",
+      "name_en": "Cable Hammer Curl",
+      "aliases": ["curl corde"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["brachialis", "brachioradialis"],
+      "secondary_muscles": ["biceps_long_head"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Prise neutre avec corde",
+        "Coudes fixes",
+        "Tension constante"
+      ],
+      "common_mistakes": [
+        "Coudes qui avancent"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-curl-vis-a-vis",
+      "name_fr": "Curl poulie vis-à-vis",
+      "name_en": "Cable Curl Face to Face",
+      "aliases": ["double biceps curl"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["biceps_short_head", "biceps_long_head"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Entre deux poulies hautes",
+        "Flexion vers les oreilles",
+        "Pose double biceps"
+      ],
+      "common_mistakes": [
+        "Épaules qui montent"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-triceps-kickback",
+      "name_fr": "Kickback triceps poulie",
+      "name_en": "Cable Triceps Kickback",
+      "aliases": [],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["triceps_long_head", "triceps_lateral_head"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Buste penché",
+        "Coude fixe",
+        "Extension complète"
+      ],
+      "common_mistakes": [
+        "Élan",
+        "Coude qui bouge"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "cable-overhead-extension",
+      "name_fr": "Extension triceps poulie basse",
+      "name_en": "Cable Overhead Triceps Extension",
+      "aliases": ["extension nuque poulie"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["triceps_long_head"],
+      "secondary_muscles": ["triceps_lateral_head", "triceps_medial_head"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Dos à la poulie basse",
+        "Coudes près des oreilles",
+        "Extension au-dessus de la tête"
+      ],
+      "common_mistakes": [
+        "Coudes qui s'écartent"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-adductor",
+      "name_fr": "Adducteurs poulie",
+      "name_en": "Cable Hip Adduction",
+      "aliases": [],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["adductors"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Sangle à la cheville",
+        "Croiser la jambe devant",
+        "Mouvement contrôlé"
+      ],
+      "common_mistakes": [
+        "Rotation du bassin"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-abductor",
+      "name_fr": "Abducteurs poulie",
+      "name_en": "Cable Hip Abduction",
+      "aliases": [],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["gluteus_maximus"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Sangle à la cheville",
+        "Écarter la jambe sur le côté",
+        "Garder le bassin stable"
+      ],
+      "common_mistakes": [
+        "Se pencher"
+      ],
+      "source": "superphysique"
+    },
+    {
+      "id": "cable-glute-kickback",
+      "name_fr": "Kickback fessiers poulie",
+      "name_en": "Cable Glute Kickback",
+      "aliases": ["donkey kick poulie"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Sangle à la cheville",
+        "Pousser la jambe vers l'arrière",
+        "Contracter les fessiers"
+      ],
+      "common_mistakes": [
+        "Arc lombaire",
+        "Élan"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "lateral-raise-machine",
+      "name_fr": "Élévations latérales machine",
+      "name_en": "Machine Lateral Raise",
+      "aliases": ["lateral raise machine"],
+      "movement_pattern": "push",
+      "exercise_type": "isolation",
+      "muscle_group": "shoulders",
+      "primary_muscles": ["lateral_delt"],
+      "secondary_muscles": ["anterior_delt", "trapezius_upper"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Bras contre les coussins",
+        "Élever jusqu'à l'horizontale",
+        "Ne pas hausser les épaules"
+      ],
+      "common_mistakes": [
+        "Utiliser les trapèzes"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "cable-woodchop",
+      "name_fr": "Woodchop poulie",
+      "name_en": "Cable Woodchop",
+      "aliases": ["bûcheron poulie"],
+      "movement_pattern": "rotation",
+      "exercise_type": "compound",
+      "muscle_group": "core",
+      "primary_muscles": ["obliques", "rectus_abdominis"],
+      "secondary_muscles": ["anterior_delt", "latissimus_dorsi"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Rotation du tronc",
+        "Bras tendus",
+        "Mouvement diagonal"
+      ],
+      "common_mistakes": [
+        "Plier les bras",
+        "Rotation des hanches"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "cable-pallof-press",
+      "name_fr": "Pallof press poulie",
+      "name_en": "Cable Pallof Press",
+      "aliases": ["anti-rotation"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "core",
+      "primary_muscles": ["obliques", "transverse_abdominis"],
+      "secondary_muscles": ["rectus_abdominis"],
+      "stabilizers": [],
+      "equipment": ["cable"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Résister à la rotation",
+        "Pousser les mains devant",
+        "Garder le tronc stable"
+      ],
+      "common_mistakes": [
+        "Rotation du tronc",
+        "Trop de poids"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "hip-adductor-machine",
+      "name_fr": "Adducteurs machine assis",
+      "name_en": "Seated Hip Adductor Machine",
+      "aliases": ["inner thigh machine"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["adductors"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Dos contre le dossier",
+        "Serrer les jambes",
+        "Mouvement contrôlé"
+      ],
+      "common_mistakes": [
+        "Aller trop vite"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "hip-abductor-machine",
+      "name_fr": "Abducteurs machine assis",
+      "name_en": "Seated Hip Abductor Machine",
+      "aliases": ["outer thigh machine"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["gluteus_maximus"],
+      "secondary_muscles": [],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Dos contre le dossier",
+        "Écarter les jambes",
+        "Contracter les fessiers"
+      ],
+      "common_mistakes": [
+        "Utiliser l'élan"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "standing-calf-machine",
+      "name_fr": "Mollets debout machine",
+      "name_en": "Standing Calf Machine",
+      "aliases": ["donkey calf raise"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "legs",
+      "primary_muscles": ["calves_gastrocnemius"],
+      "secondary_muscles": ["calves_soleus"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Monter sur la pointe des pieds",
+        "Étirement en bas",
+        "Contraction en haut"
+      ],
+      "common_mistakes": [
+        "Amplitude insuffisante"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "preacher-curl-machine",
+      "name_fr": "Curl pupitre machine",
+      "name_en": "Preacher Curl Machine",
+      "aliases": ["larry scott machine"],
+      "movement_pattern": "isolation",
+      "exercise_type": "isolation",
+      "muscle_group": "arms",
+      "primary_muscles": ["biceps_short_head"],
+      "secondary_muscles": ["biceps_long_head", "brachialis"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Bras sur le pupitre",
+        "Flexion complète",
+        "Descente contrôlée"
+      ],
+      "common_mistakes": [
+        "Décoller les coudes"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "triceps-dip-machine",
+      "name_fr": "Dips triceps machine",
+      "name_en": "Triceps Dip Machine",
+      "aliases": ["machine à dips"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "arms",
+      "primary_muscles": ["triceps_long_head", "triceps_lateral_head"],
+      "secondary_muscles": ["pec_major_sternal", "anterior_delt"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Coudes le long du corps",
+        "Pousser vers le bas",
+        "Extension complète"
+      ],
+      "common_mistakes": [
+        "Épaules qui montent"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "assisted-pullup-machine",
+      "name_fr": "Tractions assistées machine",
+      "name_en": "Assisted Pull-up Machine",
+      "aliases": ["gravitron"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "teres_major"],
+      "secondary_muscles": ["biceps_long_head", "rhomboids"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Ajuster le contrepoids",
+        "Tirer jusqu'au menton à la barre",
+        "Descente contrôlée"
+      ],
+      "common_mistakes": [
+        "Ne pas descendre complètement"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "assisted-dip-machine",
+      "name_fr": "Dips assistés machine",
+      "name_en": "Assisted Dip Machine",
+      "aliases": ["gravitron dips"],
+      "movement_pattern": "push",
+      "exercise_type": "compound",
+      "muscle_group": "chest",
+      "primary_muscles": ["pec_major_sternal", "triceps_long_head"],
+      "secondary_muscles": ["anterior_delt"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Buste penché en avant pour les pecs",
+        "Descendre jusqu'à 90°",
+        "Pousser jusqu'en haut"
+      ],
+      "common_mistakes": [
+        "Amplitude insuffisante"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "low-row-machine",
+      "name_fr": "Rowing bas machine",
+      "name_en": "Low Row Machine",
+      "aliases": ["tirage horizontal machine"],
+      "movement_pattern": "pull",
+      "exercise_type": "compound",
+      "muscle_group": "back",
+      "primary_muscles": ["latissimus_dorsi", "rhomboids"],
+      "secondary_muscles": ["biceps_long_head", "trapezius_mid"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "beginner",
+      "technique_cues": [
+        "Poitrine contre le support",
+        "Tirer vers le ventre",
+        "Serrer les omoplates"
+      ],
+      "common_mistakes": [
+        "Utiliser l'élan"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "vertical-leg-press",
+      "name_fr": "Presse verticale",
+      "name_en": "Vertical Leg Press",
+      "aliases": ["presse à cuisses verticale"],
+      "movement_pattern": "squat",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["femur_length_long"],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Pieds hauts = fessiers",
+        "Pieds bas = quadriceps",
+        "Ne pas verrouiller les genoux"
+      ],
+      "common_mistakes": [
+        "Décoller le bas du dos"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "belt-squat-machine",
+      "name_fr": "Belt squat machine",
+      "name_en": "Belt Squat Machine",
+      "aliases": ["squat ceinture"],
+      "movement_pattern": "squat",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris", "gluteus_maximus"],
+      "secondary_muscles": ["hamstrings_biceps_femoris"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": [],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Ceinture autour des hanches",
+        "Dos droit",
+        "Descendre profond"
+      ],
+      "common_mistakes": [
+        "Se pencher en avant"
+      ],
+      "source": "manual"
+    },
+    {
+      "id": "pendulum-squat",
+      "name_fr": "Pendulum squat",
+      "name_en": "Pendulum Squat",
+      "aliases": [],
+      "movement_pattern": "squat",
+      "exercise_type": "compound",
+      "muscle_group": "legs",
+      "primary_muscles": ["quadriceps_rectus_femoris"],
+      "secondary_muscles": ["gluteus_maximus"],
+      "stabilizers": [],
+      "equipment": ["machine"],
+      "equipment_alternatives": [],
+      "good_for": {
+        "morphotypes": ["femur_length_long"],
+        "conditions": ["lower_back_pain"]
+      },
+      "bad_for": {
+        "morphotypes": [],
+        "conditions": []
+      },
+      "modifications": [],
+      "difficulty": "intermediate",
+      "technique_cues": [
+        "Épaules sous les coussins",
+        "Descente profonde",
+        "Focus quadriceps"
+      ],
+      "common_mistakes": [
+        "Rebond en bas"
+      ],
+      "source": "manual"
+    }
+  ]
+}

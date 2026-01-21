@@ -1,0 +1,1905 @@
+{
+  "version": "2.0.0",
+  "methodology": "Gundill/Delavier/SuperPhysique",
+  "description": "Base de données exhaustive morpho-anatomique pour programmation intelligente",
+
+  "morphotype_rules": {
+    "arm_length_long": {
+      "description": "Bras longs - levier défavorable sur les mouvements de poussée",
+      "favors": ["pulling", "deadlifts", "rows"],
+      "penalizes": ["bench_press", "overhead_press", "dips"],
+      "volume_modifier": 0.9,
+      "rest_modifier": 1.1,
+      "notes": "Privilégier les haltères sur les développés, ROM réduit recommandé"
+    },
+    "arm_length_short": {
+      "description": "Bras courts - levier favorable sur les poussées",
+      "favors": ["bench_press", "overhead_press", "dips", "triceps"],
+      "penalizes": ["deadlifts"],
+      "volume_modifier": 1.0,
+      "rest_modifier": 1.0,
+      "notes": "Excellent potentiel sur les développés"
+    },
+    "femur_length_long": {
+      "description": "Fémurs longs - squat difficile, position penchée",
+      "favors": ["leg_press", "hack_squat", "lunges", "sumo_deadlift"],
+      "penalizes": ["back_squat", "front_squat"],
+      "volume_modifier": 1.1,
+      "rest_modifier": 1.2,
+      "notes": "Élever les talons, préférer les machines guidées"
+    },
+    "femur_length_short": {
+      "description": "Fémurs courts - position squat naturellement bonne",
+      "favors": ["back_squat", "front_squat", "olympic_lifts"],
+      "penalizes": [],
+      "volume_modifier": 1.0,
+      "rest_modifier": 1.0,
+      "notes": "Squat high bar idéal"
+    },
+    "torso_length_long": {
+      "description": "Torse long - stress lombaire accru sur les hip hinge",
+      "favors": ["sumo_deadlift", "trap_bar", "squats", "front_squat"],
+      "penalizes": ["conventional_deadlift", "bent_over_rows", "good_morning"],
+      "volume_modifier": 0.9,
+      "rest_modifier": 1.1,
+      "notes": "Attention aux lombaires, privilégier le sumo"
+    },
+    "torso_length_short": {
+      "description": "Torse court - excellent levier pour les tirages",
+      "favors": ["conventional_deadlift", "bent_over_rows"],
+      "penalizes": [],
+      "volume_modifier": 1.0,
+      "rest_modifier": 1.0,
+      "notes": "Deadlift conventionnel avantageux"
+    },
+    "narrow_ribcage": {
+      "description": "Cage thoracique étroite - ROM augmenté sur les développés",
+      "favors": ["dumbbell_press", "cable_fly", "incline"],
+      "penalizes": ["barbell_bench", "dips"],
+      "volume_modifier": 1.1,
+      "rest_modifier": 1.0,
+      "notes": "Travailler l'arc dorsal, privilégier haltères"
+    },
+    "wide_ribcage": {
+      "description": "Cage thoracique large - ROM réduit, poussées facilitées",
+      "favors": ["barbell_bench", "dips", "floor_press"],
+      "penalizes": [],
+      "volume_modifier": 1.0,
+      "rest_modifier": 1.0,
+      "notes": "Excellent potentiel sur les développés"
+    },
+    "narrow_clavicles": {
+      "description": "Clavicules étroites - épaules à développer en priorité",
+      "favors": ["lateral_raises", "wide_grip_rows", "overhead_press"],
+      "penalizes": [],
+      "volume_modifier": 1.2,
+      "rest_modifier": 1.0,
+      "notes": "Focus sur la largeur d'épaules"
+    },
+    "wide_clavicles": {
+      "description": "Clavicules larges - carrure naturelle",
+      "favors": ["all_pressing", "all_shoulder"],
+      "penalizes": [],
+      "volume_modifier": 1.0,
+      "rest_modifier": 1.0,
+      "notes": "Attention à ne pas trop développer les épaules"
+    },
+    "high_bicep_insertion": {
+      "description": "Insertion biceps haute - pic limité",
+      "favors": ["preacher_curl", "concentration_curl", "incline_curl"],
+      "penalizes": [],
+      "volume_modifier": 1.2,
+      "rest_modifier": 1.0,
+      "notes": "Travailler l'étirement et le peak contraction"
+    },
+    "low_bicep_insertion": {
+      "description": "Insertion biceps basse - excellent potentiel de pic",
+      "favors": ["all_curls"],
+      "penalizes": [],
+      "volume_modifier": 1.0,
+      "rest_modifier": 1.0,
+      "notes": "Répondeur naturel"
+    },
+    "high_calf_insertion": {
+      "description": "Insertion mollets haute - volume limité",
+      "favors": ["seated_calf", "high_volume_calves"],
+      "penalizes": [],
+      "volume_modifier": 1.5,
+      "rest_modifier": 0.8,
+      "notes": "Volume élevé, fréquence haute nécessaire"
+    }
+  },
+
+  "volume_landmarks": {
+    "chest": { "MV": 8, "MEV": 10, "MAV": 16, "MRV": 22 },
+    "back": { "MV": 8, "MEV": 10, "MAV": 18, "MRV": 25 },
+    "shoulders": { "MV": 6, "MEV": 8, "MAV": 16, "MRV": 22 },
+    "biceps": { "MV": 4, "MEV": 6, "MAV": 14, "MRV": 20 },
+    "triceps": { "MV": 4, "MEV": 6, "MAV": 12, "MRV": 18 },
+    "quads": { "MV": 6, "MEV": 8, "MAV": 16, "MRV": 22 },
+    "hamstrings": { "MV": 4, "MEV": 6, "MAV": 12, "MRV": 18 },
+    "glutes": { "MV": 4, "MEV": 6, "MAV": 12, "MRV": 16 },
+    "calves": { "MV": 6, "MEV": 8, "MAV": 14, "MRV": 20 }
+  },
+
+  "exercises": [
+    {
+      "name_fr": "Développé couché barre",
+      "goal_scores": { "strength": 95, "hypertrophy": 85, "athletic": 70, "rehab": 30 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": -1,
+          "reps": "5-8",
+          "tempo": "3-1-1-0",
+          "notes": "Arc dorsal OBLIGATOIRE, descente aux mamelons, pas plus bas"
+        },
+        "arm_length_short": {
+          "sets_modifier": 1,
+          "reps": "6-12",
+          "tempo": "2-0-1-0",
+          "notes": "Excellent exercice, exploiter l'avantage mécanique"
+        },
+        "narrow_ribcage": {
+          "sets_modifier": -1,
+          "reps": "8-12",
+          "tempo": "3-1-2-0",
+          "notes": "Arc dorsal maximal, prise moyenne, descente contrôlée"
+        },
+        "wide_ribcage": {
+          "sets_modifier": 0,
+          "reps": "5-10",
+          "tempo": "2-1-1-0",
+          "notes": "Position naturellement avantageuse"
+        }
+      },
+      "synergies": ["Développé incliné barre", "Dips pectoraux"],
+      "antagonists": ["Rowing barre", "Tractions pronation"],
+      "contraindications": ["shoulder_impingement", "ac_joint_pain"],
+      "tempo_recommendations": {
+        "strength": "2-1-X-0",
+        "hypertrophy": "3-1-2-0",
+        "power": "2-0-X-0"
+      },
+      "rest_modifiers": {
+        "arm_length_long": 1.2,
+        "narrow_ribcage": 1.1,
+        "default": 1.0
+      }
+    },
+    {
+      "name_fr": "Développé couché haltères",
+      "goal_scores": { "strength": 75, "hypertrophy": 95, "athletic": 75, "rehab": 60 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "8-12",
+          "tempo": "3-1-2-0",
+          "notes": "EXERCICE PRIORITAIRE - amplitude personnalisable, rotation naturelle"
+        },
+        "narrow_ribcage": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "3-2-2-0",
+          "notes": "Étirement profond possible, excellent choix"
+        },
+        "wrist_pain": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "3-1-2-0",
+          "notes": "Prise neutre possible, soulage les poignets"
+        }
+      },
+      "synergies": ["Écarté incliné haltères", "Poulie vis-à-vis"],
+      "antagonists": ["Rowing haltère", "Tirage horizontal poulie basse"],
+      "contraindications": [],
+      "tempo_recommendations": {
+        "strength": "2-1-1-0",
+        "hypertrophy": "3-2-1-1"
+      },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Développé incliné barre",
+      "goal_scores": { "strength": 85, "hypertrophy": 85, "athletic": 65, "rehab": 35 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": -1,
+          "reps": "6-10",
+          "tempo": "3-1-2-0",
+          "notes": "Angle 30° MAX, barre aux clavicules"
+        },
+        "narrow_clavicles": {
+          "sets_modifier": 1,
+          "reps": "8-12",
+          "tempo": "3-1-2-0",
+          "notes": "Excellent pour développer le haut des pecs et les épaules"
+        }
+      },
+      "synergies": ["Développé couché barre", "Élévations frontales"],
+      "antagonists": ["Rowing barre", "Face pull"],
+      "contraindications": ["shoulder_impingement"],
+      "tempo_recommendations": {
+        "strength": "2-1-X-0",
+        "hypertrophy": "3-1-2-0"
+      },
+      "rest_modifiers": { "arm_length_long": 1.15, "default": 1.0 }
+    },
+    {
+      "name_fr": "Développé incliné haltères",
+      "goal_scores": { "strength": 70, "hypertrophy": 95, "athletic": 70, "rehab": 55 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "3-2-2-1",
+          "notes": "PRIORITAIRE - angle 30°, étirement profond"
+        },
+        "narrow_ribcage": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "4-2-2-1",
+          "notes": "Rotation en haut, étirement maximal en bas"
+        },
+        "narrow_clavicles": {
+          "sets_modifier": 1,
+          "reps": "10-12",
+          "tempo": "3-1-2-0",
+          "notes": "Développe la portion claviculaire, élargit visuellement"
+        }
+      },
+      "synergies": ["Écarté incliné haltères", "Développé couché haltères"],
+      "antagonists": ["Rowing haltère"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "3-2-2-1" },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Développé décliné",
+      "goal_scores": { "strength": 80, "hypertrophy": 75, "athletic": 50, "rehab": 40 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "8-12",
+          "tempo": "2-1-2-0",
+          "notes": "ROM réduit naturellement, bon choix"
+        },
+        "narrow_ribcage": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "3-1-2-0",
+          "notes": "Alternative intéressante au DC plat"
+        }
+      },
+      "synergies": ["Dips pectoraux"],
+      "antagonists": ["Rowing barre"],
+      "contraindications": ["high_blood_pressure", "glaucoma"],
+      "tempo_recommendations": { "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Dips pectoraux",
+      "goal_scores": { "strength": 85, "hypertrophy": 90, "athletic": 80, "rehab": 20 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": -1,
+          "reps": "6-10",
+          "tempo": "3-1-2-0",
+          "notes": "ROM limité, ne pas descendre trop bas, stress épaules"
+        },
+        "arm_length_short": {
+          "sets_modifier": 1,
+          "reps": "8-15",
+          "tempo": "2-0-1-0",
+          "notes": "Excellent exercice, pleine amplitude possible"
+        },
+        "wide_ribcage": {
+          "sets_modifier": 1,
+          "reps": "8-12",
+          "tempo": "2-1-1-0",
+          "notes": "Position avantageuse, pencher en avant pour cibler pecs"
+        }
+      },
+      "synergies": ["Développé couché barre", "Développé décliné"],
+      "antagonists": ["Tractions supination"],
+      "contraindications": ["shoulder_instability", "sternoclavicular_pain"],
+      "tempo_recommendations": { "hypertrophy": "3-1-2-0", "strength": "2-1-X-0" },
+      "rest_modifiers": { "arm_length_long": 1.2, "default": 1.0 }
+    },
+    {
+      "name_fr": "Écarté couché haltères",
+      "goal_scores": { "strength": 30, "hypertrophy": 85, "athletic": 40, "rehab": 70 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "4-2-2-1",
+          "notes": "Légère flexion coudes, étirement contrôlé"
+        },
+        "narrow_ribcage": {
+          "sets_modifier": 1,
+          "reps": "12-15",
+          "tempo": "4-2-2-1",
+          "notes": "Excellent pour l'étirement des pecs"
+        }
+      },
+      "synergies": ["Poulie vis-à-vis", "Pec deck (machine)"],
+      "antagonists": ["Face pull", "Oiseau (rear delt fly)"],
+      "contraindications": ["shoulder_instability"],
+      "tempo_recommendations": { "hypertrophy": "4-2-2-1" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Écarté incliné haltères",
+      "goal_scores": { "strength": 25, "hypertrophy": 85, "athletic": 35, "rehab": 65 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "4-2-2-1",
+          "notes": "Angle 30°, étirement profond"
+        },
+        "narrow_clavicles": {
+          "sets_modifier": 1,
+          "reps": "12-15",
+          "tempo": "4-2-2-1",
+          "notes": "Cible le haut des pecs, élargit la carrure"
+        }
+      },
+      "synergies": ["Développé incliné haltères"],
+      "antagonists": ["Face pull"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "4-2-2-1" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Poulie vis-à-vis",
+      "goal_scores": { "strength": 20, "hypertrophy": 80, "athletic": 50, "rehab": 80 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "12-20",
+          "tempo": "3-2-2-2",
+          "notes": "Excellent finisher, tension constante"
+        },
+        "narrow_ribcage": {
+          "sets_modifier": 1,
+          "reps": "15-20",
+          "tempo": "3-2-2-2",
+          "notes": "Parfait pour l'étirement-contraction"
+        }
+      },
+      "synergies": ["Écarté couché haltères", "Pec deck (machine)"],
+      "antagonists": ["Face pull"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "3-2-2-2" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Pec deck (machine)",
+      "goal_scores": { "strength": 20, "hypertrophy": 75, "athletic": 30, "rehab": 85 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "3-2-2-2",
+          "notes": "Machine adaptée, pas de stress articulaire"
+        },
+        "shoulder_pain": {
+          "sets_modifier": 0,
+          "reps": "15-20",
+          "tempo": "3-2-2-2",
+          "notes": "Amplitude réduite si douleur"
+        }
+      },
+      "synergies": ["Poulie vis-à-vis"],
+      "antagonists": ["Oiseau machine"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "3-2-2-2" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Pompes",
+      "goal_scores": { "strength": 50, "hypertrophy": 60, "athletic": 90, "rehab": 75 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "10-20",
+          "tempo": "2-1-2-0",
+          "notes": "Amplitude partielle acceptée, mains larges"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "max",
+          "tempo": "2-1-2-0",
+          "notes": "Excellent échauffement ou finisher"
+        }
+      },
+      "synergies": ["Développé couché barre"],
+      "antagonists": ["Tractions pronation"],
+      "contraindications": ["wrist_pain"],
+      "tempo_recommendations": { "athletic": "1-0-1-0", "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Tractions pronation",
+      "goal_scores": { "strength": 90, "hypertrophy": 90, "athletic": 95, "rehab": 40 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "6-12",
+          "tempo": "2-1-3-0",
+          "notes": "EXERCICE PRIORITAIRE - levier avantageux, excellent pour le dos"
+        },
+        "arm_length_short": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "2-1-2-0",
+          "notes": "Plus difficile mécaniquement mais faisable"
+        },
+        "wide_clavicles": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "2-1-2-0",
+          "notes": "Prise large pour cibler les dorsaux"
+        }
+      },
+      "synergies": ["Tirage vertical poulie haute", "Rowing barre"],
+      "antagonists": ["Développé couché barre", "Dips pectoraux"],
+      "contraindications": ["elbow_tendinitis"],
+      "tempo_recommendations": { "strength": "2-1-X-0", "hypertrophy": "2-1-3-1" },
+      "rest_modifiers": { "default": 1.1 }
+    },
+    {
+      "name_fr": "Tractions supination",
+      "goal_scores": { "strength": 85, "hypertrophy": 90, "athletic": 85, "rehab": 45 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "8-12",
+          "tempo": "2-1-3-0",
+          "notes": "Excellent pour dos + biceps, levier avantageux"
+        },
+        "high_bicep_insertion": {
+          "sets_modifier": 1,
+          "reps": "8-12",
+          "tempo": "2-2-3-1",
+          "notes": "Bon travail des biceps en étirement"
+        }
+      },
+      "synergies": ["Curl barre", "Tirage vertical poulie haute"],
+      "antagonists": ["Développé couché barre", "Dips triceps"],
+      "contraindications": ["bicep_tendinitis"],
+      "tempo_recommendations": { "hypertrophy": "2-1-3-1" },
+      "rest_modifiers": { "default": 1.1 }
+    },
+    {
+      "name_fr": "Rowing barre",
+      "goal_scores": { "strength": 90, "hypertrophy": 90, "athletic": 80, "rehab": 35 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "6-10",
+          "tempo": "2-1-2-0",
+          "notes": "PRIORITAIRE - bras longs = grande amplitude, excellent"
+        },
+        "torso_length_long": {
+          "sets_modifier": -1,
+          "reps": "8-12",
+          "tempo": "2-1-2-0",
+          "notes": "Attention lombaires, garder dos bien gainé, angle 45°"
+        },
+        "torso_length_short": {
+          "sets_modifier": 1,
+          "reps": "6-10",
+          "tempo": "2-1-2-0",
+          "notes": "Position naturellement avantageuse"
+        }
+      },
+      "synergies": ["Soulevé de terre", "Rowing haltère"],
+      "antagonists": ["Développé couché barre"],
+      "contraindications": ["lower_back_injury"],
+      "tempo_recommendations": { "strength": "1-1-X-0", "hypertrophy": "2-1-2-1" },
+      "rest_modifiers": { "torso_length_long": 1.2, "default": 1.0 }
+    },
+    {
+      "name_fr": "Rowing haltère",
+      "goal_scores": { "strength": 80, "hypertrophy": 90, "athletic": 80, "rehab": 60 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "8-12",
+          "tempo": "2-1-3-0",
+          "notes": "Grande amplitude possible, excellent choix"
+        },
+        "torso_length_long": {
+          "sets_modifier": 1,
+          "reps": "10-12",
+          "tempo": "2-1-2-0",
+          "notes": "Préférer au rowing barre - appui soulage les lombaires"
+        }
+      },
+      "synergies": ["Rowing barre", "Tirage horizontal poulie basse"],
+      "antagonists": ["Développé couché haltères"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-1-3-1" },
+      "rest_modifiers": { "default": 0.9 }
+    },
+    {
+      "name_fr": "Tirage vertical poulie haute",
+      "goal_scores": { "strength": 70, "hypertrophy": 85, "athletic": 75, "rehab": 70 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "10-15",
+          "tempo": "2-1-3-0",
+          "notes": "Alternative aux tractions, même avantage mécanique"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "2-1-3-1",
+          "notes": "Tirer vers la poitrine, pas derrière la nuque"
+        }
+      },
+      "synergies": ["Tractions pronation", "Tractions supination"],
+      "antagonists": ["Développé militaire"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-1-3-1" },
+      "rest_modifiers": { "default": 0.9 }
+    },
+    {
+      "name_fr": "Tirage horizontal poulie basse",
+      "goal_scores": { "strength": 70, "hypertrophy": 85, "athletic": 70, "rehab": 75 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "2-2-3-1",
+          "notes": "Grande amplitude, excellent stretch"
+        },
+        "torso_length_long": {
+          "sets_modifier": 1,
+          "reps": "12-15",
+          "tempo": "2-1-2-0",
+          "notes": "Sûr pour les lombaires, position assise"
+        }
+      },
+      "synergies": ["Rowing haltère", "Rowing barre"],
+      "antagonists": ["Développé couché barre"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-3-1" },
+      "rest_modifiers": { "default": 0.9 }
+    },
+    {
+      "name_fr": "Soulevé de terre",
+      "goal_scores": { "strength": 100, "hypertrophy": 75, "athletic": 90, "rehab": 20 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "3-6",
+          "tempo": "1-0-X-0",
+          "notes": "EXCELLENT - bras longs = moins de ROM, avantage majeur"
+        },
+        "arm_length_short": {
+          "sets_modifier": -1,
+          "reps": "5-8",
+          "tempo": "2-0-X-0",
+          "notes": "ROM augmenté, plus difficile, privilégier trap bar"
+        },
+        "torso_length_long": {
+          "sets_modifier": -1,
+          "reps": "5-8",
+          "tempo": "2-0-X-0",
+          "notes": "ATTENTION - stress lombaire, préférer SUMO ou trap bar"
+        },
+        "torso_length_short": {
+          "sets_modifier": 1,
+          "reps": "3-6",
+          "tempo": "1-0-X-0",
+          "notes": "Position avantageuse, conventionnel excellent"
+        },
+        "femur_length_long": {
+          "sets_modifier": 0,
+          "reps": "4-6",
+          "tempo": "1-0-X-0",
+          "notes": "Sumo possiblement meilleur, tester les deux"
+        }
+      },
+      "synergies": ["Rowing barre", "Hip thrust"],
+      "antagonists": ["Squat barre"],
+      "contraindications": ["herniated_disc", "acute_lower_back_pain"],
+      "tempo_recommendations": { "strength": "1-0-X-0", "hypertrophy": "2-1-1-0" },
+      "rest_modifiers": { "torso_length_long": 1.3, "default": 1.2 }
+    },
+    {
+      "name_fr": "Soulevé de terre jambes tendues",
+      "goal_scores": { "strength": 60, "hypertrophy": 85, "athletic": 70, "rehab": 40 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "8-12",
+          "tempo": "3-1-2-0",
+          "notes": "Grande amplitude, excellent stretch ischios"
+        },
+        "torso_length_long": {
+          "sets_modifier": -1,
+          "reps": "10-15",
+          "tempo": "3-1-2-0",
+          "notes": "Charge modérée, focus étirement"
+        }
+      },
+      "synergies": ["Leg curl couché", "Hip thrust"],
+      "antagonists": ["Leg extension"],
+      "contraindications": ["lower_back_injury"],
+      "tempo_recommendations": { "hypertrophy": "3-1-2-1" },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Pullover haltère",
+      "goal_scores": { "strength": 40, "hypertrophy": 75, "athletic": 60, "rehab": 55 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "3-2-2-0",
+          "notes": "Exercice d'étirement, bras légèrement fléchis"
+        },
+        "narrow_ribcage": {
+          "sets_modifier": 1,
+          "reps": "15-20",
+          "tempo": "4-2-2-0",
+          "notes": "Peut aider à 'ouvrir' la cage thoracique (contesté mais ressenti positif)"
+        }
+      },
+      "synergies": ["Tirage vertical poulie haute"],
+      "antagonists": [],
+      "contraindications": ["shoulder_instability"],
+      "tempo_recommendations": { "hypertrophy": "4-2-2-0" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Rowing T-bar",
+      "goal_scores": { "strength": 85, "hypertrophy": 85, "athletic": 75, "rehab": 40 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 1,
+          "reps": "6-10",
+          "tempo": "2-1-2-0",
+          "notes": "Excellent mouvement, amplitude généreuse"
+        },
+        "torso_length_long": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "2-1-2-0",
+          "notes": "Appui ventral soulage les lombaires si disponible"
+        }
+      },
+      "synergies": ["Rowing barre", "Rowing haltère"],
+      "antagonists": ["Développé couché barre"],
+      "contraindications": ["lower_back_injury"],
+      "tempo_recommendations": { "hypertrophy": "2-1-2-1" },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Shrugs haltères",
+      "goal_scores": { "strength": 60, "hypertrophy": 75, "athletic": 50, "rehab": 60 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "narrow_clavicles": {
+          "sets_modifier": 1,
+          "reps": "12-20",
+          "tempo": "2-2-2-0",
+          "notes": "Développer les trapèzes pour élargir visuellement"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "2-2-2-0",
+          "notes": "Élévation verticale pure, pas de rotation"
+        }
+      },
+      "synergies": ["Rowing menton", "Face pull"],
+      "antagonists": [],
+      "contraindications": ["neck_pain"],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-0" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Squat barre",
+      "goal_scores": { "strength": 100, "hypertrophy": 90, "athletic": 95, "rehab": 30 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "femur_length_short": {
+          "sets_modifier": 1,
+          "reps": "5-10",
+          "tempo": "2-1-X-0",
+          "notes": "EXCELLENT - position naturellement verticale, squat high bar idéal"
+        },
+        "femur_length_long": {
+          "sets_modifier": -1,
+          "reps": "6-10",
+          "tempo": "3-1-X-0",
+          "notes": "Position inclinée, élever les talons, low bar ou front squat"
+        },
+        "torso_length_long": {
+          "sets_modifier": 0,
+          "reps": "6-10",
+          "tempo": "2-1-X-0",
+          "notes": "High bar, position plus verticale possible"
+        },
+        "limited_ankle_mobility": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "3-1-X-0",
+          "notes": "TALONS ÉLEVÉS obligatoire ou chaussures haltéro"
+        }
+      },
+      "synergies": ["Presse à cuisses", "Leg extension"],
+      "antagonists": ["Soulevé de terre jambes tendues"],
+      "contraindications": ["knee_injury", "severe_hip_impingement"],
+      "tempo_recommendations": { "strength": "2-1-X-0", "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "femur_length_long": 1.2, "default": 1.1 }
+    },
+    {
+      "name_fr": "Squat avant (front squat)",
+      "goal_scores": { "strength": 85, "hypertrophy": 85, "athletic": 90, "rehab": 40 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "femur_length_short": {
+          "sets_modifier": 1,
+          "reps": "6-10",
+          "tempo": "2-1-X-0",
+          "notes": "Position idéale, excellent exercice"
+        },
+        "femur_length_long": {
+          "sets_modifier": 0,
+          "reps": "6-10",
+          "tempo": "3-1-X-0",
+          "notes": "Meilleur que back squat pour fémurs longs - reste plus vertical"
+        },
+        "torso_length_long": {
+          "sets_modifier": 1,
+          "reps": "6-10",
+          "tempo": "2-1-X-0",
+          "notes": "PRIORITAIRE - force position verticale, soulage les lombaires"
+        }
+      },
+      "synergies": ["Squat barre", "Leg extension"],
+      "antagonists": ["Leg curl couché"],
+      "contraindications": ["wrist_pain", "elbow_tendinitis"],
+      "tempo_recommendations": { "strength": "2-1-X-0", "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "default": 1.1 }
+    },
+    {
+      "name_fr": "Presse à cuisses",
+      "goal_scores": { "strength": 75, "hypertrophy": 85, "athletic": 60, "rehab": 70 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "femur_length_long": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "3-1-2-0",
+          "notes": "EXCELLENT - pas de contrainte de position, pieds hauts pour fessiers"
+        },
+        "limited_ankle_mobility": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "3-1-2-0",
+          "notes": "Pas de mobilité cheville requise, excellent choix"
+        },
+        "torso_length_long": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "3-1-2-0",
+          "notes": "Pas de stress lombaire en position allongée"
+        }
+      },
+      "synergies": ["Squat barre", "Hack squat"],
+      "antagonists": ["Leg curl couché"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Hack squat",
+      "goal_scores": { "strength": 70, "hypertrophy": 85, "athletic": 55, "rehab": 60 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "femur_length_long": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "3-1-2-0",
+          "notes": "Guidé, pas de problème d'équilibre"
+        },
+        "limited_ankle_mobility": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "3-1-2-0",
+          "notes": "Machine compense le manque de mobilité"
+        }
+      },
+      "synergies": ["Presse à cuisses", "Leg extension"],
+      "antagonists": ["Leg curl couché"],
+      "contraindications": ["knee_pain"],
+      "tempo_recommendations": { "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Squat bulgare",
+      "goal_scores": { "strength": 70, "hypertrophy": 85, "athletic": 90, "rehab": 50 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "femur_length_long": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "3-1-2-0",
+          "notes": "Bon exercice unilatéral, moins de contrainte lombaire"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "3-1-2-0",
+          "notes": "Excellent pour les fessiers et l'équilibre"
+        }
+      },
+      "synergies": ["Fentes avant", "Hip thrust"],
+      "antagonists": [],
+      "contraindications": ["severe_knee_instability"],
+      "tempo_recommendations": { "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Fentes avant",
+      "goal_scores": { "strength": 60, "hypertrophy": 80, "athletic": 90, "rehab": 55 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "femur_length_long": {
+          "sets_modifier": 0,
+          "reps": "10-15",
+          "tempo": "2-1-2-0",
+          "notes": "Grand pas, inclinaison naturelle OK"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "2-1-2-0",
+          "notes": "Genou arrière vers le sol, torse droit"
+        }
+      },
+      "synergies": ["Fentes marchées", "Squat bulgare"],
+      "antagonists": [],
+      "contraindications": ["knee_instability"],
+      "tempo_recommendations": { "hypertrophy": "2-1-2-0" },
+      "rest_modifiers": { "default": 0.9 }
+    },
+    {
+      "name_fr": "Fentes marchées",
+      "goal_scores": { "strength": 55, "hypertrophy": 75, "athletic": 95, "rehab": 50 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-15/jambe",
+          "tempo": "2-0-2-0",
+          "notes": "Excellent travail fonctionnel et cardio"
+        }
+      },
+      "synergies": ["Fentes avant", "Squat bulgare"],
+      "antagonists": [],
+      "contraindications": ["balance_issues", "knee_pain"],
+      "tempo_recommendations": { "athletic": "1-0-1-0" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Goblet squat",
+      "goal_scores": { "strength": 50, "hypertrophy": 70, "athletic": 80, "rehab": 80 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "limited_ankle_mobility": {
+          "sets_modifier": 1,
+          "reps": "12-15",
+          "tempo": "3-2-2-0",
+          "notes": "Charge avant aide à rester vertical"
+        },
+        "femur_length_long": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "3-2-2-0",
+          "notes": "Bon apprentissage du squat"
+        }
+      },
+      "synergies": ["Squat avant (front squat)"],
+      "antagonists": [],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "3-2-2-0" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Leg extension",
+      "goal_scores": { "strength": 30, "hypertrophy": 80, "athletic": 40, "rehab": 85 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "12-20",
+          "tempo": "2-2-2-2",
+          "notes": "Isolation quadriceps, éviter charges lourdes (stress rotule)"
+        }
+      },
+      "synergies": ["Squat barre", "Presse à cuisses"],
+      "antagonists": ["Leg curl couché"],
+      "contraindications": ["patellar_tendinitis"],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-2" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Leg curl couché",
+      "goal_scores": { "strength": 40, "hypertrophy": 80, "athletic": 65, "rehab": 75 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-15",
+          "tempo": "2-2-3-0",
+          "notes": "Pointe de pied vers tibia pour cibler les ischios"
+        }
+      },
+      "synergies": ["Soulevé de terre jambes tendues", "Leg curl assis"],
+      "antagonists": ["Leg extension"],
+      "contraindications": ["hamstring_tear"],
+      "tempo_recommendations": { "hypertrophy": "2-2-3-0" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Leg curl assis",
+      "goal_scores": { "strength": 40, "hypertrophy": 80, "athletic": 60, "rehab": 80 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-15",
+          "tempo": "2-2-3-0",
+          "notes": "Meilleur étirement des ischios vs couché"
+        }
+      },
+      "synergies": ["Leg curl couché", "Soulevé de terre jambes tendues"],
+      "antagonists": ["Leg extension"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-3-1" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Hip thrust",
+      "goal_scores": { "strength": 70, "hypertrophy": 90, "athletic": 85, "rehab": 65 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "8-15",
+          "tempo": "2-2-2-0",
+          "notes": "Pause en haut, squeeze fessiers, chin tucked"
+        }
+      },
+      "synergies": ["Squat barre", "Fentes avant"],
+      "antagonists": [],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-2" },
+      "rest_modifiers": { "default": 0.9 }
+    },
+    {
+      "name_fr": "Mollets debout",
+      "goal_scores": { "strength": 50, "hypertrophy": 80, "athletic": 70, "rehab": 60 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "high_calf_insertion": {
+          "sets_modifier": 2,
+          "reps": "15-25",
+          "tempo": "2-2-2-2",
+          "notes": "Volume ÉLEVÉ obligatoire, fréquence haute"
+        },
+        "low_calf_insertion": {
+          "sets_modifier": 0,
+          "reps": "10-15",
+          "tempo": "2-2-2-0",
+          "notes": "Répond bien, volume standard"
+        }
+      },
+      "synergies": ["Mollets assis"],
+      "antagonists": [],
+      "contraindications": ["achilles_tendinitis"],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-2" },
+      "rest_modifiers": { "high_calf_insertion": 0.6, "default": 0.7 }
+    },
+    {
+      "name_fr": "Mollets assis",
+      "goal_scores": { "strength": 40, "hypertrophy": 80, "athletic": 50, "rehab": 70 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "high_calf_insertion": {
+          "sets_modifier": 2,
+          "reps": "15-25",
+          "tempo": "2-2-2-2",
+          "notes": "Cible le soléaire, INDISPENSABLE pour mollets hauts"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "15-20",
+          "tempo": "2-2-2-2",
+          "notes": "Complément au mollets debout"
+        }
+      },
+      "synergies": ["Mollets debout"],
+      "antagonists": [],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-2" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Développé militaire",
+      "goal_scores": { "strength": 90, "hypertrophy": 85, "athletic": 85, "rehab": 35 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": -1,
+          "reps": "6-10",
+          "tempo": "2-1-2-0",
+          "notes": "ROM important, ne pas verrouiller en haut"
+        },
+        "arm_length_short": {
+          "sets_modifier": 1,
+          "reps": "5-10",
+          "tempo": "2-1-X-0",
+          "notes": "Avantage mécanique, excellent exercice"
+        },
+        "narrow_clavicles": {
+          "sets_modifier": 1,
+          "reps": "8-12",
+          "tempo": "2-1-2-0",
+          "notes": "PRIORITAIRE pour élargir les épaules"
+        }
+      },
+      "synergies": ["Développé haltères assis", "Élévations latérales"],
+      "antagonists": ["Tirage vertical poulie haute"],
+      "contraindications": ["shoulder_impingement", "rotator_cuff_injury"],
+      "tempo_recommendations": { "strength": "2-1-X-0", "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "arm_length_long": 1.1, "default": 1.0 }
+    },
+    {
+      "name_fr": "Développé haltères assis",
+      "goal_scores": { "strength": 75, "hypertrophy": 90, "athletic": 80, "rehab": 55 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "2-1-2-0",
+          "notes": "Meilleur que militaire barre - amplitude personnalisable"
+        },
+        "narrow_clavicles": {
+          "sets_modifier": 1,
+          "reps": "10-12",
+          "tempo": "2-1-2-0",
+          "notes": "Excellent pour la largeur d'épaules"
+        },
+        "shoulder_pain": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "3-1-2-0",
+          "notes": "Rotation naturelle soulage l'articulation"
+        }
+      },
+      "synergies": ["Développé militaire", "Arnold press"],
+      "antagonists": ["Tirage vertical poulie haute"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-1-2-1" },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Arnold press",
+      "goal_scores": { "strength": 65, "hypertrophy": 85, "athletic": 75, "rehab": 50 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "narrow_clavicles": {
+          "sets_modifier": 1,
+          "reps": "10-12",
+          "tempo": "3-1-2-0",
+          "notes": "Rotation travaille toutes les portions"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "3-1-2-0",
+          "notes": "Rotation complète, contraction en haut"
+        }
+      },
+      "synergies": ["Développé haltères assis", "Élévations latérales"],
+      "antagonists": [],
+      "contraindications": ["shoulder_impingement"],
+      "tempo_recommendations": { "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "default": 0.9 }
+    },
+    {
+      "name_fr": "Élévations latérales",
+      "goal_scores": { "strength": 25, "hypertrophy": 90, "athletic": 60, "rehab": 70 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "narrow_clavicles": {
+          "sets_modifier": 2,
+          "reps": "12-20",
+          "tempo": "2-2-2-0",
+          "notes": "PRIORITAIRE - volume élevé pour élargir"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "2-2-2-0",
+          "notes": "Légère inclinaison, pouces vers le bas"
+        }
+      },
+      "synergies": ["Développé militaire", "Élévations frontales"],
+      "antagonists": ["Face pull"],
+      "contraindications": ["shoulder_impingement"],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-1" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Élévations frontales",
+      "goal_scores": { "strength": 25, "hypertrophy": 70, "athletic": 55, "rehab": 65 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "2-2-2-0",
+          "notes": "Souvent travaillé par les développés, pas toujours nécessaire"
+        }
+      },
+      "synergies": ["Développé incliné barre"],
+      "antagonists": ["Face pull"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-0" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Face pull",
+      "goal_scores": { "strength": 30, "hypertrophy": 75, "athletic": 85, "rehab": 95 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "narrow_clavicles": {
+          "sets_modifier": 1,
+          "reps": "15-20",
+          "tempo": "2-2-2-0",
+          "notes": "Excellent pour la posture et l'arrière d'épaule"
+        },
+        "all": {
+          "sets_modifier": 1,
+          "reps": "15-20",
+          "tempo": "2-2-2-0",
+          "notes": "INDISPENSABLE - ratio push/pull, santé des épaules"
+        }
+      },
+      "synergies": ["Oiseau (rear delt fly)", "Rowing menton"],
+      "antagonists": ["Développé couché barre", "Développé militaire"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-1", "rehab": "3-2-2-2" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Oiseau (rear delt fly)",
+      "goal_scores": { "strength": 20, "hypertrophy": 80, "athletic": 70, "rehab": 85 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "narrow_clavicles": {
+          "sets_modifier": 1,
+          "reps": "12-20",
+          "tempo": "2-2-2-0",
+          "notes": "Développe l'arrière d'épaule, équilibre visuel"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "2-2-2-0",
+          "notes": "Prise neutre, léger fléchissement coudes"
+        }
+      },
+      "synergies": ["Face pull"],
+      "antagonists": ["Développé incliné barre"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-1" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Rowing menton",
+      "goal_scores": { "strength": 50, "hypertrophy": 70, "athletic": 60, "rehab": 30 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "narrow_clavicles": {
+          "sets_modifier": 0,
+          "reps": "10-15",
+          "tempo": "2-1-2-0",
+          "notes": "Prise large, coudes hauts"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "2-1-2-0",
+          "notes": "ATTENTION - potentiel impingement, prise large préférée"
+        }
+      },
+      "synergies": ["Élévations latérales", "Shrugs haltères"],
+      "antagonists": [],
+      "contraindications": ["shoulder_impingement"],
+      "tempo_recommendations": { "hypertrophy": "2-1-2-0" },
+      "rest_modifiers": { "default": 0.9 }
+    },
+    {
+      "name_fr": "Curl barre",
+      "goal_scores": { "strength": 70, "hypertrophy": 85, "athletic": 55, "rehab": 50 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "high_bicep_insertion": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "2-1-3-0",
+          "notes": "Travailler le stretch en bas, peak contraction en haut"
+        },
+        "low_bicep_insertion": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "2-1-2-0",
+          "notes": "Excellent potentiel, volume standard suffit"
+        },
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "2-1-3-0",
+          "notes": "Grande amplitude, tempo lent bénéfique"
+        }
+      },
+      "synergies": ["Curl haltères", "Curl pupitre (Larry Scott)"],
+      "antagonists": ["Extension triceps poulie haute"],
+      "contraindications": ["bicep_tendinitis"],
+      "tempo_recommendations": { "hypertrophy": "2-1-3-1" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Curl haltères",
+      "goal_scores": { "strength": 60, "hypertrophy": 85, "athletic": 55, "rehab": 60 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "high_bicep_insertion": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "2-2-3-1",
+          "notes": "Supination en haut pour peak, stretch en bas"
+        },
+        "wrist_pain": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "2-1-2-0",
+          "notes": "Rotation naturelle soulage les poignets"
+        }
+      },
+      "synergies": ["Curl barre", "Curl marteau"],
+      "antagonists": ["Extension triceps haltère"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-3-1" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Curl incliné",
+      "goal_scores": { "strength": 45, "hypertrophy": 90, "athletic": 45, "rehab": 55 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "high_bicep_insertion": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "3-2-3-0",
+          "notes": "EXCELLENT - étirement maximal de la longue portion"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "3-1-2-0",
+          "notes": "Banc 45°, bras pendants, pas de triche"
+        }
+      },
+      "synergies": ["Curl barre"],
+      "antagonists": ["Barre au front"],
+      "contraindications": ["shoulder_instability"],
+      "tempo_recommendations": { "hypertrophy": "3-2-3-1" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Curl pupitre (Larry Scott)",
+      "goal_scores": { "strength": 50, "hypertrophy": 85, "athletic": 40, "rehab": 60 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "high_bicep_insertion": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "2-2-3-1",
+          "notes": "Excellent pour le peak, contraction isométrique en haut"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "2-1-2-0",
+          "notes": "Pas d'extension complète pour protéger le coude"
+        }
+      },
+      "synergies": ["Curl concentré"],
+      "antagonists": [],
+      "contraindications": ["elbow_hyperextension"],
+      "tempo_recommendations": { "hypertrophy": "2-2-3-1" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Curl concentré",
+      "goal_scores": { "strength": 30, "hypertrophy": 80, "athletic": 30, "rehab": 70 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "high_bicep_insertion": {
+          "sets_modifier": 1,
+          "reps": "12-15",
+          "tempo": "2-3-2-2",
+          "notes": "Contraction maximale, squeeze long"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-15",
+          "tempo": "2-2-2-1",
+          "notes": "Isolation pure, finisher idéal"
+        }
+      },
+      "synergies": ["Curl pupitre (Larry Scott)"],
+      "antagonists": [],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-3-2-2" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Curl marteau",
+      "goal_scores": { "strength": 55, "hypertrophy": 80, "athletic": 65, "rehab": 65 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "wrist_pain": {
+          "sets_modifier": 1,
+          "reps": "10-15",
+          "tempo": "2-1-2-0",
+          "notes": "Position neutre soulage les poignets"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "2-1-2-0",
+          "notes": "Cible brachial et brachio-radial"
+        }
+      },
+      "synergies": ["Curl haltères"],
+      "antagonists": ["Extension triceps corde"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-1-2-0" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Curl poulie basse",
+      "goal_scores": { "strength": 40, "hypertrophy": 80, "athletic": 45, "rehab": 75 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "2-2-2-1",
+          "notes": "Tension constante, excellent finisher"
+        }
+      },
+      "synergies": ["Curl barre"],
+      "antagonists": ["Extension triceps poulie haute"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-1" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Barre au front",
+      "goal_scores": { "strength": 70, "hypertrophy": 90, "athletic": 55, "rehab": 35 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "3-1-2-0",
+          "notes": "Grande amplitude, excellent pour la longue portion"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "3-1-2-0",
+          "notes": "Descendre vers le front ou derrière, pas sur le nez"
+        }
+      },
+      "synergies": ["Extension triceps poulie haute", "Dips triceps"],
+      "antagonists": ["Curl barre"],
+      "contraindications": ["elbow_pain"],
+      "tempo_recommendations": { "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "default": 0.9 }
+    },
+    {
+      "name_fr": "Extension triceps poulie haute",
+      "goal_scores": { "strength": 45, "hypertrophy": 85, "athletic": 50, "rehab": 70 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-15",
+          "tempo": "2-2-2-1",
+          "notes": "Coudes fixes, extension complète"
+        }
+      },
+      "synergies": ["Extension triceps corde", "Barre au front"],
+      "antagonists": ["Curl poulie basse"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-1" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Extension triceps corde",
+      "goal_scores": { "strength": 40, "hypertrophy": 85, "athletic": 50, "rehab": 75 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "12-15",
+          "tempo": "2-2-2-1",
+          "notes": "Écarter les mains en bas pour contraction max"
+        }
+      },
+      "synergies": ["Extension triceps poulie haute"],
+      "antagonists": ["Curl marteau"],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-1" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Extension triceps haltère",
+      "goal_scores": { "strength": 50, "hypertrophy": 80, "athletic": 45, "rehab": 55 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "3-1-2-0",
+          "notes": "Grande amplitude, stretch de la longue portion"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-12",
+          "tempo": "2-1-2-0",
+          "notes": "Un ou deux bras, coude fixe"
+        }
+      },
+      "synergies": ["Barre au front"],
+      "antagonists": ["Curl haltères"],
+      "contraindications": ["elbow_pain"],
+      "tempo_recommendations": { "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Dips triceps",
+      "goal_scores": { "strength": 80, "hypertrophy": 85, "athletic": 75, "rehab": 30 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": -1,
+          "reps": "6-10",
+          "tempo": "2-1-2-0",
+          "notes": "ROM important, stress articulaire, ne pas descendre trop bas"
+        },
+        "arm_length_short": {
+          "sets_modifier": 1,
+          "reps": "8-15",
+          "tempo": "2-1-1-0",
+          "notes": "Excellent exercice, corps vertical pour triceps"
+        }
+      },
+      "synergies": ["Barre au front", "Développé couché prise serrée"],
+      "antagonists": ["Curl barre"],
+      "contraindications": ["shoulder_instability"],
+      "tempo_recommendations": { "hypertrophy": "2-1-2-0" },
+      "rest_modifiers": { "arm_length_long": 1.1, "default": 1.0 }
+    },
+    {
+      "name_fr": "Développé couché prise serrée",
+      "goal_scores": { "strength": 85, "hypertrophy": 80, "athletic": 65, "rehab": 45 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "6-10",
+          "tempo": "2-1-2-0",
+          "notes": "ROM important mais moins que prise large"
+        },
+        "arm_length_short": {
+          "sets_modifier": 1,
+          "reps": "6-10",
+          "tempo": "2-1-X-0",
+          "notes": "Excellent exercice pour triceps"
+        }
+      },
+      "synergies": ["Barre au front", "Dips triceps"],
+      "antagonists": ["Curl barre"],
+      "contraindications": ["wrist_pain"],
+      "tempo_recommendations": { "strength": "2-1-X-0", "hypertrophy": "3-1-2-0" },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Kickback triceps",
+      "goal_scores": { "strength": 20, "hypertrophy": 65, "athletic": 35, "rehab": 75 },
+      "programming_priority": "finisher",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "12-20",
+          "tempo": "2-2-2-1",
+          "notes": "Finisher uniquement, contraction peak"
+        }
+      },
+      "synergies": ["Extension triceps corde"],
+      "antagonists": [],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-2" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Crunch",
+      "goal_scores": { "strength": 30, "hypertrophy": 70, "athletic": 60, "rehab": 80 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "15-25",
+          "tempo": "2-1-2-1",
+          "notes": "Courte amplitude, décoller les omoplates seulement"
+        }
+      },
+      "synergies": ["Crunch inversé", "Planche"],
+      "antagonists": [],
+      "contraindications": ["lower_back_injury"],
+      "tempo_recommendations": { "hypertrophy": "2-1-2-1" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Crunch câble",
+      "goal_scores": { "strength": 40, "hypertrophy": 80, "athletic": 55, "rehab": 65 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "12-20",
+          "tempo": "2-2-2-1",
+          "notes": "Résistance constante, excellent pour la progression"
+        }
+      },
+      "synergies": ["Crunch"],
+      "antagonists": [],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-1" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Crunch inversé",
+      "goal_scores": { "strength": 35, "hypertrophy": 75, "athletic": 65, "rehab": 70 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "15-20",
+          "tempo": "2-2-2-0",
+          "notes": "Ramener les genoux vers la poitrine, lever le bassin"
+        }
+      },
+      "synergies": ["Crunch", "Relevé de jambes suspendu"],
+      "antagonists": [],
+      "contraindications": [],
+      "tempo_recommendations": { "hypertrophy": "2-2-2-0" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Relevé de jambes suspendu",
+      "goal_scores": { "strength": 55, "hypertrophy": 80, "athletic": 85, "rehab": 40 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-20",
+          "tempo": "2-1-2-0",
+          "notes": "Contrôler la descente, pas de balancement"
+        }
+      },
+      "synergies": ["Crunch inversé"],
+      "antagonists": [],
+      "contraindications": ["shoulder_injury", "grip_weakness"],
+      "tempo_recommendations": { "athletic": "2-0-2-0", "hypertrophy": "2-1-2-1" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Planche",
+      "goal_scores": { "strength": 45, "hypertrophy": 40, "athletic": 80, "rehab": 90 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "30-60s",
+          "tempo": "isometric",
+          "notes": "Corps aligné, fessiers et abdos contractés"
+        }
+      },
+      "synergies": ["Planche latérale", "Dead bug"],
+      "antagonists": [],
+      "contraindications": [],
+      "tempo_recommendations": { "rehab": "isometric" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Planche latérale",
+      "goal_scores": { "strength": 40, "hypertrophy": 35, "athletic": 75, "rehab": 90 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "20-45s/côté",
+          "tempo": "isometric",
+          "notes": "Hanches hautes, corps aligné"
+        }
+      },
+      "synergies": ["Planche", "Russian twist"],
+      "antagonists": [],
+      "contraindications": ["shoulder_injury"],
+      "tempo_recommendations": { "rehab": "isometric" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Russian twist",
+      "goal_scores": { "strength": 35, "hypertrophy": 60, "athletic": 80, "rehab": 50 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "15-25/côté",
+          "tempo": "1-0-1-0",
+          "notes": "Rotation du tronc, pas juste des bras"
+        }
+      },
+      "synergies": ["Planche latérale"],
+      "antagonists": [],
+      "contraindications": ["lower_back_injury"],
+      "tempo_recommendations": { "athletic": "1-0-1-0" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Dead bug",
+      "goal_scores": { "strength": 30, "hypertrophy": 35, "athletic": 75, "rehab": 95 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-15/côté",
+          "tempo": "3-0-3-0",
+          "notes": "Dos plaqué au sol, mouvements lents et contrôlés"
+        }
+      },
+      "synergies": ["Planche"],
+      "antagonists": [],
+      "contraindications": [],
+      "tempo_recommendations": { "rehab": "3-0-3-0" },
+      "rest_modifiers": { "default": 0.5 }
+    },
+    {
+      "name_fr": "Ab wheel rollout",
+      "goal_scores": { "strength": 60, "hypertrophy": 70, "athletic": 85, "rehab": 35 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "8-15",
+          "tempo": "3-0-2-0",
+          "notes": "Extension contrôlée, ne pas cambrer le dos"
+        }
+      },
+      "synergies": ["Planche"],
+      "antagonists": [],
+      "contraindications": ["lower_back_injury", "shoulder_injury"],
+      "tempo_recommendations": { "athletic": "2-0-2-0" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Mountain climbers",
+      "goal_scores": { "strength": 25, "hypertrophy": 30, "athletic": 90, "rehab": 55 },
+      "programming_priority": "finisher",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "20-40",
+          "tempo": "explosive",
+          "notes": "Cardio et core, maintenir position planche"
+        }
+      },
+      "synergies": ["Burpees", "Planche"],
+      "antagonists": [],
+      "contraindications": ["wrist_pain"],
+      "tempo_recommendations": { "athletic": "explosive" },
+      "rest_modifiers": { "default": 0.5 }
+    },
+    {
+      "name_fr": "Burpees",
+      "goal_scores": { "strength": 35, "hypertrophy": 30, "athletic": 95, "rehab": 20 },
+      "programming_priority": "finisher",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "10-20",
+          "tempo": "explosive",
+          "notes": "Full body cardio, technique propre même fatigué"
+        }
+      },
+      "synergies": ["Mountain climbers", "Box jumps"],
+      "antagonists": [],
+      "contraindications": ["knee_injury", "wrist_pain"],
+      "tempo_recommendations": { "athletic": "explosive" },
+      "rest_modifiers": { "default": 0.7 }
+    },
+    {
+      "name_fr": "Box jumps",
+      "goal_scores": { "strength": 45, "hypertrophy": 35, "athletic": 95, "rehab": 25 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "5-10",
+          "tempo": "explosive",
+          "notes": "Atterrissage souple, descendre en step-down"
+        }
+      },
+      "synergies": ["Squat barre"],
+      "antagonists": [],
+      "contraindications": ["knee_injury", "achilles_tendinitis"],
+      "tempo_recommendations": { "athletic": "explosive" },
+      "rest_modifiers": { "default": 1.0 }
+    },
+    {
+      "name_fr": "Kettlebell swing",
+      "goal_scores": { "strength": 55, "hypertrophy": 50, "athletic": 95, "rehab": 45 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "torso_length_long": {
+          "sets_modifier": 0,
+          "reps": "15-25",
+          "tempo": "explosive",
+          "notes": "Attention aux lombaires, hinge propre"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "15-25",
+          "tempo": "explosive",
+          "notes": "Extension des hanches explosive, bras passifs"
+        }
+      },
+      "synergies": ["Soulevé de terre", "Hip thrust"],
+      "antagonists": [],
+      "contraindications": ["lower_back_injury"],
+      "tempo_recommendations": { "athletic": "explosive" },
+      "rest_modifiers": { "default": 0.8 }
+    },
+    {
+      "name_fr": "Clean & Press",
+      "goal_scores": { "strength": 80, "hypertrophy": 60, "athletic": 95, "rehab": 20 },
+      "programming_priority": "primary",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "3-6",
+          "tempo": "explosive",
+          "notes": "Avantage au clean, attention au press"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "3-6",
+          "tempo": "explosive",
+          "notes": "Mouvement technique, apprentissage progressif"
+        }
+      },
+      "synergies": ["Soulevé de terre", "Développé militaire"],
+      "antagonists": [],
+      "contraindications": ["wrist_pain", "shoulder_injury"],
+      "tempo_recommendations": { "strength": "explosive", "athletic": "explosive" },
+      "rest_modifiers": { "default": 1.2 }
+    },
+    {
+      "name_fr": "Thrusters",
+      "goal_scores": { "strength": 65, "hypertrophy": 55, "athletic": 95, "rehab": 25 },
+      "programming_priority": "secondary",
+      "morpho_protocols": {
+        "femur_length_short": {
+          "sets_modifier": 0,
+          "reps": "8-15",
+          "tempo": "explosive",
+          "notes": "Squat naturel, mouvement fluide"
+        },
+        "femur_length_long": {
+          "sets_modifier": 0,
+          "reps": "8-12",
+          "tempo": "controlled",
+          "notes": "Squat partiel acceptable, focus cardio"
+        }
+      },
+      "synergies": ["Squat avant (front squat)", "Développé militaire"],
+      "antagonists": [],
+      "contraindications": ["shoulder_injury"],
+      "tempo_recommendations": { "athletic": "explosive" },
+      "rest_modifiers": { "default": 0.9 }
+    },
+    {
+      "name_fr": "Battle ropes",
+      "goal_scores": { "strength": 30, "hypertrophy": 30, "athletic": 90, "rehab": 50 },
+      "programming_priority": "finisher",
+      "morpho_protocols": {
+        "all": {
+          "sets_modifier": 0,
+          "reps": "20-40s",
+          "tempo": "explosive",
+          "notes": "Cardio haute intensité, variations multiples"
+        }
+      },
+      "synergies": ["Burpees"],
+      "antagonists": [],
+      "contraindications": ["shoulder_injury"],
+      "tempo_recommendations": { "athletic": "explosive" },
+      "rest_modifiers": { "default": 0.6 }
+    },
+    {
+      "name_fr": "Rowing machine",
+      "goal_scores": { "strength": 40, "hypertrophy": 35, "athletic": 85, "rehab": 75 },
+      "programming_priority": "accessory",
+      "morpho_protocols": {
+        "arm_length_long": {
+          "sets_modifier": 0,
+          "reps": "500-2000m",
+          "tempo": "controlled",
+          "notes": "Grande amplitude naturelle, excellent cardio"
+        },
+        "all": {
+          "sets_modifier": 0,
+          "reps": "intervals",
+          "tempo": "varied",
+          "notes": "Full body cardio, technique de tirage correcte"
+        }
+      },
+      "synergies": [],
+      "antagonists": [],
+      "contraindications": ["lower_back_injury"],
+      "tempo_recommendations": { "athletic": "varied" },
+      "rest_modifiers": { "default": 0.5 }
+    }
+  ]
+}
