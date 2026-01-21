@@ -50,6 +50,7 @@ const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
 type MorphoProfileData = {
   primaryMorphotype: string;
   secondaryMorphotype: string | null;
+  morphotypeScore: { globalType?: string } | null;
   strengths: string[] | null;
   weaknesses: string[] | null;
   recommendedExercises: string[] | null;
@@ -80,7 +81,7 @@ export default function ProfilePage() {
       setAchievements(achievementsData);
       setRecentXp(xpData);
       setStats(statsData);
-      setMorphoProfile(morphoData);
+      setMorphoProfile(morphoData as MorphoProfileData);
       setIsLoading(false);
     }
     loadData();
@@ -271,6 +272,9 @@ function getAvatarEmoji(stage: number): string {
 }
 
 const morphotypeInfo: Record<string, { emoji: string; title: string; gradient: string }> = {
+  longiligne: { emoji: '🦒', title: 'Longiligne', gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)' },
+  breviline: { emoji: '🐻', title: 'Bréviligne', gradient: 'linear-gradient(135deg, #10b981 0%, #22c55e 100%)' },
+  normo: { emoji: '🦁', title: 'Normoligne', gradient: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)' },
   ectomorph: { emoji: '🦒', title: 'Ectomorphe', gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)' },
   mesomorph: { emoji: '🦁', title: 'Mésomorphe', gradient: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)' },
   endomorph: { emoji: '🐻', title: 'Endomorphe', gradient: 'linear-gradient(135deg, #10b981 0%, #22c55e 100%)' },
@@ -293,7 +297,7 @@ function StatsTab({ stats, achievements, morphoProfile }: { stats: StatsData; ac
           </Typography>
           <Card
             sx={{
-              background: morphotypeInfo[morphoProfile.primaryMorphotype]?.gradient || morphotypeInfo.mesomorph.gradient,
+              background: morphotypeInfo[morphoProfile.morphotypeScore?.globalType || morphoProfile.primaryMorphotype]?.gradient || morphotypeInfo.longiligne.gradient,
               color: 'white',
             }}
           >
@@ -301,11 +305,11 @@ function StatsTab({ stats, achievements, morphoProfile }: { stats: StatsData; ac
               <CardContent sx={{ py: 2 }}>
                 <Stack direction="row" spacing={2} alignItems="center">
                   <Typography variant="h2">
-                    {morphotypeInfo[morphoProfile.primaryMorphotype]?.emoji || '🧬'}
+                    {morphotypeInfo[morphoProfile.morphotypeScore?.globalType || morphoProfile.primaryMorphotype]?.emoji || '🧬'}
                   </Typography>
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="h6" fontWeight={700}>
-                      {morphotypeInfo[morphoProfile.primaryMorphotype]?.title || 'Morphotype'}
+                      {morphotypeInfo[morphoProfile.morphotypeScore?.globalType || morphoProfile.primaryMorphotype]?.title || 'Morphotype'}
                     </Typography>
                     {morphoProfile.strengths && morphoProfile.strengths.length > 0 && (
                       <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
