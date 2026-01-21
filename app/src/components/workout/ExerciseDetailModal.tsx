@@ -9,6 +9,7 @@ import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
 import Drawer from '@mui/material/Drawer';
 import Close from '@mui/icons-material/Close';
+import ArrowBack from '@mui/icons-material/ArrowBack';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { getExerciseImages } from '@/lib/exercise-images';
 
@@ -21,19 +22,20 @@ const MUSCLE_MAPPING: Record<string, string[]> = {
   chest: ['chest'],
 
   // Dos
-  latissimus_dorsi: ['upper-back', 'trapezius'],
+  latissimus_dorsi: ['upper-back'],
   teres_major: ['upper-back'],
   rhomboids: ['upper-back'],
   trapezius_mid: ['trapezius'],
   trapezius_upper: ['trapezius'],
   erector_spinae: ['lower-back'],
-  back: ['upper-back', 'lower-back', 'trapezius'],
+  back: ['upper-back', 'lower-back'],
 
   // Épaules
   anterior_delt: ['front-deltoids'],
-  lateral_delt: ['front-deltoids', 'back-deltoids'],
+  lateral_delt: ['front-deltoids'], // Visible principalement de face
   posterior_delt: ['back-deltoids'],
   infraspinatus: ['back-deltoids'],
+  teres_minor: ['back-deltoids'], // Coiffe des rotateurs
   shoulders: ['front-deltoids', 'back-deltoids'],
 
   // Bras
@@ -53,18 +55,23 @@ const MUSCLE_MAPPING: Record<string, string[]> = {
   quadriceps_vastus_lateralis: ['quadriceps'],
   quadriceps_vastus_medialis: ['quadriceps'],
   gluteus_maximus: ['gluteal'],
+  gluteus_medius: ['gluteal'],
   hamstrings_biceps_femoris: ['hamstring'],
   hamstrings_semitendinosus: ['hamstring'],
   calves_gastrocnemius: ['calves'],
   calves_soleus: ['calves'],
-  hip_flexors: ['adductor'],
+  hip_flexors: ['quadriceps'], // Inclut le rectus femoris
+  tensor_fasciae_latae: ['gluteal'], // TFL - côté de la hanche
   adductors: ['adductor'],
   legs: ['quadriceps', 'hamstring', 'gluteal', 'calves'],
 
   // Core
   rectus_abdominis: ['abs'],
   obliques: ['obliques'],
+  obliques_external: ['obliques'],
+  obliques_internal: ['obliques'],
   transverse_abdominis: ['abs'],
+  serratus_anterior: ['obliques'], // Dentelé - côté du torse
   core: ['abs', 'obliques'],
 };
 
@@ -130,7 +137,6 @@ export default function ExerciseDetailModal({
   };
 
   const primaryMusclesMapped = getMappedMuscles(exercise.primaryMuscles);
-  const secondaryMusclesMapped = getMappedMuscles(exercise.secondaryMuscles);
 
   // Also map from muscle group if no primary muscles
   if (primaryMusclesMapped.length === 0) {
@@ -139,6 +145,11 @@ export default function ExerciseDetailModal({
       groupMapping.forEach(m => primaryMusclesMapped.push(m));
     }
   }
+
+  // Filter secondary muscles to exclude any that are already in primary
+  const primarySet = new Set(primaryMusclesMapped);
+  const secondaryMusclesMapped = getMappedMuscles(exercise.secondaryMuscles)
+    .filter(m => !primarySet.has(m));
 
   // Build data for Model component
   const modelData: IExerciseData[] = [
@@ -191,11 +202,23 @@ export default function ExerciseDetailModal({
 
         {/* Header */}
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-          <Typography sx={{ fontWeight: 600, fontSize: '1.2rem', flex: 1 }}>
-            {exercise.nameFr}
-          </Typography>
-          <IconButton onClick={onClose} size="small">
-            <Close />
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ flex: 1 }}>
+            <IconButton
+              onClick={onClose}
+              size="small"
+              sx={{
+                bgcolor: 'action.hover',
+                '&:hover': { bgcolor: 'action.selected' },
+              }}
+            >
+              <ArrowBack sx={{ fontSize: 20 }} />
+            </IconButton>
+            <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              {exercise.nameFr}
+            </Typography>
+          </Stack>
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.disabled' }}>
+            <Close sx={{ fontSize: 20 }} />
           </IconButton>
         </Stack>
 
@@ -210,12 +233,12 @@ export default function ExerciseDetailModal({
           <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
             {primaryMusclesMapped.map(muscle => (
               <Chip
-                key={muscle}
+                key={`primary-${muscle}`}
                 label={MUSCLE_LABELS[muscle] || muscle}
                 size="small"
                 sx={{
-                  bgcolor: 'error.main',
-                  color: 'error.contrastText',
+                  bgcolor: '#dc2626', // Red for primary
+                  color: 'white',
                   fontWeight: 600,
                   fontSize: '0.75rem',
                 }}
@@ -223,12 +246,12 @@ export default function ExerciseDetailModal({
             ))}
             {secondaryMusclesMapped.map(muscle => (
               <Chip
-                key={muscle}
+                key={`secondary-${muscle}`}
                 label={MUSCLE_LABELS[muscle] || muscle}
                 size="small"
                 sx={{
-                  bgcolor: 'warning.main',
-                  color: 'warning.contrastText',
+                  bgcolor: '#f59e0b', // Amber/Orange for secondary
+                  color: 'white',
                   fontWeight: 500,
                   fontSize: '0.75rem',
                 }}
@@ -288,7 +311,7 @@ export default function ExerciseDetailModal({
             <Model
               data={modelData}
               style={{ width: '100%', maxWidth: 200 }}
-              highlightedColors={['#ef4444', '#f97316']} // Red for primary, orange for secondary
+              highlightedColors={['#f97316', '#ef4444']} // Orange for secondary (freq 1), Red for primary (freq 2)
               bodyColor="#3f3f46"
               type={viewSide}
             />
