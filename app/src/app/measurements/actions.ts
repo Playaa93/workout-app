@@ -16,11 +16,15 @@ export type MeasurementData = {
   leftForearm: string | null;
   rightForearm: string | null;
   waist: string | null;
+  abdomen: string | null;
   hips: string | null;
+  glutes: string | null;
   leftThigh: string | null;
   rightThigh: string | null;
   leftCalf: string | null;
   rightCalf: string | null;
+  wrist: string | null;
+  ankle: string | null;
   notes: string | null;
 };
 
@@ -45,11 +49,15 @@ export type MeasurementInput = {
   leftForearm?: number;
   rightForearm?: number;
   waist?: number;
+  abdomen?: number;
   hips?: number;
+  glutes?: number;
   leftThigh?: number;
   rightThigh?: number;
   leftCalf?: number;
   rightCalf?: number;
+  wrist?: number;
+  ankle?: number;
   notes?: string;
 };
 
@@ -121,11 +129,15 @@ export async function addMeasurement(data: MeasurementInput): Promise<string> {
       leftForearm: data.leftForearm?.toString(),
       rightForearm: data.rightForearm?.toString(),
       waist: data.waist?.toString(),
+      abdomen: data.abdomen?.toString(),
       hips: data.hips?.toString(),
+      glutes: data.glutes?.toString(),
       leftThigh: data.leftThigh?.toString(),
       rightThigh: data.rightThigh?.toString(),
       leftCalf: data.leftCalf?.toString(),
       rightCalf: data.rightCalf?.toString(),
+      wrist: data.wrist?.toString(),
+      ankle: data.ankle?.toString(),
       notes: data.notes,
     })
     .returning();

@@ -19,6 +19,14 @@ import ArrowBack from '@mui/icons-material/ArrowBack';
 
 type ViewState = 'loading' | 'intro' | 'questionnaire' | 'results';
 
+// Haptic feedback helper
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  if ('vibrate' in navigator) {
+    const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
+    navigator.vibrate(patterns[style]);
+  }
+};
+
 export default function MorphologyPage() {
   const [view, setView] = useState<ViewState>('loading');
   const [questions, setQuestions] = useState<MorphoQuestion[]>([]);
@@ -117,25 +125,30 @@ export default function MorphologyPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      {/* Header */}
-      <Paper
-        elevation={0}
-        sx={{
-          px: 2,
-          py: 1.5,
-          borderBottom: 1,
-          borderColor: 'divider',
-          borderRadius: 0,
-          bgcolor: 'background.paper',
-        }}
-      >
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <IconButton component={Link} href="/" size="small">
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" fontWeight={600}>Analyse Morphologique</Typography>
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Box
+            component={Link}
+            href="/"
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              textDecoration: 'none',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            Analyse Morphologique
+          </Typography>
+          <Box sx={{ width: 32 }} />
         </Stack>
-      </Paper>
+      </Box>
 
       {/* Content */}
       <Box sx={{ flex: 1, p: 2 }}>
@@ -180,22 +193,26 @@ function IntroView({ onStart }: { onStart: () => void }) {
         <InfoCard emoji="🏋️" title="Exercices" description="Squat, deadlift, bench, curls" />
       </Stack>
 
-      <Button
-        variant="contained"
-        size="large"
-        onClick={onStart}
-        fullWidth
+      <Box
+        onClick={() => {
+          triggerHaptic('light');
+          onStart();
+        }}
         sx={{
           maxWidth: 360,
+          width: '100%',
           py: 1.5,
-          background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
-          '&:hover': {
-            background: 'linear-gradient(135deg, #7f67be 0%, #bb86fc 100%)',
-          },
+          textAlign: 'center',
+          bgcolor: 'text.primary',
+          color: 'background.default',
+          borderRadius: 2,
+          fontWeight: 600,
+          cursor: 'pointer',
+          '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
         }}
       >
         Commencer l&apos;analyse
-      </Button>
+      </Box>
     </Box>
   );
 }

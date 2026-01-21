@@ -818,7 +818,7 @@ function PhotoUploadModal({
   );
 }
 
-// Add Measurement Form
+// Add Measurement Form - Minimalist single scroll
 function AddMeasurementForm({
   lastMeasurement,
   onSubmit,
@@ -832,7 +832,11 @@ function AddMeasurementForm({
     weight: lastMeasurement?.weight ? parseFloat(lastMeasurement.weight) : undefined,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeSection, setActiveSection] = useState<'essential' | 'upper' | 'lower'>('essential');
+  const [showMore, setShowMore] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [height, setHeight] = useState('175');
+  const [isMale, setIsMale] = useState(true);
+  const [calculatedBf, setCalculatedBf] = useState<number | null>(null);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -846,6 +850,27 @@ function AddMeasurementForm({
     }));
   };
 
+  const calculateNavyBodyFat = () => {
+    const h = parseFloat(height);
+    const n = data.neck;
+    const w = data.waist;
+    const hp = data.hips;
+    if (!h || !n || !w) return;
+    let bf: number;
+    if (isMale) {
+      if (w <= n) return;
+      bf = 86.010 * Math.log10(w - n) - 70.041 * Math.log10(h) + 36.76;
+    } else {
+      if (!hp || (w + hp) <= n) return;
+      bf = 163.205 * Math.log10(w + hp - n) - 97.684 * Math.log10(h) - 78.387;
+    }
+    const rounded = Math.round(bf * 10) / 10;
+    setCalculatedBf(rounded);
+    updateField('bodyFatPercentage', rounded.toString());
+  };
+
+  const canCalculate = data.neck && data.waist && height && (isMale || data.hips);
+
   return (
     <Box
       sx={{
@@ -857,22 +882,15 @@ function AddMeasurementForm({
         flexDirection: 'column',
       }}
     >
-      {/* Header - minimal */}
+      {/* Header */}
       <Box sx={{ pt: 1.5, pb: 1, px: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Box
+          <Typography
             onClick={onClose}
-            sx={{
-              cursor: 'pointer',
-              p: 0.5,
-              display: 'flex',
-              alignItems: 'center',
-              color: 'text.secondary',
-              '&:active': { opacity: 0.5 },
-            }}
+            sx={{ cursor: 'pointer', color: 'text.secondary', '&:active': { opacity: 0.5 } }}
           >
-            <Close sx={{ fontSize: 24 }} />
-          </Box>
+            Annuler
+          </Typography>
           <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
             Nouvelle mesure
           </Typography>
@@ -881,7 +899,6 @@ function AddMeasurementForm({
             sx={{
               cursor: isSubmitting || !data.weight ? 'default' : 'pointer',
               fontWeight: 600,
-              fontSize: '0.95rem',
               color: isSubmitting || !data.weight ? 'text.disabled' : 'primary.main',
               '&:active': { opacity: 0.5 },
             }}
@@ -891,52 +908,19 @@ function AddMeasurementForm({
         </Stack>
       </Box>
 
-      {/* Section Tabs - text style */}
-      <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" justifyContent="center" spacing={3}>
-          {([
-            { key: 'essential', label: 'Essentiel' },
-            { key: 'upper', label: 'Haut' },
-            { key: 'lower', label: 'Bas' },
-          ] as const).map((section) => (
-            <Typography
-              key={section.key}
-              onClick={() => {
-                triggerHaptic('light');
-                setActiveSection(section.key);
-              }}
-              sx={{
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: activeSection === section.key ? 600 : 400,
-                color: activeSection === section.key ? 'text.primary' : 'text.disabled',
-                transition: 'all 0.15s ease',
-                '&:active': { opacity: 0.5 },
-              }}
-            >
-              {section.label}
-            </Typography>
-          ))}
-        </Stack>
-      </Box>
-
+      {/* Content - single scroll */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-        {activeSection === 'essential' && (
-          <Stack spacing={2}>
-            <MeasureInput
-              label="Poids"
-              unit="kg"
-              value={data.weight}
-              onChange={(v) => updateField('weight', v)}
-              placeholder={lastMeasurement?.weight || ''}
-            />
-            <MeasureInput
-              label="Masse grasse"
-              unit="%"
-              value={data.bodyFatPercentage}
-              onChange={(v) => updateField('bodyFatPercentage', v)}
-              placeholder={lastMeasurement?.bodyFatPercentage || ''}
-            />
+        <Stack spacing={2.5}>
+          {/* Main metrics */}
+          <MeasureInput
+            label="Poids"
+            unit="kg"
+            value={data.weight}
+            onChange={(v) => updateField('weight', v)}
+            placeholder={lastMeasurement?.weight || '80'}
+          />
+
+          <Stack direction="row" spacing={2}>
             <MeasureInput
               label="Tour de taille"
               unit="cm"
@@ -945,121 +929,174 @@ function AddMeasurementForm({
               placeholder={lastMeasurement?.waist || ''}
             />
             <MeasureInput
-              label="Tour de poitrine"
+              label="Poitrine"
               unit="cm"
               value={data.chest}
               onChange={(v) => updateField('chest', v)}
               placeholder={lastMeasurement?.chest || ''}
             />
           </Stack>
-        )}
 
-        {activeSection === 'upper' && (
-          <Stack spacing={2}>
-            <MeasureInput
-              label="Cou"
-              unit="cm"
-              value={data.neck}
-              onChange={(v) => updateField('neck', v)}
-              placeholder={lastMeasurement?.neck || ''}
-            />
-            <MeasureInput
-              label="Épaules"
-              unit="cm"
-              value={data.shoulders}
-              onChange={(v) => updateField('shoulders', v)}
-              placeholder={lastMeasurement?.shoulders || ''}
-            />
-            <MeasureInput
-              label="Hanches"
-              unit="cm"
-              value={data.hips}
-              onChange={(v) => updateField('hips', v)}
-              placeholder={lastMeasurement?.hips || ''}
-            />
-            <Stack direction="row" spacing={2}>
-              <MeasureInput
-                label="Bras gauche"
-                unit="cm"
-                value={data.leftArm}
-                onChange={(v) => updateField('leftArm', v)}
-                placeholder={lastMeasurement?.leftArm || ''}
-              />
-              <MeasureInput
-                label="Bras droit"
-                unit="cm"
-                value={data.rightArm}
-                onChange={(v) => updateField('rightArm', v)}
-                placeholder={lastMeasurement?.rightArm || ''}
-              />
-            </Stack>
-            <Stack direction="row" spacing={2}>
-              <MeasureInput
-                label="Avant-bras G"
-                unit="cm"
-                value={data.leftForearm}
-                onChange={(v) => updateField('leftForearm', v)}
-                placeholder={lastMeasurement?.leftForearm || ''}
-              />
-              <MeasureInput
-                label="Avant-bras D"
-                unit="cm"
-                value={data.rightForearm}
-                onChange={(v) => updateField('rightForearm', v)}
-                placeholder={lastMeasurement?.rightForearm || ''}
-              />
-            </Stack>
-          </Stack>
-        )}
+          <MeasureInput
+            label="Masse grasse"
+            unit="%"
+            value={data.bodyFatPercentage}
+            onChange={(v) => updateField('bodyFatPercentage', v)}
+            placeholder={lastMeasurement?.bodyFatPercentage || ''}
+          />
 
-        {activeSection === 'lower' && (
-          <Stack spacing={2}>
-            <Stack direction="row" spacing={2}>
-              <MeasureInput
-                label="Cuisse gauche"
-                unit="cm"
-                value={data.leftThigh}
-                onChange={(v) => updateField('leftThigh', v)}
-                placeholder={lastMeasurement?.leftThigh || ''}
-              />
-              <MeasureInput
-                label="Cuisse droite"
-                unit="cm"
-                value={data.rightThigh}
-                onChange={(v) => updateField('rightThigh', v)}
-                placeholder={lastMeasurement?.rightThigh || ''}
-              />
-            </Stack>
-            <Stack direction="row" spacing={2}>
-              <MeasureInput
-                label="Mollet gauche"
-                unit="cm"
-                value={data.leftCalf}
-                onChange={(v) => updateField('leftCalf', v)}
-                placeholder={lastMeasurement?.leftCalf || ''}
-              />
-              <MeasureInput
-                label="Mollet droit"
-                unit="cm"
-                value={data.rightCalf}
-                onChange={(v) => updateField('rightCalf', v)}
-                placeholder={lastMeasurement?.rightCalf || ''}
-              />
-            </Stack>
-          </Stack>
-        )}
+          {/* Calculator - collapsible */}
+          <Box
+            onClick={() => {
+              triggerHaptic('light');
+              setShowCalculator(!showCalculator);
+            }}
+            sx={{
+              py: 1,
+              color: 'text.secondary',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <ExpandMore sx={{ fontSize: 18, transform: showCalculator ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+            Calculer ma masse grasse
+          </Box>
 
-        {/* Notes */}
-        <TextField
-          label="Notes (optionnel)"
-          multiline
-          rows={3}
-          value={data.notes || ''}
-          onChange={(e) => setData((prev) => ({ ...prev, notes: e.target.value }))}
-          placeholder="Comment tu te sens ?"
-          fullWidth
-          sx={{ mt: 3 }}
-        />
+          <Collapse in={showCalculator}>
+            <Card sx={{ bgcolor: 'action.hover' }}>
+              <CardContent sx={{ py: 2 }}>
+                <Stack spacing={2}>
+                  <Stack direction="row" spacing={1}>
+                    {['Homme', 'Femme'].map((g) => (
+                      <Box
+                        key={g}
+                        onClick={() => { setIsMale(g === 'Homme'); setCalculatedBf(null); }}
+                        sx={{
+                          flex: 1, py: 0.75, textAlign: 'center', borderRadius: 1,
+                          fontSize: '0.85rem', cursor: 'pointer', border: 1,
+                          fontWeight: (g === 'Homme' ? isMale : !isMale) ? 600 : 400,
+                          bgcolor: (g === 'Homme' ? isMale : !isMale) ? 'primary.main' : 'transparent',
+                          color: (g === 'Homme' ? isMale : !isMale) ? 'primary.contrastText' : 'text.secondary',
+                          borderColor: (g === 'Homme' ? isMale : !isMale) ? 'primary.main' : 'divider',
+                        }}
+                      >
+                        {g}
+                      </Box>
+                    ))}
+                  </Stack>
+
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      label="Taille"
+                      type="number"
+                      value={height}
+                      onChange={(e) => setHeight(e.target.value)}
+                      size="small"
+                      fullWidth
+                      InputProps={{ endAdornment: <Typography color="text.secondary">cm</Typography> }}
+                    />
+                    <TextField
+                      label="Cou"
+                      type="number"
+                      value={data.neck || ''}
+                      onChange={(e) => updateField('neck', e.target.value)}
+                      size="small"
+                      fullWidth
+                      InputProps={{ endAdornment: <Typography color="text.secondary">cm</Typography> }}
+                    />
+                  </Stack>
+
+                  {!isMale && (
+                    <TextField
+                      label="Hanches"
+                      type="number"
+                      value={data.hips || ''}
+                      onChange={(e) => updateField('hips', e.target.value)}
+                      size="small"
+                      fullWidth
+                      InputProps={{ endAdornment: <Typography color="text.secondary">cm</Typography> }}
+                    />
+                  )}
+
+                  <Box
+                    onClick={canCalculate ? calculateNavyBodyFat : undefined}
+                    sx={{
+                      py: 1.5, textAlign: 'center', borderRadius: 1,
+                      fontWeight: 600, cursor: canCalculate ? 'pointer' : 'default',
+                      bgcolor: canCalculate ? 'text.primary' : 'action.disabled',
+                      color: 'background.default',
+                      '&:active': canCalculate ? { opacity: 0.8 } : {},
+                    }}
+                  >
+                    {calculatedBf !== null ? `${calculatedBf}% - Appliqué ✓` : 'Calculer'}
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Collapse>
+
+          {/* More measurements - collapsible */}
+          <Box
+            onClick={() => {
+              triggerHaptic('light');
+              setShowMore(!showMore);
+            }}
+            sx={{
+              py: 1,
+              color: 'text.secondary',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <ExpandMore sx={{ fontSize: 18, transform: showMore ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+            Plus de mesures
+          </Box>
+
+          <Collapse in={showMore}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={2}>
+                <MeasureInput label="Cou" unit="cm" value={data.neck} onChange={(v) => updateField('neck', v)} placeholder="" />
+                <MeasureInput label="Épaules" unit="cm" value={data.shoulders} onChange={(v) => updateField('shoulders', v)} placeholder="" />
+              </Stack>
+              <Stack direction="row" spacing={2}>
+                <MeasureInput label="Bras G" unit="cm" value={data.leftArm} onChange={(v) => updateField('leftArm', v)} placeholder="" />
+                <MeasureInput label="Bras D" unit="cm" value={data.rightArm} onChange={(v) => updateField('rightArm', v)} placeholder="" />
+              </Stack>
+              <Stack direction="row" spacing={2}>
+                <MeasureInput label="Hanches" unit="cm" value={data.hips} onChange={(v) => updateField('hips', v)} placeholder="" />
+                <MeasureInput label="Fesses" unit="cm" value={data.glutes} onChange={(v) => updateField('glutes', v)} placeholder="" />
+              </Stack>
+              <Stack direction="row" spacing={2}>
+                <MeasureInput label="Cuisse G" unit="cm" value={data.leftThigh} onChange={(v) => updateField('leftThigh', v)} placeholder="" />
+                <MeasureInput label="Cuisse D" unit="cm" value={data.rightThigh} onChange={(v) => updateField('rightThigh', v)} placeholder="" />
+              </Stack>
+              <Stack direction="row" spacing={2}>
+                <MeasureInput label="Mollet G" unit="cm" value={data.leftCalf} onChange={(v) => updateField('leftCalf', v)} placeholder="" />
+                <MeasureInput label="Mollet D" unit="cm" value={data.rightCalf} onChange={(v) => updateField('rightCalf', v)} placeholder="" />
+              </Stack>
+            </Stack>
+          </Collapse>
+
+          {/* Notes */}
+          <TextField
+            label="Notes"
+            multiline
+            rows={2}
+            value={data.notes || ''}
+            onChange={(e) => setData((prev) => ({ ...prev, notes: e.target.value }))}
+            placeholder="Optionnel"
+            fullWidth
+            size="small"
+          />
+        </Stack>
       </Box>
     </Box>
   );
@@ -1093,3 +1130,4 @@ function MeasureInput({
     />
   );
 }
+

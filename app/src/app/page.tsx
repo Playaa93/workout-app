@@ -62,42 +62,36 @@ export default function HomePage() {
       flexDirection: 'column',
       bgcolor: 'background.default',
     }}>
-      {/* Header */}
-      <Paper
-        elevation={0}
-        sx={{
-          px: 2.5,
-          py: 2,
-          borderBottom: 1,
-          borderColor: 'divider',
-          borderRadius: 0,
-          bgcolor: 'background.paper',
-        }}
-      >
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Avatar
-              sx={{
-                width: 48,
-                height: 48,
-                bgcolor: 'primary.main',
-                fontSize: '1.25rem',
-                fontWeight: 600,
-              }}
-            >
-              H
-            </Avatar>
-            <Box>
-              <Typography variant="h6" fontWeight={600}>
-                Salut, haze
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Prêt pour ta séance ?
-              </Typography>
-            </Box>
-          </Stack>
+      {/* Header - minimal */}
+      <Box sx={{ px: 2.5, pt: 2, pb: 1.5 }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Avatar
+            component={Link}
+            href="/profile"
+            sx={{
+              width: 44,
+              height: 44,
+              bgcolor: 'text.primary',
+              color: 'background.default',
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+              cursor: 'pointer',
+              '&:active': { opacity: 0.7 },
+            }}
+          >
+            H
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              Salut, haze
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Prêt pour ta séance ?
+            </Typography>
+          </Box>
         </Stack>
-      </Paper>
+      </Box>
 
       {/* Morphology CTA - First thing to do if not defined */}
       {!morphoProfile && (

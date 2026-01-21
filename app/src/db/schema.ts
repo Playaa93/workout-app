@@ -118,11 +118,15 @@ export const measurements = pgTable(
     leftForearm: decimal('left_forearm', { precision: 5, scale: 2 }),
     rightForearm: decimal('right_forearm', { precision: 5, scale: 2 }),
     waist: decimal('waist', { precision: 5, scale: 2 }),
+    abdomen: decimal('abdomen', { precision: 5, scale: 2 }), // Tour de ventre (nombril)
     hips: decimal('hips', { precision: 5, scale: 2 }),
+    glutes: decimal('glutes', { precision: 5, scale: 2 }), // Tour de fesses
     leftThigh: decimal('left_thigh', { precision: 5, scale: 2 }),
     rightThigh: decimal('right_thigh', { precision: 5, scale: 2 }),
     leftCalf: decimal('left_calf', { precision: 5, scale: 2 }),
     rightCalf: decimal('right_calf', { precision: 5, scale: 2 }),
+    wrist: decimal('wrist', { precision: 5, scale: 2 }), // Tour de poignet
+    ankle: decimal('ankle', { precision: 5, scale: 2 }), // Tour de cheville
     notes: text('notes'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },

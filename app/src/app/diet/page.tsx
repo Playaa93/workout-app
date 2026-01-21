@@ -44,6 +44,14 @@ import Close from '@mui/icons-material/Close';
 
 type View = 'main' | 'cravings' | 'search' | 'quick' | 'settings';
 
+// Haptic feedback helper
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  if ('vibrate' in navigator) {
+    const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
+    navigator.vibrate(patterns[style]);
+  }
+};
+
 export default function DietPage() {
   const [view, setView] = useState<View>('main');
   const [cravings, setCravings] = useState<CravingData[]>([]);
@@ -115,30 +123,45 @@ export default function DietPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      {/* Header */}
-      <Paper
-        elevation={0}
-        sx={{
-          px: 2,
-          py: 1.5,
-          borderBottom: 1,
-          borderColor: 'divider',
-          borderRadius: 0,
-          bgcolor: 'background.paper',
-        }}
-      >
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <IconButton component={Link} href="/" size="small">
-              <ArrowBack />
-            </IconButton>
-            <Typography variant="h6" fontWeight={600}>Nutrition</Typography>
-          </Stack>
-          <IconButton onClick={() => setView('settings')} size="small">
-            <Settings />
-          </IconButton>
+          <Box
+            component={Link}
+            href="/"
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              textDecoration: 'none',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            Nutrition
+          </Typography>
+          <Box
+            onClick={() => {
+              triggerHaptic('light');
+              setView('settings');
+            }}
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <Settings sx={{ fontSize: 22 }} />
+          </Box>
         </Stack>
-      </Paper>
+      </Box>
 
       {view === 'main' && (
         <MainView
@@ -540,17 +563,31 @@ function CravingsView({
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
-          <IconButton onClick={onClose} size="small">
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" fontWeight={600}>J&apos;ai envie de...</Typography>
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+          <Box
+            onClick={onClose}
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            J&apos;ai envie de...
+          </Typography>
+          <Box sx={{ width: 32 }} />
         </Stack>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', pb: 1 }}>
           Pas de jugement. Log ce que tu manges vraiment.
         </Typography>
-      </Paper>
+      </Box>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         <Stack spacing={3}>
@@ -693,31 +730,48 @@ function SearchView({
           </Card>
         </Stack>
 
-        <Button
-          fullWidth
-          variant="contained"
-          size="large"
+        <Box
           onClick={handleAdd}
           sx={{
             mt: 2,
             py: 1.5,
-            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+            textAlign: 'center',
+            bgcolor: 'text.primary',
+            color: 'background.default',
+            borderRadius: 2,
+            fontWeight: 600,
+            cursor: 'pointer',
+            '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
           }}
         >
           Ajouter
-        </Button>
+        </Box>
       </Box>
     );
   }
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-          <IconButton onClick={onClose} size="small">
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" fontWeight={600}>Rechercher un aliment</Typography>
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Box
+            onClick={onClose}
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            Rechercher un aliment
+          </Typography>
+          <Box sx={{ width: 32 }} />
         </Stack>
         <TextField
           fullWidth
@@ -734,7 +788,7 @@ function SearchView({
             ),
           }}
         />
-      </Paper>
+      </Box>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         {isSearching ? (
@@ -781,13 +835,31 @@ function QuickEntryView({
   };
 
   return (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-        <IconButton onClick={onClose} size="small">
-          <ArrowBack />
-        </IconButton>
-        <Typography variant="h6" fontWeight={600}>Entrée rapide</Typography>
-      </Stack>
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2, mb: 2 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Box
+            onClick={onClose}
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            Entrée rapide
+          </Typography>
+          <Box sx={{ width: 32 }} />
+        </Stack>
+      </Box>
+
+      <Box sx={{ flex: 1, px: 2 }}>
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Tu sais pas exactement ce que tu manges ? Pas grave. Estime juste.
@@ -835,19 +907,22 @@ function QuickEntryView({
         </Box>
       </Stack>
 
-      <Button
-        fullWidth
-        variant="contained"
-        size="large"
+      <Box
         onClick={handleSubmit}
-        disabled={!name || !calories}
         sx={{
           py: 1.5,
-          background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+          textAlign: 'center',
+          bgcolor: !name || !calories ? 'action.disabled' : 'text.primary',
+          color: 'background.default',
+          borderRadius: 2,
+          fontWeight: 600,
+          cursor: !name || !calories ? 'default' : 'pointer',
+          '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
         }}
       >
         Ajouter
-      </Button>
+      </Box>
+      </Box>
     </Box>
   );
 }
@@ -906,14 +981,28 @@ function SettingsView({
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <IconButton onClick={onClose} size="small">
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" fontWeight={600}>Mon profil nutrition</Typography>
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Box
+            onClick={onClose}
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            Mon profil nutrition
+          </Typography>
+          <Box sx={{ width: 32 }} />
         </Stack>
-      </Paper>
+      </Box>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         <Stack spacing={3}>
@@ -1032,21 +1121,23 @@ function SettingsView({
         </Stack>
       </Box>
 
-      <Paper elevation={0} sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-        <Button
-          fullWidth
-          variant="contained"
-          size="large"
+      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Box
           onClick={handleSave}
-          disabled={!isValid}
           sx={{
             py: 1.5,
-            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+            textAlign: 'center',
+            bgcolor: !isValid ? 'action.disabled' : 'text.primary',
+            color: 'background.default',
+            borderRadius: 2,
+            fontWeight: 600,
+            cursor: !isValid ? 'default' : 'pointer',
+            '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
           }}
         >
           Enregistrer
-        </Button>
-      </Paper>
+        </Box>
+      </Box>
     </Box>
   );
 }

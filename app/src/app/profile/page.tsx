@@ -28,8 +28,6 @@ import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import LinearProgress from '@mui/material/LinearProgress';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
 import Divider from '@mui/material/Divider';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import LocalFireDepartment from '@mui/icons-material/LocalFireDepartment';
@@ -40,6 +38,14 @@ import LightMode from '@mui/icons-material/LightMode';
 import DarkMode from '@mui/icons-material/DarkMode';
 import SettingsBrightness from '@mui/icons-material/SettingsBrightness';
 import Check from '@mui/icons-material/Check';
+
+// Haptic feedback helper
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  if ('vibrate' in navigator) {
+    const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
+    navigator.vibrate(patterns[style]);
+  }
+};
 
 type MorphoProfileData = {
   primaryMorphotype: string;
@@ -88,29 +94,37 @@ export default function ProfilePage() {
     );
   }
 
+  const handleTabChange = (newTab: number) => {
+    triggerHaptic('light');
+    setTab(newTab);
+  };
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      {/* Header */}
-      <Paper
-        elevation={0}
-        sx={{
-          px: 2,
-          py: 1.5,
-          borderBottom: 1,
-          borderColor: 'divider',
-          borderRadius: 0,
-          bgcolor: 'background.paper',
-        }}
-      >
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <IconButton component={Link} href="/" size="small">
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" fontWeight={600}>
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Box
+            component={Link}
+            href="/"
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              textDecoration: 'none',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
             Mon Profil
           </Typography>
+          <Box sx={{ width: 32 }} />
         </Stack>
-      </Paper>
+      </Box>
 
       {/* Profile Header */}
       {gamification && profile && (
@@ -213,22 +227,32 @@ export default function ProfilePage() {
         </Box>
       )}
 
-      {/* Tabs */}
-      <Tabs
-        value={tab}
-        onChange={(_, v) => setTab(v)}
-        variant="fullWidth"
-        sx={{
-          borderBottom: 1,
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
-        }}
-      >
-        <Tab label="Stats" />
-        <Tab label="Succès" />
-        <Tab label="XP" />
-        <Tab label="Param." />
-      </Tabs>
+      {/* Tabs - text style */}
+      <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" justifyContent="center" spacing={3}>
+          {([
+            { key: 0, label: 'Stats' },
+            { key: 1, label: 'Succès' },
+            { key: 2, label: 'XP' },
+            { key: 3, label: 'Param.' },
+          ] as const).map((item) => (
+            <Typography
+              key={item.key}
+              onClick={() => handleTabChange(item.key)}
+              sx={{
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: tab === item.key ? 600 : 400,
+                color: tab === item.key ? 'text.primary' : 'text.disabled',
+                transition: 'all 0.15s ease',
+                '&:active': { opacity: 0.5 },
+              }}
+            >
+              {item.label}
+            </Typography>
+          ))}
+        </Stack>
+      </Box>
 
       {/* Content */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
