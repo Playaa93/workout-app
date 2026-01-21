@@ -24,8 +24,6 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
 import TextField from '@mui/material/TextField';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
 import CircularProgress from '@mui/material/CircularProgress';
 import Fab from '@mui/material/Fab';
 import Collapse from '@mui/material/Collapse';
@@ -35,6 +33,14 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import Close from '@mui/icons-material/Close';
 
 type TabValue = 'overview' | 'history' | 'photos';
+
+// Haptic feedback helper
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  if ('vibrate' in navigator) {
+    const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
+    navigator.vibrate(patterns[style]);
+  }
+};
 
 export default function MeasurementsPage() {
   const [activeTab, setActiveTab] = useState<TabValue>('overview');
@@ -74,39 +80,63 @@ export default function MeasurementsPage() {
     await loadData();
   };
 
+  const handleTabChange = (tab: TabValue) => {
+    triggerHaptic('light');
+    setActiveTab(tab);
+  };
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      {/* Header */}
-      <Paper
-        elevation={0}
-        sx={{
-          px: 2,
-          py: 1.5,
-          borderBottom: 1,
-          borderColor: 'divider',
-          borderRadius: 0,
-          bgcolor: 'background.paper',
-        }}
-      >
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <IconButton component={Link} href="/" size="small">
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" fontWeight={600}>Mensurations</Typography>
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Box
+            component={Link}
+            href="/"
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              textDecoration: 'none',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            Mensurations
+          </Typography>
+          <Box sx={{ width: 32 }} /> {/* Spacer for centering */}
         </Stack>
-      </Paper>
+      </Box>
 
-      {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        onChange={(_, v) => setActiveTab(v as TabValue)}
-        variant="fullWidth"
-        sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}
-      >
-        <Tab label="Aperçu" value="overview" />
-        <Tab label="Historique" value="history" />
-        <Tab label="Photos" value="photos" />
-      </Tabs>
+      {/* Tabs - text style */}
+      <Box sx={{ px: 2, pb: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" justifyContent="center" spacing={3}>
+          {([
+            { key: 'overview', label: 'Aperçu' },
+            { key: 'history', label: 'Historique' },
+            { key: 'photos', label: 'Photos' },
+          ] as const).map((tab) => (
+            <Typography
+              key={tab.key}
+              onClick={() => handleTabChange(tab.key)}
+              sx={{
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: activeTab === tab.key ? 600 : 400,
+                color: activeTab === tab.key ? 'text.primary' : 'text.disabled',
+                transition: 'all 0.15s ease',
+                '&:active': { opacity: 0.5 },
+              }}
+            >
+              {tab.label}
+            </Typography>
+          ))}
+        </Stack>
+      </Box>
 
       {/* Content */}
       <Box sx={{ flex: 1, p: 2, pb: 12 }}>
@@ -123,18 +153,32 @@ export default function MeasurementsPage() {
         )}
       </Box>
 
-      {/* Add Button */}
+      {/* Add Button - minimal style */}
       <Fab
-        color="primary"
-        onClick={() => setShowAddForm(true)}
+        onClick={() => {
+          triggerHaptic('light');
+          setShowAddForm(true);
+        }}
         sx={{
           position: 'fixed',
           bottom: 24,
           right: 24,
-          background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+          width: 56,
+          height: 56,
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+          border: 1,
+          borderColor: 'divider',
+          '&:hover': {
+            bgcolor: 'background.paper',
+          },
+          '&:active': {
+            transform: 'scale(0.95)',
+          },
         }}
       >
-        <Add />
+        <Add sx={{ fontSize: 28 }} />
       </Fab>
 
       {/* Add Form Modal */}
@@ -482,13 +526,26 @@ function PhotosTab({
         <Typography color="text.secondary" sx={{ mb: 3 }}>
           Prends des photos pour suivre ta transformation
         </Typography>
-        <Button
-          variant="contained"
-          onClick={() => setShowUpload(true)}
-          sx={{ background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)' }}
+        <Box
+          onClick={() => {
+            triggerHaptic('light');
+            setShowUpload(true);
+          }}
+          sx={{
+            py: 1.5,
+            px: 4,
+            textAlign: 'center',
+            bgcolor: 'text.primary',
+            color: 'background.default',
+            borderRadius: 2,
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'inline-block',
+            '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
+          }}
         >
           Ajouter une photo
-        </Button>
+        </Box>
       </Box>
     );
   }
@@ -502,15 +559,30 @@ function PhotosTab({
 
   return (
     <Stack spacing={3}>
-      <Button
-        fullWidth
-        variant="outlined"
-        onClick={() => setShowUpload(true)}
-        sx={{ py: 1.5, borderStyle: 'dashed' }}
-        startIcon={<Add />}
+      <Box
+        onClick={() => {
+          triggerHaptic('light');
+          setShowUpload(true);
+        }}
+        sx={{
+          py: 2,
+          textAlign: 'center',
+          border: 1,
+          borderStyle: 'dashed',
+          borderColor: 'divider',
+          borderRadius: 2,
+          color: 'text.secondary',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1,
+          '&:active': { bgcolor: 'action.hover' },
+        }}
       >
+        <Add sx={{ fontSize: 20 }} />
         Ajouter une photo
-      </Button>
+      </Box>
 
       {Object.entries(photosByDate).map(([date, datePhotos]) => (
         <Box key={date}>
@@ -610,30 +682,61 @@ function PhotoUploadModal({
         flexDirection: 'column',
       }}
     >
-      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <IconButton onClick={onClose} size="small">
-            <Close />
-          </IconButton>
-          <Typography variant="h6" fontWeight={600}>Ajouter une photo</Typography>
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Box
+            onClick={onClose}
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            <Close sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            Ajouter une photo
+          </Typography>
+          <Box sx={{ width: 32 }} />
         </Stack>
-      </Paper>
+      </Box>
 
       <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
-        {/* Photo Type Selection */}
+        {/* Photo Type Selection - text style */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Type de photo</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
-            {(['front', 'back', 'side_left', 'side_right'] as const).map((type) => (
-              <Chip
-                key={type}
-                label={type === 'front' ? 'Face' : type === 'back' ? 'Dos' : type === 'side_left' ? 'Côté G' : 'Côté D'}
-                onClick={() => setPhotoType(type)}
-                color={photoType === type ? 'primary' : 'default'}
-                variant={photoType === type ? 'filled' : 'outlined'}
-              />
+          <Typography variant="caption" color="text.disabled" sx={{ mb: 1.5, display: 'block', textAlign: 'center' }}>
+            Type de photo
+          </Typography>
+          <Stack direction="row" justifyContent="center" spacing={3}>
+            {([
+              { key: 'front', label: 'Face' },
+              { key: 'back', label: 'Dos' },
+              { key: 'side_left', label: 'Côté G' },
+              { key: 'side_right', label: 'Côté D' },
+            ] as const).map((type) => (
+              <Typography
+                key={type.key}
+                onClick={() => {
+                  triggerHaptic('light');
+                  setPhotoType(type.key);
+                }}
+                sx={{
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: photoType === type.key ? 600 : 400,
+                  color: photoType === type.key ? 'text.primary' : 'text.disabled',
+                  transition: 'all 0.15s ease',
+                  '&:active': { opacity: 0.5 },
+                }}
+              >
+                {type.label}
+              </Typography>
             ))}
-          </Box>
+          </Stack>
         </Box>
 
         {/* Preview / Upload Area */}
@@ -691,22 +794,24 @@ function PhotoUploadModal({
           )}
         </Box>
 
-        {/* Submit Button */}
+        {/* Submit Button - minimal */}
         {previewUrl && (
-          <Button
-            fullWidth
-            variant="contained"
-            size="large"
+          <Box
             onClick={handleSubmit}
-            disabled={isUploading}
             sx={{
               mt: 2,
               py: 1.5,
-              background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+              textAlign: 'center',
+              bgcolor: isUploading ? 'action.disabled' : 'text.primary',
+              color: 'background.default',
+              borderRadius: 2,
+              fontWeight: 600,
+              cursor: isUploading ? 'default' : 'pointer',
+              '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
             }}
           >
             {isUploading ? 'Enregistrement...' : 'Enregistrer'}
-          </Button>
+          </Box>
         )}
       </Box>
     </Box>
@@ -752,37 +857,65 @@ function AddMeasurementForm({
         flexDirection: 'column',
       }}
     >
-      <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+      {/* Header - minimal */}
+      <Box sx={{ pt: 1.5, pb: 1, px: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <IconButton onClick={onClose} size="small">
-              <Close />
-            </IconButton>
-            <Typography variant="h6" fontWeight={600}>Nouvelle mesure</Typography>
-          </Stack>
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleSubmit}
-            disabled={isSubmitting || !data.weight}
-            sx={{ background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)' }}
+          <Box
+            onClick={onClose}
+            sx={{
+              cursor: 'pointer',
+              p: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'text.secondary',
+              '&:active': { opacity: 0.5 },
+            }}
           >
-            {isSubmitting ? '...' : 'Enregistrer'}
-          </Button>
+            <Close sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            Nouvelle mesure
+          </Typography>
+          <Typography
+            onClick={handleSubmit}
+            sx={{
+              cursor: isSubmitting || !data.weight ? 'default' : 'pointer',
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              color: isSubmitting || !data.weight ? 'text.disabled' : 'primary.main',
+              '&:active': { opacity: 0.5 },
+            }}
+          >
+            {isSubmitting ? '...' : 'OK'}
+          </Typography>
         </Stack>
-      </Paper>
+      </Box>
 
-      {/* Section Tabs */}
+      {/* Section Tabs - text style */}
       <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" spacing={1}>
-          {(['essential', 'upper', 'lower'] as const).map((section) => (
-            <Chip
-              key={section}
-              label={section === 'essential' ? 'Essentiel' : section === 'upper' ? 'Haut' : 'Bas'}
-              onClick={() => setActiveSection(section)}
-              color={activeSection === section ? 'primary' : 'default'}
-              variant={activeSection === section ? 'filled' : 'outlined'}
-            />
+        <Stack direction="row" justifyContent="center" spacing={3}>
+          {([
+            { key: 'essential', label: 'Essentiel' },
+            { key: 'upper', label: 'Haut' },
+            { key: 'lower', label: 'Bas' },
+          ] as const).map((section) => (
+            <Typography
+              key={section.key}
+              onClick={() => {
+                triggerHaptic('light');
+                setActiveSection(section.key);
+              }}
+              sx={{
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: activeSection === section.key ? 600 : 400,
+                color: activeSection === section.key ? 'text.primary' : 'text.disabled',
+                transition: 'all 0.15s ease',
+                '&:active': { opacity: 0.5 },
+              }}
+            >
+              {section.label}
+            </Typography>
           ))}
         </Stack>
       </Box>
