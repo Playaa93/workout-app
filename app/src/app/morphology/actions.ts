@@ -1,7 +1,8 @@
 'use server';
 
-import { db, morphoProfiles, users } from '@/db';
+import { db, morphoProfiles } from '@/db';
 import { eq } from 'drizzle-orm';
+import { requireUserId } from '@/lib/auth';
 import type {
   MorphoQuestion,
   FrameSize,
@@ -331,17 +332,7 @@ export async function calculateMorphotype(answers: Record<string, string>): Prom
 }
 
 export async function saveMorphoProfile(answers: Record<string, string>, result: MorphotypeResult) {
-  let user = await db.select().from(users).limit(1);
-
-  if (user.length === 0) {
-    const [newUser] = await db
-      .insert(users)
-      .values({ email: 'demo@workout.app', displayName: 'haze' })
-      .returning();
-    user = [newUser];
-  }
-
-  const userId = user[0].id;
+  const userId = await requireUserId();
 
   await db
     .insert(morphoProfiles)
@@ -396,13 +387,12 @@ export async function saveMorphoProfile(answers: Record<string, string>, result:
 }
 
 export async function getMorphoProfile() {
-  const user = await db.select().from(users).limit(1);
-  if (user.length === 0) return null;
+  const userId = await requireUserId();
 
   const profile = await db
     .select()
     .from(morphoProfiles)
-    .where(eq(morphoProfiles.userId, user[0].id))
+    .where(eq(morphoProfiles.userId, userId))
     .limit(1);
 
   return profile[0] || null;

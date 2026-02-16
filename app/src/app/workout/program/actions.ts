@@ -1,8 +1,9 @@
 'use server';
 
-import { db, exercises, workoutTemplates, workoutTemplateExercises, users, morphoProfiles } from '@/db';
+import { db, exercises, workoutTemplates, workoutTemplateExercises, morphoProfiles } from '@/db';
 import { eq } from 'drizzle-orm';
 import type { MorphotypeResult } from '@/app/morphology/types';
+import { requireUserId } from '@/lib/auth';
 import {
   type ProgramGoal,
   type ProgramApproach,
@@ -48,13 +49,12 @@ export type GeneratedProgram = {
 
 // Get user morphotype for program generation
 async function getUserMorphotype(): Promise<MorphotypeResult | null> {
-  const user = await db.select().from(users).limit(1);
-  if (user.length === 0) return null;
+  const userId = await requireUserId();
 
   const profile = await db
     .select()
     .from(morphoProfiles)
-    .where(eq(morphoProfiles.userId, user[0].id))
+    .where(eq(morphoProfiles.userId, userId))
     .limit(1);
 
   if (profile.length === 0) return null;
@@ -546,8 +546,7 @@ export async function generateProgram(config: ProgramConfig): Promise<GeneratedP
 
 // Save generated program as templates
 export async function saveProgramAsTemplates(program: GeneratedProgram): Promise<{ success: boolean; templateIds: string[] }> {
-  const user = await db.select().from(users).limit(1);
-  if (user.length === 0) throw new Error('No user found');
+  const userId = await requireUserId();
 
   const templateIds: string[] = [];
 
@@ -556,7 +555,7 @@ export async function saveProgramAsTemplates(program: GeneratedProgram): Promise
     const [template] = await db
       .insert(workoutTemplates)
       .values({
-        userId: user[0].id,
+        userId,
         name: workout.name,
         description: `${GOAL_LABELS[program.config.goal]} • ${APPROACH_LABELS[program.config.approach]} • ${SPLIT_LABELS[program.config.split]}`,
         targetMuscles: workout.targetMuscles,

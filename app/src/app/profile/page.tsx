@@ -38,6 +38,9 @@ import LightMode from '@mui/icons-material/LightMode';
 import DarkMode from '@mui/icons-material/DarkMode';
 import SettingsBrightness from '@mui/icons-material/SettingsBrightness';
 import Check from '@mui/icons-material/Check';
+import Logout from '@mui/icons-material/Logout';
+import Button from '@mui/material/Button';
+import { logout } from '@/lib/auth-actions';
 
 // Haptic feedback helper
 const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
@@ -640,6 +643,23 @@ function SettingsTab() {
         <Typography variant="body2" color="text.secondary">
           Workout App v1.0.0
         </Typography>
+      </Box>
+
+      <Divider />
+
+      <Box>
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+          Compte
+        </Typography>
+        <Button
+          variant="outlined"
+          color="error"
+          startIcon={<Logout />}
+          fullWidth
+          onClick={() => logout()}
+        >
+          Se déconnecter
+        </Button>
       </Box>
     </Stack>
   );

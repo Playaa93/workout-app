@@ -1,7 +1,8 @@
 'use server';
 
-import { db, foods, foodCravings, foodEntries, nutritionDailySummary, nutritionProfiles, users, userGamification, xpTransactions } from '@/db';
+import { db, foods, foodCravings, foodEntries, nutritionDailySummary, nutritionProfiles, userGamification, xpTransactions } from '@/db';
 import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
+import { requireUserId } from '@/lib/auth';
 
 // XP rewards for diet actions
 const XP_REWARDS = {
@@ -53,19 +54,6 @@ export type DailySummaryData = {
   totalFat: number;
   entriesCount: number;
 };
-
-// Get or create user
-async function getUser() {
-  let user = await db.select().from(users).limit(1);
-  if (user.length === 0) {
-    const [newUser] = await db
-      .insert(users)
-      .values({ email: 'demo@workout.app', displayName: 'haze' })
-      .returning();
-    user = [newUser];
-  }
-  return user[0];
-}
 
 // Award XP for diet actions
 async function awardDietXp(userId: string, amount: number, reason: string, referenceId?: string) {
@@ -154,7 +142,7 @@ export async function searchFoods(query: string, limit = 20): Promise<FoodData[]
 
 // Get today's entries
 export async function getTodayEntries(): Promise<FoodEntryData[]> {
-  const user = await getUser();
+  const userId = await requireUserId();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -165,7 +153,7 @@ export async function getTodayEntries(): Promise<FoodEntryData[]> {
     .from(foodEntries)
     .where(
       and(
-        eq(foodEntries.userId, user.id),
+        eq(foodEntries.userId, userId),
         gte(foodEntries.loggedAt, today),
         lte(foodEntries.loggedAt, tomorrow)
       )
@@ -180,10 +168,10 @@ export async function getTodayEntries(): Promise<FoodEntryData[]> {
 
 // Add food entry from craving
 export async function addCravingEntry(cravingId: string, notes?: string): Promise<{ id: string; xpEarned: number }> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   // Check if first entry of day (before inserting)
-  const firstOfDay = await isFirstEntryOfDay(user.id);
+  const firstOfDay = await isFirstEntryOfDay(userId);
 
   // Get craving details
   const [craving] = await db
@@ -196,7 +184,7 @@ export async function addCravingEntry(cravingId: string, notes?: string): Promis
   const [entry] = await db
     .insert(foodEntries)
     .values({
-      userId: user.id,
+      userId: userId,
       cravingId,
       customName: craving.nameFr,
       loggedAt: new Date(),
@@ -209,12 +197,12 @@ export async function addCravingEntry(cravingId: string, notes?: string): Promis
     .returning();
 
   // Update daily summary
-  await updateDailySummary(user.id);
+  await updateDailySummary(userId);
 
   // Award XP - extra for craving log (honesty bonus)
   let xpEarned = XP_REWARDS.CRAVING_LOGGED;
   if (firstOfDay) xpEarned += XP_REWARDS.FIRST_ENTRY_OF_DAY;
-  await awardDietXp(user.id, xpEarned, 'Craving loggé 🎭', entry.id);
+  await awardDietXp(userId, xpEarned, 'Craving loggé 🎭', entry.id);
 
   return { id: entry.id, xpEarned };
 }
@@ -231,10 +219,10 @@ export async function addFoodEntry(data: {
   fat?: number;
   notes?: string;
 }): Promise<{ id: string; xpEarned: number }> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   // Check if first entry of day (before inserting)
-  const firstOfDay = await isFirstEntryOfDay(user.id);
+  const firstOfDay = await isFirstEntryOfDay(userId);
 
   // If foodId provided, get food details
   let foodData: FoodData | null = null;
@@ -265,7 +253,7 @@ export async function addFoodEntry(data: {
   const [entry] = await db
     .insert(foodEntries)
     .values({
-      userId: user.id,
+      userId: userId,
       foodId: data.foodId,
       customName: data.customName || foodData?.nameFr,
       loggedAt: new Date(),
@@ -280,12 +268,12 @@ export async function addFoodEntry(data: {
     .returning();
 
   // Update daily summary
-  await updateDailySummary(user.id);
+  await updateDailySummary(userId);
 
   // Award XP
   let xpEarned = XP_REWARDS.FOOD_ENTRY;
   if (firstOfDay) xpEarned += XP_REWARDS.FIRST_ENTRY_OF_DAY;
-  await awardDietXp(user.id, xpEarned, 'Repas loggé 🍎', entry.id);
+  await awardDietXp(userId, xpEarned, 'Repas loggé 🍎', entry.id);
 
   return { id: entry.id, xpEarned };
 }
@@ -296,15 +284,15 @@ export async function addQuickEntry(
   estimatedCalories: number,
   mealType: string = 'snack'
 ): Promise<{ id: string; xpEarned: number }> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   // Check if first entry of day (before inserting)
-  const firstOfDay = await isFirstEntryOfDay(user.id);
+  const firstOfDay = await isFirstEntryOfDay(userId);
 
   const [entry] = await db
     .insert(foodEntries)
     .values({
-      userId: user.id,
+      userId: userId,
       customName: name,
       loggedAt: new Date(),
       mealType,
@@ -313,21 +301,21 @@ export async function addQuickEntry(
     })
     .returning();
 
-  await updateDailySummary(user.id);
+  await updateDailySummary(userId);
 
   // Award XP
   let xpEarned = XP_REWARDS.FOOD_ENTRY;
   if (firstOfDay) xpEarned += XP_REWARDS.FIRST_ENTRY_OF_DAY;
-  await awardDietXp(user.id, xpEarned, 'Entrée rapide 📝', entry.id);
+  await awardDietXp(userId, xpEarned, 'Entrée rapide 📝', entry.id);
 
   return { id: entry.id, xpEarned };
 }
 
 // Delete entry
 export async function deleteEntry(entryId: string): Promise<void> {
-  const user = await getUser();
+  const userId = await requireUserId();
   await db.delete(foodEntries).where(eq(foodEntries.id, entryId));
-  await updateDailySummary(user.id);
+  await updateDailySummary(userId);
 }
 
 // Update daily summary
@@ -428,14 +416,14 @@ export async function getDailySummary(): Promise<{
   today: DailySummaryData;
   avg7d: DailySummaryData;
 } | null> {
-  const user = await getUser();
+  const userId = await requireUserId();
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [summary] = await db
     .select()
     .from(nutritionDailySummary)
     .where(
-      and(eq(nutritionDailySummary.userId, user.id), eq(nutritionDailySummary.date, todayStr))
+      and(eq(nutritionDailySummary.userId, userId), eq(nutritionDailySummary.date, todayStr))
     );
 
   if (!summary) {
@@ -481,7 +469,7 @@ export async function getDailySummary(): Promise<{
 
 // Get week history for chart
 export async function getWeekHistory(): Promise<DailySummaryData[]> {
-  const user = await getUser();
+  const userId = await requireUserId();
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -490,7 +478,7 @@ export async function getWeekHistory(): Promise<DailySummaryData[]> {
     .from(nutritionDailySummary)
     .where(
       and(
-        eq(nutritionDailySummary.userId, user.id),
+        eq(nutritionDailySummary.userId, userId),
         gte(nutritionDailySummary.date, sevenDaysAgo.toISOString().split('T')[0])
       )
     )
@@ -590,12 +578,12 @@ function calculateNutritionTargets(
 // Get nutrition profile
 export async function getNutritionProfile(): Promise<NutritionProfileData | null> {
   try {
-    const user = await getUser();
+    const userId = await requireUserId();
 
     const [profile] = await db
       .select()
       .from(nutritionProfiles)
-      .where(eq(nutritionProfiles.userId, user.id));
+      .where(eq(nutritionProfiles.userId, userId));
 
     if (!profile) {
       return null;
@@ -630,7 +618,7 @@ export async function saveNutritionProfile(data: {
   age: number;
   isMale: boolean;
 }): Promise<NutritionProfileData> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   // Calculate targets
   const targets = calculateNutritionTargets(
@@ -643,7 +631,7 @@ export async function saveNutritionProfile(data: {
   );
 
   const profileData = {
-    userId: user.id,
+    userId: userId,
     goal: data.goal,
     activityLevel: data.activityLevel,
     height: data.height.toString(),

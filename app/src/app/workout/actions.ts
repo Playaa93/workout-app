@@ -1,8 +1,9 @@
 'use server';
 
-import { db, exercises, workoutSessions, workoutSets, users, userGamification, xpTransactions, personalRecords, morphoProfiles, workoutTemplates, workoutTemplateExercises } from '@/db';
+import { db, exercises, workoutSessions, workoutSets, userGamification, xpTransactions, personalRecords, morphoProfiles, workoutTemplates, workoutTemplateExercises } from '@/db';
 import { eq, desc, and, sql, gte, lte } from 'drizzle-orm';
 import type { MorphotypeResult } from '@/app/morphology/types';
+import { requireUserId } from '@/lib/auth';
 
 export type Exercise = {
   id: string;
@@ -107,8 +108,7 @@ export async function getExercisesByMuscle(muscle: string): Promise<Exercise[]> 
 
 // Get recent workout sessions
 export async function getRecentSessions(limit = 10): Promise<WorkoutSession[]> {
-  const user = await db.select().from(users).limit(1);
-  if (user.length === 0) return [];
+  const userId = await requireUserId();
 
   const result = await db
     .select({
@@ -120,7 +120,7 @@ export async function getRecentSessions(limit = 10): Promise<WorkoutSession[]> {
       notes: workoutSessions.notes,
     })
     .from(workoutSessions)
-    .where(eq(workoutSessions.userId, user[0].id))
+    .where(eq(workoutSessions.userId, userId))
     .orderBy(desc(workoutSessions.startedAt))
     .limit(limit);
 
@@ -132,20 +132,12 @@ export async function getRecentSessions(limit = 10): Promise<WorkoutSession[]> {
 
 // Start a new workout session
 export async function startWorkoutSession(): Promise<string> {
-  // Get or create user
-  let user = await db.select().from(users).limit(1);
-  if (user.length === 0) {
-    const [newUser] = await db
-      .insert(users)
-      .values({ email: 'demo@workout.app', displayName: 'haze' })
-      .returning();
-    user = [newUser];
-  }
+  const userId = await requireUserId();
 
   const [session] = await db
     .insert(workoutSessions)
     .values({
-      userId: user[0].id,
+      userId,
       startedAt: new Date(),
     })
     .returning();
@@ -232,9 +224,7 @@ export async function addSet(
   isWarmup = false,
   restTaken?: number
 ): Promise<{ id: string; isPr: boolean }> {
-  // Check if this is a PR
-  const user = await db.select().from(users).limit(1);
-  if (user.length === 0) throw new Error('No user found');
+  const userId = await requireUserId();
 
   // Get current PR for this exercise (1RM estimation: weight * (1 + reps/30))
   const estimated1RM = weight * (1 + reps / 30);
@@ -244,7 +234,7 @@ export async function addSet(
     .from(personalRecords)
     .where(
       and(
-        eq(personalRecords.userId, user[0].id),
+        eq(personalRecords.userId, userId),
         eq(personalRecords.exerciseId, exerciseId),
         eq(personalRecords.recordType, '1rm')
       )
@@ -274,7 +264,7 @@ export async function addSet(
     await db
       .insert(personalRecords)
       .values({
-        userId: user[0].id,
+        userId,
         exerciseId,
         recordType: '1rm',
         value: estimated1RM.toFixed(2),
@@ -366,8 +356,7 @@ export async function endWorkoutSession(
     .where(eq(workoutSessions.id, sessionId));
 
   // Award XP
-  const user = await db.select().from(users).limit(1);
-  if (user.length === 0) throw new Error('No user found');
+  const userId = await requireUserId();
 
   // Base XP + bonus for volume and PRs
   const baseXp = 50;
@@ -377,7 +366,7 @@ export async function endWorkoutSession(
 
   // Add XP transaction
   await db.insert(xpTransactions).values({
-    userId: user[0].id,
+    userId,
     amount: totalXp,
     reason: 'workout_completed',
     referenceType: 'workout_session',
@@ -388,7 +377,7 @@ export async function endWorkoutSession(
   await db
     .insert(userGamification)
     .values({
-      userId: user[0].id,
+      userId,
       totalXp,
       lastActivityDate: new Date().toISOString().split('T')[0],
     })
@@ -413,8 +402,7 @@ export async function endWorkoutSession(
 
 // Get today's calories burned from workouts
 export async function getTodayWorkoutCalories(): Promise<number> {
-  const user = await db.select().from(users).limit(1);
-  if (user.length === 0) return 0;
+  const userId = await requireUserId();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -426,7 +414,7 @@ export async function getTodayWorkoutCalories(): Promise<number> {
     .from(workoutSessions)
     .where(
       and(
-        eq(workoutSessions.userId, user[0].id),
+        eq(workoutSessions.userId, userId),
         gte(workoutSessions.startedAt, today),
         lte(workoutSessions.startedAt, tomorrow)
       )
@@ -437,8 +425,7 @@ export async function getTodayWorkoutCalories(): Promise<number> {
 
 // Get last sets for an exercise (to show previous performance)
 export async function getLastSetsForExercise(exerciseId: string, limit = 5): Promise<WorkoutSet[]> {
-  const user = await db.select().from(users).limit(1);
-  if (user.length === 0) return [];
+  const userId = await requireUserId();
 
   const result = await db
     .select({
@@ -458,7 +445,7 @@ export async function getLastSetsForExercise(exerciseId: string, limit = 5): Pro
     .leftJoin(exercises, eq(workoutSets.exerciseId, exercises.id))
     .where(
       and(
-        eq(workoutSessions.userId, user[0].id),
+        eq(workoutSessions.userId, userId),
         eq(workoutSets.exerciseId, exerciseId),
         eq(workoutSets.isWarmup, false)
       )
@@ -475,13 +462,12 @@ export async function getLastSetsForExercise(exerciseId: string, limit = 5): Pro
 
 // Get user's morphotype result for exercise scoring
 export async function getUserMorphotype(): Promise<MorphotypeResult | null> {
-  const user = await db.select().from(users).limit(1);
-  if (user.length === 0) return null;
+  const userId = await requireUserId();
 
   const profile = await db
     .select()
     .from(morphoProfiles)
-    .where(eq(morphoProfiles.userId, user[0].id))
+    .where(eq(morphoProfiles.userId, userId))
     .limit(1);
 
   if (profile.length === 0) return null;
@@ -542,8 +528,7 @@ export async function getUserMorphotype(): Promise<MorphotypeResult | null> {
 
 // Get all workout templates for the user
 export async function getTemplates(): Promise<WorkoutTemplate[]> {
-  const user = await db.select().from(users).limit(1);
-  if (user.length === 0) return [];
+  const userId = await requireUserId();
 
   const templates = await db
     .select({
@@ -555,7 +540,7 @@ export async function getTemplates(): Promise<WorkoutTemplate[]> {
       createdAt: workoutTemplates.createdAt,
     })
     .from(workoutTemplates)
-    .where(eq(workoutTemplates.userId, user[0].id))
+    .where(eq(workoutTemplates.userId, userId))
     .orderBy(desc(workoutTemplates.createdAt));
 
   // Get exercises for each template
@@ -598,15 +583,7 @@ export async function getTemplates(): Promise<WorkoutTemplate[]> {
 
 // Start a workout session from a template (pre-loads exercises)
 export async function startWorkoutFromTemplate(templateId: string): Promise<{ sessionId: string; exercises: TemplateExercise[] }> {
-  // Get or create user
-  let user = await db.select().from(users).limit(1);
-  if (user.length === 0) {
-    const [newUser] = await db
-      .insert(users)
-      .values({ email: 'demo@workout.app', displayName: 'haze' })
-      .returning();
-    user = [newUser];
-  }
+  const userId = await requireUserId();
 
   // Get template exercises
   const templateExercises = await db
@@ -628,7 +605,7 @@ export async function startWorkoutFromTemplate(templateId: string): Promise<{ se
   const [session] = await db
     .insert(workoutSessions)
     .values({
-      userId: user[0].id,
+      userId,
       templateId,
       startedAt: new Date(),
     })

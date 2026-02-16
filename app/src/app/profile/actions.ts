@@ -2,7 +2,6 @@
 
 import {
   db,
-  users,
   userGamification,
   xpTransactions,
   achievements,
@@ -14,6 +13,7 @@ import {
   bossFights,
 } from '@/db';
 import { eq, desc, sql, and, count } from 'drizzle-orm';
+import { requireUserId, getAuthenticatedUser } from '@/lib/auth';
 
 // =====================================================
 // TYPES
@@ -89,19 +89,6 @@ function calculateLevel(totalXp: number): { level: number; xpInCurrentLevel: num
   };
 }
 
-// Get or create user
-async function getUser() {
-  let user = await db.select().from(users).limit(1);
-  if (user.length === 0) {
-    const [newUser] = await db
-      .insert(users)
-      .values({ email: 'demo@workout.app', displayName: 'haze' })
-      .returning();
-    user = [newUser];
-  }
-  return user[0];
-}
-
 // Get or create gamification profile
 async function getOrCreateGamification(userId: string) {
   let [gamification] = await db
@@ -133,7 +120,7 @@ async function getOrCreateGamification(userId: string) {
 
 // Get user profile
 export async function getUserProfile(): Promise<UserProfileData> {
-  const user = await getUser();
+  const user = await getAuthenticatedUser();
   return {
     id: user.id,
     displayName: user.displayName,
@@ -143,8 +130,8 @@ export async function getUserProfile(): Promise<UserProfileData> {
 
 // Get gamification data
 export async function getGamificationData(): Promise<GamificationData> {
-  const user = await getUser();
-  const gamification = await getOrCreateGamification(user.id);
+  const userId = await requireUserId();
+  const gamification = await getOrCreateGamification(userId);
 
   const levelInfo = calculateLevel(gamification.totalXp || 0);
   const xpProgress = Math.round((levelInfo.xpInCurrentLevel / levelInfo.xpToNext) * 100);
@@ -162,7 +149,7 @@ export async function getGamificationData(): Promise<GamificationData> {
 
 // Get all achievements with unlock status
 export async function getAchievements(): Promise<AchievementData[]> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   const allAchievements = await db
     .select({
@@ -181,7 +168,7 @@ export async function getAchievements(): Promise<AchievementData[]> {
       userAchievements,
       and(
         eq(userAchievements.achievementId, achievements.id),
-        eq(userAchievements.userId, user.id)
+        eq(userAchievements.userId, userId)
       )
     )
     .orderBy(achievements.category, achievements.xpReward);
@@ -195,12 +182,12 @@ export async function getAchievements(): Promise<AchievementData[]> {
 
 // Get recent XP transactions
 export async function getRecentXp(limit = 10): Promise<XpTransactionData[]> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   const transactions = await db
     .select()
     .from(xpTransactions)
-    .where(eq(xpTransactions.userId, user.id))
+    .where(eq(xpTransactions.userId, userId))
     .orderBy(desc(xpTransactions.createdAt))
     .limit(limit);
 
@@ -214,32 +201,32 @@ export async function getRecentXp(limit = 10): Promise<XpTransactionData[]> {
 
 // Get user stats
 export async function getUserStats(): Promise<StatsData> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   const [workoutsResult] = await db
     .select({ count: count() })
     .from(workoutSessions)
-    .where(eq(workoutSessions.userId, user.id));
+    .where(eq(workoutSessions.userId, userId));
 
   const [foodResult] = await db
     .select({ count: count() })
     .from(foodEntries)
-    .where(eq(foodEntries.userId, user.id));
+    .where(eq(foodEntries.userId, userId));
 
   const [measurementsResult] = await db
     .select({ count: count() })
     .from(measurements)
-    .where(eq(measurements.userId, user.id));
+    .where(eq(measurements.userId, userId));
 
   const [prsResult] = await db
     .select({ count: count() })
     .from(personalRecords)
-    .where(eq(personalRecords.userId, user.id));
+    .where(eq(personalRecords.userId, userId));
 
   const [bossResult] = await db
     .select({ count: count() })
     .from(bossFights)
-    .where(and(eq(bossFights.userId, user.id), eq(bossFights.status, 'completed')));
+    .where(and(eq(bossFights.userId, userId), eq(bossFights.status, 'completed')));
 
   return {
     totalWorkouts: workoutsResult.count,
@@ -261,8 +248,8 @@ export async function awardXp(
   referenceType?: string,
   referenceId?: string
 ): Promise<{ newTotal: number; leveledUp: boolean; newLevel: number }> {
-  const user = await getUser();
-  const gamification = await getOrCreateGamification(user.id);
+  const userId = await requireUserId();
+  const gamification = await getOrCreateGamification(userId);
 
   const oldLevel = calculateLevel(gamification.totalXp || 0).level;
   const newTotal = (gamification.totalXp || 0) + amount;
@@ -270,7 +257,7 @@ export async function awardXp(
 
   // Record transaction
   await db.insert(xpTransactions).values({
-    userId: user.id,
+    userId,
     amount,
     reason,
     referenceType,
@@ -286,7 +273,7 @@ export async function awardXp(
       xpToNextLevel: newLevelInfo.xpToNext,
       updatedAt: new Date(),
     })
-    .where(eq(userGamification.userId, user.id));
+    .where(eq(userGamification.userId, userId));
 
   return {
     newTotal,
@@ -297,9 +284,9 @@ export async function awardXp(
 
 // Check and unlock achievements
 export async function checkAchievements(): Promise<AchievementData[]> {
-  const user = await getUser();
+  const userId = await requireUserId();
   const stats = await getUserStats();
-  const gamification = await getOrCreateGamification(user.id);
+  const gamification = await getOrCreateGamification(userId);
 
   // Get all unearned achievements
   const unearnedAchievements = await db
@@ -307,7 +294,7 @@ export async function checkAchievements(): Promise<AchievementData[]> {
     .from(achievements)
     .where(
       sql`${achievements.id} NOT IN (
-        SELECT achievement_id FROM user_achievements WHERE user_id = ${user.id}
+        SELECT achievement_id FROM user_achievements WHERE user_id = ${userId}
       )`
     );
 
@@ -343,7 +330,7 @@ export async function checkAchievements(): Promise<AchievementData[]> {
         const [cheatEntry] = await db
           .select()
           .from(foodEntries)
-          .where(and(eq(foodEntries.userId, user.id), eq(foodEntries.isCheat, true)))
+          .where(and(eq(foodEntries.userId, userId), eq(foodEntries.isCheat, true)))
           .limit(1);
         unlocked = !!cheatEntry;
         break;
@@ -352,7 +339,7 @@ export async function checkAchievements(): Promise<AchievementData[]> {
     if (unlocked) {
       // Unlock achievement
       await db.insert(userAchievements).values({
-        userId: user.id,
+        userId,
         achievementId: achievement.id,
       });
 
@@ -380,8 +367,8 @@ export async function checkAchievements(): Promise<AchievementData[]> {
 
 // Update streak
 export async function updateStreak(): Promise<{ currentStreak: number; isNewRecord: boolean }> {
-  const user = await getUser();
-  const gamification = await getOrCreateGamification(user.id);
+  const userId = await requireUserId();
+  const gamification = await getOrCreateGamification(userId);
 
   const today = new Date().toISOString().split('T')[0];
   const lastActivity = gamification.lastActivityDate;
@@ -419,7 +406,7 @@ export async function updateStreak(): Promise<{ currentStreak: number; isNewReco
       lastActivityDate: today,
       updatedAt: new Date(),
     })
-    .where(eq(userGamification.userId, user.id));
+    .where(eq(userGamification.userId, userId));
 
   // Check for streak achievements
   await checkAchievements();
@@ -429,8 +416,8 @@ export async function updateStreak(): Promise<{ currentStreak: number; isNewReco
 
 // Update avatar stage based on level
 export async function updateAvatarStage(): Promise<number> {
-  const user = await getUser();
-  const gamification = await getOrCreateGamification(user.id);
+  const userId = await requireUserId();
+  const gamification = await getOrCreateGamification(userId);
 
   const level = calculateLevel(gamification.totalXp || 0).level;
 
@@ -441,7 +428,7 @@ export async function updateAvatarStage(): Promise<number> {
     await db
       .update(userGamification)
       .set({ avatarStage: newStage, updatedAt: new Date() })
-      .where(eq(userGamification.userId, user.id));
+      .where(eq(userGamification.userId, userId));
   }
 
   return newStage;

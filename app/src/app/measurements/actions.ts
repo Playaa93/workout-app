@@ -1,7 +1,8 @@
 'use server';
 
-import { db, measurements, progressPhotos, users } from '@/db';
+import { db, measurements, progressPhotos } from '@/db';
 import { eq, desc } from 'drizzle-orm';
+import { requireUserId } from '@/lib/auth';
 
 export type MeasurementData = {
   id: string;
@@ -61,27 +62,14 @@ export type MeasurementInput = {
   notes?: string;
 };
 
-// Get or create user
-async function getUser() {
-  let user = await db.select().from(users).limit(1);
-  if (user.length === 0) {
-    const [newUser] = await db
-      .insert(users)
-      .values({ email: 'demo@workout.app', displayName: 'haze' })
-      .returning();
-    user = [newUser];
-  }
-  return user[0];
-}
-
 // Get all measurements for user
 export async function getMeasurements(limit = 50): Promise<MeasurementData[]> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   const result = await db
     .select()
     .from(measurements)
-    .where(eq(measurements.userId, user.id))
+    .where(eq(measurements.userId, userId))
     .orderBy(desc(measurements.measuredAt))
     .limit(limit);
 
@@ -93,12 +81,12 @@ export async function getMeasurements(limit = 50): Promise<MeasurementData[]> {
 
 // Get latest measurement
 export async function getLatestMeasurement(): Promise<MeasurementData | null> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   const [result] = await db
     .select()
     .from(measurements)
-    .where(eq(measurements.userId, user.id))
+    .where(eq(measurements.userId, userId))
     .orderBy(desc(measurements.measuredAt))
     .limit(1);
 
@@ -112,12 +100,12 @@ export async function getLatestMeasurement(): Promise<MeasurementData | null> {
 
 // Add new measurement
 export async function addMeasurement(data: MeasurementInput): Promise<string> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   const [result] = await db
     .insert(measurements)
     .values({
-      userId: user.id,
+      userId: userId,
       measuredAt: new Date(),
       weight: data.weight?.toString(),
       bodyFatPercentage: data.bodyFatPercentage?.toString(),
@@ -147,12 +135,12 @@ export async function addMeasurement(data: MeasurementInput): Promise<string> {
 
 // Get progress photos
 export async function getProgressPhotos(limit = 20): Promise<ProgressPhotoData[]> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   const result = await db
     .select()
     .from(progressPhotos)
-    .where(eq(progressPhotos.userId, user.id))
+    .where(eq(progressPhotos.userId, userId))
     .orderBy(desc(progressPhotos.takenAt))
     .limit(limit);
 
@@ -169,12 +157,12 @@ export async function addProgressPhoto(
   measurementId?: string,
   notes?: string
 ): Promise<string> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   const [result] = await db
     .insert(progressPhotos)
     .values({
-      userId: user.id,
+      userId: userId,
       photoUrl,
       photoType,
       measurementId,
@@ -201,12 +189,12 @@ export async function getMeasurementHistory(
   field: keyof MeasurementData,
   limit = 30
 ): Promise<{ date: string; value: number }[]> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   const result = await db
     .select()
     .from(measurements)
-    .where(eq(measurements.userId, user.id))
+    .where(eq(measurements.userId, userId))
     .orderBy(desc(measurements.measuredAt))
     .limit(limit);
 
@@ -228,12 +216,12 @@ export async function getProgressSummary(): Promise<{
   daysSinceFirst: number;
   totalMeasurements: number;
 }> {
-  const user = await getUser();
+  const userId = await requireUserId();
 
   const allMeasurements = await db
     .select()
     .from(measurements)
-    .where(eq(measurements.userId, user.id))
+    .where(eq(measurements.userId, userId))
     .orderBy(desc(measurements.measuredAt));
 
   if (allMeasurements.length < 2) {

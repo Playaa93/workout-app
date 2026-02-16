@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getGamificationData, getUserStats, type GamificationData, type StatsData } from './profile/actions'
+import { getGamificationData, getUserProfile, getUserStats, type GamificationData, type UserProfileData, type StatsData } from './profile/actions'
 import { getMorphoProfile } from './morphology/actions'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -31,6 +31,7 @@ type MorphoProfileData = {
 } | null
 
 export default function HomePage() {
+  const [profile, setProfile] = useState<UserProfileData | null>(null)
   const [gamification, setGamification] = useState<GamificationData | null>(null)
   const [stats, setStats] = useState<StatsData | null>(null)
   const [morphoProfile, setMorphoProfile] = useState<MorphoProfileData>(null)
@@ -42,11 +43,13 @@ export default function HomePage() {
     }
 
     async function loadData() {
-      const [gamData, statsData, morphoData] = await Promise.all([
+      const [profileData, gamData, statsData, morphoData] = await Promise.all([
+        getUserProfile(),
         getGamificationData(),
         getUserStats(),
         getMorphoProfile(),
       ])
+      setProfile(profileData)
       setGamification(gamData)
       setStats(statsData)
       setMorphoProfile(morphoData)
@@ -80,11 +83,11 @@ export default function HomePage() {
               '&:active': { opacity: 0.7 },
             }}
           >
-            H
+            {(profile?.displayName || 'U')[0].toUpperCase()}
           </Avatar>
           <Box sx={{ flex: 1 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-              Salut, haze
+              Salut, {profile?.displayName || 'Guerrier'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Prêt pour ta séance ?
