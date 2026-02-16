@@ -167,7 +167,7 @@ export async function getTodayEntries(): Promise<FoodEntryData[]> {
 }
 
 // Add food entry from craving
-export async function addCravingEntry(cravingId: string, notes?: string): Promise<{ id: string; xpEarned: number }> {
+export async function addCravingEntry(cravingId: string, notes?: string, mealType: string = 'snack'): Promise<{ id: string; xpEarned: number }> {
   const userId = await requireUserId();
 
   // Check if first entry of day (before inserting)
@@ -188,7 +188,7 @@ export async function addCravingEntry(cravingId: string, notes?: string): Promis
       cravingId,
       customName: craving.nameFr,
       loggedAt: new Date(),
-      mealType: 'snack',
+      mealType,
       quantity: '1',
       calories: craving.estimatedCalories?.toString(),
       isCheat: true, // Cravings are considered "cheats" but that's OK!
@@ -677,4 +677,161 @@ export async function saveNutritionProfile(data: {
     isMale: data.isMale,
     ...targets,
   };
+}
+
+// =====================================================
+// BARCODE LOOKUP (Open Food Facts)
+// =====================================================
+
+export async function lookupBarcode(barcode: string): Promise<FoodData | null> {
+  // First, check local database
+  const [localFood] = await db
+    .select({
+      id: foods.id,
+      nameFr: foods.nameFr,
+      nameEn: foods.nameEn,
+      brand: foods.brand,
+      calories: foods.calories,
+      protein: foods.protein,
+      carbohydrates: foods.carbohydrates,
+      fat: foods.fat,
+    })
+    .from(foods)
+    .where(eq(foods.barcode, barcode));
+
+  if (localFood) return localFood;
+
+  // Fetch from Open Food Facts
+  try {
+    const response = await fetch(
+      `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+
+    if (!response.ok) return null;
+    const data = await response.json();
+
+    if (data.status !== 1 || !data.product) return null;
+
+    const product = data.product;
+    const nutriments = product.nutriments || {};
+
+    const nameFr =
+      product.product_name_fr ||
+      product.product_name ||
+      product.generic_name_fr ||
+      'Produit scanné';
+
+    // Save to local DB for future lookups
+    const [saved] = await db
+      .insert(foods)
+      .values({
+        nameFr,
+        nameEn: product.product_name_en || null,
+        brand: product.brands || null,
+        barcode,
+        calories: nutriments['energy-kcal_100g']?.toString() || null,
+        protein: nutriments.proteins_100g?.toString() || null,
+        carbohydrates: nutriments.carbohydrates_100g?.toString() || null,
+        fat: nutriments.fat_100g?.toString() || null,
+      })
+      .returning();
+
+    return {
+      id: saved.id,
+      nameFr: saved.nameFr,
+      nameEn: saved.nameEn,
+      brand: saved.brand,
+      calories: saved.calories,
+      protein: saved.protein,
+      carbohydrates: saved.carbohydrates,
+      fat: saved.fat,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// =====================================================
+// RECENT FOODS
+// =====================================================
+
+export async function getRecentFoods(limit: number = 10): Promise<FoodEntryData[]> {
+  const userId = await requireUserId();
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const entries = await db
+    .select()
+    .from(foodEntries)
+    .where(
+      and(
+        eq(foodEntries.userId, userId),
+        gte(foodEntries.loggedAt, sevenDaysAgo)
+      )
+    )
+    .orderBy(desc(foodEntries.loggedAt))
+    .limit(50);
+
+  // Deduplicate by customName/foodId
+  const seen = new Set<string>();
+  const unique: FoodEntryData[] = [];
+
+  for (const e of entries) {
+    const key = e.foodId || e.customName || e.id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push({
+      ...e,
+      loggedAt: e.loggedAt!,
+    });
+    if (unique.length >= limit) break;
+  }
+
+  return unique;
+}
+
+// =====================================================
+// AI FOOD ENTRY
+// =====================================================
+
+export async function addAIFoodEntry(data: {
+  customName: string;
+  mealType: string;
+  calories: number;
+  protein: number;
+  carbohydrates: number;
+  fat: number;
+  photoUrl?: string;
+  aiConfidence: number;
+}): Promise<{ id: string; xpEarned: number }> {
+  const userId = await requireUserId();
+
+  const firstOfDay = await isFirstEntryOfDay(userId);
+
+  const [entry] = await db
+    .insert(foodEntries)
+    .values({
+      userId,
+      customName: data.customName,
+      loggedAt: new Date(),
+      mealType: data.mealType,
+      quantity: '1',
+      calories: data.calories.toString(),
+      protein: data.protein.toString(),
+      carbohydrates: data.carbohydrates.toString(),
+      fat: data.fat.toString(),
+      photoUrl: data.photoUrl,
+      recognizedByAi: true,
+      aiConfidence: data.aiConfidence.toString(),
+    })
+    .returning();
+
+  await updateDailySummary(userId);
+
+  let xpEarned = XP_REWARDS.FOOD_ENTRY;
+  if (firstOfDay) xpEarned += XP_REWARDS.FIRST_ENTRY_OF_DAY;
+  await awardDietXp(userId, xpEarned, 'Photo IA 📸', entry.id);
+
+  return { id: entry.id, xpEarned };
 }
