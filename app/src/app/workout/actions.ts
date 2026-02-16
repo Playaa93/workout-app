@@ -43,6 +43,7 @@ export type WorkoutSession = {
   endedAt: Date | null;
   durationMinutes: number | null;
   totalVolume: string | null;
+  caloriesBurned: number | null;
   notes: string | null;
 };
 
@@ -117,6 +118,7 @@ export async function getRecentSessions(limit = 10): Promise<WorkoutSession[]> {
       endedAt: workoutSessions.endedAt,
       durationMinutes: workoutSessions.durationMinutes,
       totalVolume: workoutSessions.totalVolume,
+      caloriesBurned: workoutSessions.caloriesBurned,
       notes: workoutSessions.notes,
     })
     .from(workoutSessions)
@@ -202,6 +204,7 @@ export async function getActiveSession(sessionId: string): Promise<ActiveSession
       endedAt: session.endedAt,
       durationMinutes: session.durationMinutes,
       totalVolume: session.totalVolume,
+      caloriesBurned: session.caloriesBurned,
       notes: session.notes,
     },
     sets: sets.map(s => ({
