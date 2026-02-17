@@ -12,6 +12,9 @@ import {
   type WorkoutSession,
   type WorkoutTemplate,
 } from './actions';
+import { startCardioSession } from './cardio-actions';
+import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
+import type { CardioActivity } from '@/db/schema';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -29,13 +32,17 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import FitnessCenter from '@mui/icons-material/FitnessCenter';
 import PlayArrow from '@mui/icons-material/PlayArrow';
 import Bolt from '@mui/icons-material/Bolt';
 import Add from '@mui/icons-material/Add';
 import ChevronRight from '@mui/icons-material/ChevronRight';
-import EmojiEvents from '@mui/icons-material/EmojiEvents';
+import Close from '@mui/icons-material/Close';
 import Delete from '@mui/icons-material/Delete';
 import BottomNav from '@/components/BottomNav';
 
@@ -48,6 +55,8 @@ export default function WorkoutPage() {
   const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [showCardioDrawer, setShowCardioDrawer] = useState(false);
+  const [startingCardio, setStartingCardio] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -106,6 +115,18 @@ export default function WorkoutPage() {
     setSessionToDelete(null);
   };
 
+  const handleStartCardio = async (activity: CardioActivity) => {
+    setStartingCardio(true);
+    try {
+      const sessionId = await startCardioSession(activity);
+      router.push(`/workout/cardio?id=${sessionId}`);
+    } catch (error) {
+      console.error('Error starting cardio:', error);
+      setStartingCardio(false);
+      setShowCardioDrawer(false);
+    }
+  };
+
   // Separate in-progress and completed sessions
   const inProgressSessions = sessions.filter(s => !s.endedAt);
   const completedSessions = sessions.filter(s => !!s.endedAt);
@@ -162,9 +183,43 @@ export default function WorkoutPage() {
             </CardActionArea>
           </Card>
 
+          {/* CTA Cardio */}
+          <Card sx={{ border: 1, borderColor: 'divider', borderRadius: 4 }}>
+            <CardActionArea onClick={() => setShowCardioDrawer(true)}>
+              <CardContent sx={{ py: 3, px: 3 }}>
+                <Stack direction="row" alignItems="center" spacing={2.5}>
+                  <Box sx={{
+                    width: 56, height: 56, borderRadius: '50%',
+                    bgcolor: 'action.hover',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.5rem',
+                  }}>
+                    🏃
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" fontWeight={700}>
+                      Séance cardio
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Course, vélo, rameur...
+                    </Typography>
+                  </Box>
+                  <ChevronRight sx={{ color: 'text.disabled' }} />
+                </Stack>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+
           {/* Session en cours */}
           {inProgressSessions.map((session) => {
             const date = new Date(session.startedAt);
+            const isCardio = session.sessionType === 'cardio';
+            const resumeHref = isCardio
+              ? `/workout/cardio?id=${session.id}`
+              : `/workout/active?id=${session.id}`;
+            const activityInfo = isCardio && session.cardioActivity
+              ? CARDIO_ACTIVITIES[session.cardioActivity as CardioActivity]
+              : null;
             return (
               <Card key={session.id} sx={{ border: '2px solid', borderColor: 'warning.main', bgcolor: 'rgba(255,152,0,0.05)' }}>
                 <CardContent sx={{ py: 2 }}>
@@ -173,11 +228,14 @@ export default function WorkoutPage() {
                       width: 44, height: 44, borderRadius: '50%',
                       bgcolor: 'rgba(255,152,0,0.15)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: activityInfo ? '1.2rem' : undefined,
                     }}>
-                      <PlayArrow sx={{ color: 'warning.main' }} />
+                      {activityInfo ? activityInfo.emoji : <PlayArrow sx={{ color: 'warning.main' }} />}
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" fontWeight={600}>Séance en cours</Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {isCardio ? `Cardio en cours — ${activityInfo?.label || 'Cardio'}` : 'Séance en cours'}
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Commencée à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                       </Typography>
@@ -185,7 +243,7 @@ export default function WorkoutPage() {
                     <Stack direction="row" spacing={0.5} alignItems="center">
                       <Button
                         component={Link}
-                        href={`/workout/active?id=${session.id}`}
+                        href={resumeHref}
                         size="small"
                         variant="contained"
                         color="warning"
@@ -346,6 +404,48 @@ export default function WorkoutPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Cardio Activity Drawer */}
+      <Drawer
+        anchor="bottom"
+        open={showCardioDrawer}
+        onClose={() => setShowCardioDrawer(false)}
+        PaperProps={{
+          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.paper', maxHeight: '70vh' },
+        }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Typography variant="h6" fontWeight={600}>
+              Choisir une activité
+            </Typography>
+            <IconButton onClick={() => setShowCardioDrawer(false)}>
+              <Close />
+            </IconButton>
+          </Stack>
+          {startingCardio ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <List>
+              {(Object.entries(CARDIO_ACTIVITIES) as [CardioActivity, { label: string; emoji: string }][]).map(
+                ([key, { label, emoji }]) => (
+                  <ListItemButton
+                    key={key}
+                    onClick={() => handleStartCardio(key)}
+                    sx={{ borderRadius: 2, mb: 0.5 }}
+                  >
+                    <Typography sx={{ fontSize: '1.3rem', mr: 2 }}>{emoji}</Typography>
+                    <ListItemText primary={label} />
+                    <ChevronRight sx={{ color: 'text.disabled' }} />
+                  </ListItemButton>
+                )
+              )}
+            </List>
+          )}
+        </Box>
+      </Drawer>
     </Box>
   );
 }
@@ -362,7 +462,12 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
     minute: '2-digit',
   });
 
+  const isCardio = session.sessionType === 'cardio';
+  const activityInfo = isCardio && session.cardioActivity
+    ? CARDIO_ACTIVITIES[session.cardioActivity as CardioActivity]
+    : null;
   const volume = session.totalVolume ? parseFloat(session.totalVolume) : 0;
+  const distanceM = session.distanceMeters ? parseFloat(session.distanceMeters) : 0;
   const [showDelete, setShowDelete] = useState(false);
 
   return (
@@ -370,14 +475,23 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
       sx={{ px: 2.5, py: 2 }}
       onClick={() => setShowDelete(!showDelete)}
     >
-      {/* Row 1: Name + PR inline + date */}
+      {/* Row 1: Name + date */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
-          <Typography variant="body2" fontWeight={600} noWrap sx={{ textTransform: 'capitalize' }}>
-            {formattedDate}
-          </Typography>
+          {isCardio && activityInfo ? (
+            <>
+              <Typography component="span" sx={{ fontSize: '1rem' }}>{activityInfo.emoji}</Typography>
+              <Typography variant="body2" fontWeight={600} noWrap>
+                {activityInfo.label}
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" fontWeight={600} noWrap sx={{ textTransform: 'capitalize' }}>
+              {formattedDate}
+            </Typography>
+          )}
           <Typography variant="caption" color="text.secondary">
-            {formattedTime}
+            {isCardio ? formattedDate : formattedTime}
           </Typography>
         </Stack>
         {showDelete ? (
@@ -410,22 +524,45 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
             Durée
           </Typography>
         </Box>
-        <Box sx={{ flex: 1, py: 1, textAlign: 'center', borderRight: 1, borderColor: 'divider' }}>
-          <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
-            {volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`}
-          </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-            Volume
-          </Typography>
-        </Box>
-        <Box sx={{ flex: 1, py: 1, textAlign: 'center' }}>
-          <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
-            {session.caloriesBurned || 0}
-          </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-            kcal
-          </Typography>
-        </Box>
+        {isCardio ? (
+          <>
+            <Box sx={{ flex: 1, py: 1, textAlign: 'center', borderRight: 1, borderColor: 'divider' }}>
+              <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                {distanceM > 0 ? formatDistance(distanceM) : '—'}
+              </Typography>
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
+                Distance
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1, py: 1, textAlign: 'center' }}>
+              <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                {session.avgPaceSecondsPerKm ? formatPace(session.avgPaceSecondsPerKm) : '—'}
+              </Typography>
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
+                Allure
+              </Typography>
+            </Box>
+          </>
+        ) : (
+          <>
+            <Box sx={{ flex: 1, py: 1, textAlign: 'center', borderRight: 1, borderColor: 'divider' }}>
+              <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                {volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`}
+              </Typography>
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
+                Volume
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1, py: 1, textAlign: 'center' }}>
+              <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                {session.caloriesBurned || 0}
+              </Typography>
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
+                kcal
+              </Typography>
+            </Box>
+          </>
+        )}
       </Stack>
     </Box>
   );

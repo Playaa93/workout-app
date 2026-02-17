@@ -15,14 +15,26 @@ import Grow from '@mui/material/Grow';
 import History from '@mui/icons-material/History';
 import Home from '@mui/icons-material/Home';
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
+import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
+import type { CardioActivity } from '@/db/schema';
 
 function SummaryContent() {
   const searchParams = useSearchParams();
 
+  const type = searchParams.get('type') || 'strength';
   const xp = parseInt(searchParams.get('xp') || '0');
   const volume = parseFloat(searchParams.get('volume') || '0');
   const duration = parseInt(searchParams.get('duration') || '0');
   const prs = parseInt(searchParams.get('prs') || '0');
+
+  // Cardio params
+  const activity = searchParams.get('activity') as CardioActivity | null;
+  const distanceM = parseFloat(searchParams.get('distance') || '0');
+  const pace = parseInt(searchParams.get('pace') || '0');
+  const calories = parseInt(searchParams.get('calories') || '0');
+
+  const isCardio = type === 'cardio';
+  const activityInfo = isCardio && activity ? CARDIO_ACTIVITIES[activity] : null;
 
   const volumeDisplay = volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`;
 
@@ -43,10 +55,10 @@ function SummaryContent() {
       <Grow in timeout={500}>
         <Box sx={{ mb: 4 }}>
           <Typography variant="h1" sx={{ mb: 2, fontSize: '4.5rem' }}>
-            🎉
+            {isCardio && activityInfo ? activityInfo.emoji : '🎉'}
           </Typography>
           <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
-            Séance terminée !
+            {isCardio ? 'Séance cardio terminée !' : 'Séance terminée !'}
           </Typography>
           <Typography color="text.secondary">
             Bravo, continue comme ça
@@ -67,10 +79,20 @@ function SummaryContent() {
           }}
         >
           <StatCard icon="⏱️" label="Durée" value={`${duration} min`} />
-          <StatCard icon="🏋️" label="Volume" value={volumeDisplay} />
-          <StatCard icon="⭐" label="XP gagné" value={`+${xp}`} highlight />
-          {prs > 0 && (
-            <StatCard icon="🏆" label="Records" value={prs.toString()} highlight />
+          {isCardio ? (
+            <>
+              <StatCard icon="📏" label="Distance" value={distanceM > 0 ? formatDistance(distanceM) : '—'} />
+              <StatCard icon="🏃" label="Allure moy" value={pace > 0 ? formatPace(pace) : '—'} />
+              <StatCard icon="🔥" label="Calories" value={`${calories} kcal`} />
+            </>
+          ) : (
+            <>
+              <StatCard icon="🏋️" label="Volume" value={volumeDisplay} />
+              <StatCard icon="⭐" label="XP gagné" value={`+${xp}`} highlight />
+              {prs > 0 && (
+                <StatCard icon="🏆" label="Records" value={prs.toString()} highlight />
+              )}
+            </>
           )}
         </Box>
       </Grow>
@@ -100,8 +122,8 @@ function SummaryContent() {
         </Card>
       </Grow>
 
-      {/* PR Celebration */}
-      {prs > 0 && (
+      {/* PR Celebration (strength only) */}
+      {!isCardio && prs > 0 && (
         <Grow in timeout={1100}>
           <Card
             sx={{

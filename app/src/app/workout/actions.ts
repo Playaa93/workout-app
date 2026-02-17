@@ -45,6 +45,11 @@ export type WorkoutSession = {
   totalVolume: string | null;
   caloriesBurned: number | null;
   notes: string | null;
+  sessionType: 'strength' | 'cardio' | null;
+  cardioActivity: string | null;
+  distanceMeters: string | null;
+  avgPaceSecondsPerKm: number | null;
+  avgSpeedKmh: string | null;
 };
 
 export type WorkoutSet = {
@@ -120,6 +125,11 @@ export async function getRecentSessions(limit = 10): Promise<WorkoutSession[]> {
       totalVolume: workoutSessions.totalVolume,
       caloriesBurned: workoutSessions.caloriesBurned,
       notes: workoutSessions.notes,
+      sessionType: workoutSessions.sessionType,
+      cardioActivity: workoutSessions.cardioActivity,
+      distanceMeters: workoutSessions.distanceMeters,
+      avgPaceSecondsPerKm: workoutSessions.avgPaceSecondsPerKm,
+      avgSpeedKmh: workoutSessions.avgSpeedKmh,
     })
     .from(workoutSessions)
     .where(eq(workoutSessions.userId, userId))
@@ -206,6 +216,11 @@ export async function getActiveSession(sessionId: string): Promise<ActiveSession
       totalVolume: session.totalVolume,
       caloriesBurned: session.caloriesBurned,
       notes: session.notes,
+      sessionType: session.sessionType,
+      cardioActivity: session.cardioActivity,
+      distanceMeters: session.distanceMeters,
+      avgPaceSecondsPerKm: session.avgPaceSecondsPerKm,
+      avgSpeedKmh: session.avgSpeedKmh,
     },
     sets: sets.map(s => ({
       ...s,

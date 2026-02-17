@@ -19,6 +19,12 @@ import { relations } from 'drizzle-orm';
 // ENUMS
 // =====================================================
 
+export const sessionTypeEnum = pgEnum('session_type', ['strength', 'cardio']);
+export const cardioActivityEnum = pgEnum('cardio_activity', [
+  'running', 'walking', 'cycling', 'rowing', 'jump_rope',
+  'swimming', 'elliptical', 'stepper', 'hiit', 'other',
+]);
+
 export const morphotypeEnum = pgEnum('morphotype', [
   'ectomorph',
   'mesomorph',
@@ -286,6 +292,13 @@ export const workoutSessions = pgTable(
     notes: text('notes'),
     isBossFight: boolean('is_boss_fight').default(false),
     bossFightCompleted: boolean('boss_fight_completed'),
+    sessionType: sessionTypeEnum('session_type').default('strength'),
+    cardioActivity: cardioActivityEnum('cardio_activity'),
+    distanceMeters: decimal('distance_meters', { precision: 10, scale: 2 }),
+    avgPaceSecondsPerKm: integer('avg_pace_seconds_per_km'),
+    avgSpeedKmh: decimal('avg_speed_kmh', { precision: 5, scale: 2 }),
+    avgHeartRate: integer('avg_heart_rate'),
+    maxHeartRate: integer('max_heart_rate'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (table) => [index('idx_sessions_user_date').on(table.userId, table.startedAt)]
@@ -311,6 +324,21 @@ export const workoutSets = pgTable(
     index('idx_sets_session').on(table.sessionId),
     index('idx_sets_exercise').on(table.exerciseId),
   ]
+);
+
+export const cardioIntervals = pgTable(
+  'cardio_intervals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sessionId: uuid('session_id').references(() => workoutSessions.id, { onDelete: 'cascade' }),
+    intervalNumber: integer('interval_number').notNull(),
+    durationSeconds: integer('duration_seconds'),
+    distanceMeters: decimal('distance_meters', { precision: 8, scale: 2 }),
+    paceSecondsPerKm: integer('pace_seconds_per_km'),
+    heartRate: integer('heart_rate'),
+    performedAt: timestamp('performed_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index('idx_cardio_intervals_session').on(t.sessionId)]
 );
 
 export const personalRecords = pgTable(
@@ -586,6 +614,7 @@ export const workoutSessionsRelations = relations(workoutSessions, ({ one, many 
     references: [workoutTemplates.id],
   }),
   sets: many(workoutSets),
+  cardioIntervals: many(cardioIntervals),
 }));
 
 export const workoutSetsRelations = relations(workoutSets, ({ one }) => ({
@@ -596,6 +625,13 @@ export const workoutSetsRelations = relations(workoutSets, ({ one }) => ({
   exercise: one(exercises, {
     fields: [workoutSets.exerciseId],
     references: [exercises.id],
+  }),
+}));
+
+export const cardioIntervalsRelations = relations(cardioIntervals, ({ one }) => ({
+  session: one(workoutSessions, {
+    fields: [cardioIntervals.sessionId],
+    references: [workoutSessions.id],
   }),
 }));
 
@@ -640,6 +676,9 @@ export type NewWorkoutSession = typeof workoutSessions.$inferInsert;
 export type WorkoutSet = typeof workoutSets.$inferSelect;
 export type NewWorkoutSet = typeof workoutSets.$inferInsert;
 export type PersonalRecord = typeof personalRecords.$inferSelect;
+export type CardioInterval = typeof cardioIntervals.$inferSelect;
+export type SessionType = (typeof sessionTypeEnum.enumValues)[number];
+export type CardioActivity = (typeof cardioActivityEnum.enumValues)[number];
 
 export type Food = typeof foods.$inferSelect;
 export type FoodCraving = typeof foodCravings.$inferSelect;

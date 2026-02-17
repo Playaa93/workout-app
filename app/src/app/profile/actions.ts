@@ -60,6 +60,9 @@ export type StatsData = {
   totalMeasurements: number;
   totalPRs: number;
   bossFightsWon: number;
+  totalCardioSessions: number;
+  totalCardioDistanceKm: number;
+  totalCardioTimeMinutes: number;
 };
 
 // =====================================================
@@ -228,12 +231,31 @@ export async function getUserStats(): Promise<StatsData> {
     .from(bossFights)
     .where(and(eq(bossFights.userId, userId), eq(bossFights.status, 'completed')));
 
+  // Cardio stats
+  const [cardioResult] = await db
+    .select({
+      count: count(),
+      totalDistance: sql<string>`COALESCE(SUM(${workoutSessions.distanceMeters}::numeric), 0)`,
+      totalMinutes: sql<string>`COALESCE(SUM(${workoutSessions.durationMinutes}), 0)`,
+    })
+    .from(workoutSessions)
+    .where(
+      and(
+        eq(workoutSessions.userId, userId),
+        eq(workoutSessions.sessionType, 'cardio'),
+        sql`${workoutSessions.endedAt} IS NOT NULL`
+      )
+    );
+
   return {
     totalWorkouts: workoutsResult.count,
     totalFoodEntries: foodResult.count,
     totalMeasurements: measurementsResult.count,
     totalPRs: prsResult.count,
     bossFightsWon: bossResult.count,
+    totalCardioSessions: cardioResult.count,
+    totalCardioDistanceKm: Math.round(parseFloat(cardioResult.totalDistance || '0') / 1000 * 10) / 10,
+    totalCardioTimeMinutes: parseInt(cardioResult.totalMinutes || '0'),
   };
 }
 
