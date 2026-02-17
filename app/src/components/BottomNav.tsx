@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
@@ -17,7 +18,13 @@ const NAV_ITEMS = [
   { key: 'profile', label: 'Profil', icon: <Person />, href: '/profile' },
 ];
 
-export default function BottomNav({ active = 'journal' }: { active?: string }) {
+export default function BottomNav() {
+  const pathname = usePathname();
+
+  const activeKey = NAV_ITEMS.find((item) =>
+    item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
+  )?.key;
+
   return (
     <Paper
       elevation={8}
@@ -34,7 +41,7 @@ export default function BottomNav({ active = 'journal' }: { active?: string }) {
     >
       <Stack direction="row" sx={{ height: 64 }}>
         {NAV_ITEMS.map((item) => {
-          const isActive = active === item.key;
+          const isActive = activeKey === item.key;
           return (
             <Box
               key={item.key}

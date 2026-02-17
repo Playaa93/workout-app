@@ -16,6 +16,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import ArrowBack from '@mui/icons-material/ArrowBack';
+import BottomNav from '@/components/BottomNav';
 
 type ViewState = 'loading' | 'intro' | 'questionnaire' | 'results';
 
@@ -151,7 +152,7 @@ export default function MorphologyPage() {
       </Box>
 
       {/* Content */}
-      <Box sx={{ flex: 1, p: 2 }}>
+      <Box sx={{ flex: 1, p: 2, pb: 10 }}>
         <Box sx={{ width: '100%', maxWidth: 480, mx: 'auto' }}>
         {view === 'loading' && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -170,6 +171,9 @@ export default function MorphologyPage() {
         )}
         </Box>
       </Box>
+
+      {/* Bottom Navigation */}
+      <BottomNav />
     </Box>
   );
 }

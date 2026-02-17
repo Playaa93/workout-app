@@ -41,6 +41,7 @@ import Check from '@mui/icons-material/Check';
 import Logout from '@mui/icons-material/Logout';
 import Button from '@mui/material/Button';
 import { logout } from '@/lib/auth-actions';
+import BottomNav from '@/components/BottomNav';
 
 // Haptic feedback helper
 const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
@@ -259,12 +260,15 @@ export default function ProfilePage() {
       </Box>
 
       {/* Content */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+      <Box sx={{ flex: 1, overflow: 'auto', p: 2, pb: 10 }}>
         {tab === 0 && stats && <StatsTab stats={stats} achievements={achievements} morphoProfile={morphoProfile} />}
         {tab === 1 && <AchievementsTab achievements={achievements} />}
         {tab === 2 && <HistoryTab transactions={recentXp} />}
         {tab === 3 && <SettingsTab />}
       </Box>
+
+      {/* Bottom Navigation */}
+      <BottomNav />
     </Box>
   );
 }

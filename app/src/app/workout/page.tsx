@@ -37,6 +37,7 @@ import Add from '@mui/icons-material/Add';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import Delete from '@mui/icons-material/Delete';
+import BottomNav from '@/components/BottomNav';
 
 export default function WorkoutPage() {
   const router = useRouter();
@@ -320,6 +321,9 @@ export default function WorkoutPage() {
           </Box>
         </Stack>
       </Box>
+
+      {/* Bottom Navigation */}
+      <BottomNav />
 
       {/* Delete Confirmation Dialog */}
       <Dialog

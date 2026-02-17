@@ -39,7 +39,7 @@ import SettingsView from './components/SettingsView';
 import ScannerView from './components/ScannerView';
 import PhotoAIView from './components/PhotoAIView';
 import AddEntryBottomSheet from './components/AddEntryBottomSheet';
-import BottomNav from './components/BottomNav';
+import BottomNav from '@/components/BottomNav';
 
 type View = 'main' | 'cravings' | 'search' | 'quick' | 'settings' | 'scanner' | 'photo';
 
@@ -296,7 +296,7 @@ export default function DietPage() {
       />
 
       {/* Bottom Nav */}
-      <BottomNav active="journal" />
+      <BottomNav />
     </Box>
   );
 }

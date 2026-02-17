@@ -47,6 +47,7 @@ import PhotoLibrary from '@mui/icons-material/PhotoLibrary';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import Straighten from '@mui/icons-material/Straighten';
 import MonitorWeight from '@mui/icons-material/MonitorWeight';
+import BottomNav from '@/components/BottomNav';
 
 // Haptic feedback helper
 const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
@@ -182,6 +183,9 @@ export default function MeasurementsPage() {
           </>
         )}
       </Box>
+
+      {/* Bottom Navigation */}
+      <BottomNav />
 
       {/* FAB */}
       <Fab
