@@ -63,6 +63,7 @@ export const userSettings = pgTable('user_settings', {
   theme: varchar('theme', { length: 20 }).default('system'),
   notificationsEnabled: boolean('notifications_enabled').default(true),
   unitSystem: varchar('unit_system', { length: 10 }).default('metric'),
+  geminiApiKey: varchar('gemini_api_key', { length: 255 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

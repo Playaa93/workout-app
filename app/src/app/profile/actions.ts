@@ -11,6 +11,7 @@ import {
   measurements,
   personalRecords,
   bossFights,
+  userSettings,
 } from '@/db';
 import { eq, desc, sql, and, count } from 'drizzle-orm';
 import { requireUserId, getAuthenticatedUser } from '@/lib/auth';
@@ -454,4 +455,28 @@ export async function updateAvatarStage(): Promise<number> {
   }
 
   return newStage;
+}
+
+// =====================================================
+// USER SETTINGS
+// =====================================================
+
+export async function getGeminiApiKey(): Promise<string | null> {
+  const userId = await requireUserId();
+  const [settings] = await db
+    .select({ geminiApiKey: userSettings.geminiApiKey })
+    .from(userSettings)
+    .where(eq(userSettings.userId, userId));
+  return settings?.geminiApiKey || null;
+}
+
+export async function saveGeminiApiKey(apiKey: string): Promise<void> {
+  const userId = await requireUserId();
+  await db
+    .insert(userSettings)
+    .values({ userId, geminiApiKey: apiKey })
+    .onConflictDoUpdate({
+      target: userSettings.userId,
+      set: { geminiApiKey: apiKey, updatedAt: new Date() },
+    });
 }

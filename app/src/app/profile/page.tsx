@@ -9,6 +9,8 @@ import {
   getAchievements,
   getRecentXp,
   getUserStats,
+  getGeminiApiKey,
+  saveGeminiApiKey,
   type UserProfileData,
   type GamificationData,
   type AchievementData,
@@ -40,6 +42,13 @@ import SettingsBrightness from '@mui/icons-material/SettingsBrightness';
 import Check from '@mui/icons-material/Check';
 import Logout from '@mui/icons-material/Logout';
 import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import InputAdornment from '@mui/material/InputAdornment';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import Key from '@mui/icons-material/Key';
 import { logout } from '@/lib/auth-actions';
 import BottomNav from '@/components/BottomNav';
 
@@ -547,10 +556,33 @@ function HistoryTab({ transactions }: { transactions: XpTransactionData[] }) {
 function SettingsTab() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [apiKeyLoaded, setApiKeyLoaded] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [savingKey, setSavingKey] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false, message: '', severity: 'success',
+  });
 
   useEffect(() => {
     setMounted(true);
+    getGeminiApiKey().then((key) => {
+      if (key) setApiKey(key);
+      setApiKeyLoaded(true);
+    });
   }, []);
+
+  const handleSaveApiKey = async () => {
+    setSavingKey(true);
+    try {
+      await saveGeminiApiKey(apiKey.trim());
+      setSnackbar({ open: true, message: 'Clé API sauvegardée', severity: 'success' });
+    } catch {
+      setSnackbar({ open: true, message: 'Erreur lors de la sauvegarde', severity: 'error' });
+    } finally {
+      setSavingKey(false);
+    }
+  };
 
   if (!mounted) {
     return (
@@ -641,6 +673,63 @@ function SettingsTab() {
       <Divider />
 
       <Box>
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+          Reconnaissance IA
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+          Clé API Google Gemini pour la reconnaissance photo (repas et screenshots cardio).
+        </Typography>
+        <Stack direction="row" spacing={1}>
+          <TextField
+            size="small"
+            fullWidth
+            placeholder="AIza..."
+            type={showApiKey ? 'text' : 'password'}
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            disabled={!apiKeyLoaded}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Key sx={{ fontSize: 18, color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setShowApiKey(!showApiKey)} edge="end">
+                      {showApiKey ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleSaveApiKey}
+            disabled={savingKey || !apiKey.trim()}
+            sx={{ textTransform: 'none', minWidth: 'auto', px: 2 }}
+          >
+            {savingKey ? <CircularProgress size={18} /> : 'OK'}
+          </Button>
+        </Stack>
+        <Button
+          component="a"
+          href="https://aistudio.google.com/apikey"
+          target="_blank"
+          rel="noopener noreferrer"
+          size="small"
+          sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.8rem' }}
+        >
+          Obtenir une clé gratuite →
+        </Button>
+      </Box>
+
+      <Divider />
+
+      <Box>
         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
           À propos
         </Typography>
@@ -665,6 +754,21 @@ function SettingsTab() {
           Se déconnecter
         </Button>
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%', borderRadius: 2 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Stack>
   );
 }

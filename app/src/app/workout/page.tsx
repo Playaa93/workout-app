@@ -274,26 +274,22 @@ export default function WorkoutPage() {
           <Card sx={{
             background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
             color: 'white',
-            borderRadius: 4,
+            borderRadius: 3,
           }}>
             <CardActionArea onClick={() => { setDrawerView('main'); setShowNewSessionDrawer(true); }}>
-              <CardContent sx={{ py: 3.5, px: 3 }}>
-                <Stack direction="row" alignItems="center" spacing={2.5}>
+              <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
                   <Box sx={{
-                    width: 56, height: 56, borderRadius: '50%',
+                    width: 44, height: 44, borderRadius: '50%',
                     bgcolor: 'rgba(255,255,255,0.2)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
                   }}>
-                    <Add sx={{ fontSize: 30 }} />
+                    <Add sx={{ fontSize: 24 }} />
                   </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={700}>
-                      Nouvelle séance
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                      Musculation, cardio ou import
-                    </Typography>
-                  </Box>
+                  <Typography variant="body1" fontWeight={700} sx={{ flex: 1 }}>
+                    Nouvelle séance
+                  </Typography>
                   <ChevronRight sx={{ opacity: 0.5 }} />
                 </Stack>
               </CardContent>

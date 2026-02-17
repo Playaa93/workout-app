@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUserId } from '@/lib/auth';
+import { getGeminiApiKey } from '@/app/profile/actions';
 
 export async function POST(request: Request) {
   // Verify auth
@@ -9,11 +10,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = await getGeminiApiKey() || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: 'GEMINI_API_KEY non configurée' },
-      { status: 500 }
+      { error: 'Clé API Gemini non configurée. Ajoute-la dans Profil > Paramètres.' },
+      { status: 400 }
     );
   }
 

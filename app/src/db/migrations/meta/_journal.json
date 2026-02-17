@@ -15,6 +15,13 @@
       "when": 1771339711793,
       "tag": "0001_blushing_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771347085049,
+      "tag": "0002_little_hawkeye",
+      "breakpoints": true
     }
   ]
 }

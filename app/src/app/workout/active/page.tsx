@@ -88,6 +88,9 @@ function ActiveWorkoutContent() {
   // Elapsed time
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  // Exercise info modal
+  const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
+
   // Swap exercise state
   const [swapExerciseId, setSwapExerciseId] = useState<string | null>(null);
   const [similarExercises, setSimilarExercises] = useState<Exercise[]>([]);
@@ -435,7 +438,12 @@ function ActiveWorkoutContent() {
                               color={isComplete ? 'success' : 'primary'}
                               sx={{ width: 24, height: 24, fontSize: '0.75rem' }}
                             />
-                            <Typography variant="subtitle2" fontWeight={600}>
+                            <Typography
+                              variant="subtitle2"
+                              fontWeight={600}
+                              onClick={() => { if (exercise) setInfoExercise(exercise); }}
+                              sx={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'divider', textUnderlineOffset: 3 }}
+                            >
                               {templateEx.exerciseName}
                             </Typography>
                           </Stack>
@@ -692,6 +700,22 @@ function ActiveWorkoutContent() {
           )}
         </Box>
       </Drawer>
+
+      {/* Exercise Info Modal */}
+      <ExerciseDetailModal
+        exercise={infoExercise ? {
+          id: infoExercise.id,
+          nameFr: infoExercise.nameFr,
+          nameEn: infoExercise.nameEn,
+          muscleGroup: infoExercise.muscleGroup,
+          primaryMuscles: infoExercise.primaryMuscles,
+          secondaryMuscles: infoExercise.secondaryMuscles,
+          equipment: infoExercise.equipment,
+          difficulty: infoExercise.difficulty,
+        } : null}
+        open={!!infoExercise}
+        onClose={() => setInfoExercise(null)}
+      />
 
       {/* Quick Add FAB - minimal style */}
       {!selectedExercise && !showExercisePicker && (
