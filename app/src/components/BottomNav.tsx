@@ -13,8 +13,8 @@ import Link from 'next/link';
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Accueil', icon: <Home />, href: '/' },
-  { key: 'journal', label: 'Journal', icon: <Restaurant />, href: '/diet' },
   { key: 'workout', label: 'Training', icon: <FitnessCenter />, href: '/workout' },
+  { key: 'journal', label: 'Journal', icon: <Restaurant />, href: '/diet' },
   { key: 'profile', label: 'Profil', icon: <Person />, href: '/profile' },
 ];
 

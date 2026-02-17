@@ -399,23 +399,22 @@ export default function WorkoutPage() {
                             ))}
                           </Stack>
                         </Box>
-                        <Button
-                          size="small"
-                          variant="outlined"
+                        <IconButton
                           onClick={() => handleStartFromTemplate(t.id)}
                           disabled={startingTemplateId === t.id}
-                          startIcon={startingTemplateId === t.id
-                            ? <CircularProgress size={14} />
-                            : <PlayArrow sx={{ fontSize: 16 }} />
-                          }
                           sx={{
-                            borderRadius: 2.5, borderColor: 'divider', color: 'text.primary',
-                            fontSize: '0.75rem', fontWeight: 600, textTransform: 'none',
-                            minWidth: 'auto', px: 1.5, flexShrink: 0,
+                            width: 42, height: 42, flexShrink: 0,
+                            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+                            color: 'white',
+                            '&:hover': { background: 'linear-gradient(135deg, #5a4494 0%, #8a5ad4 100%)' },
+                            '&.Mui-disabled': { background: 'action.disabledBackground', color: 'action.disabled' },
                           }}
                         >
-                          Go
-                        </Button>
+                          {startingTemplateId === t.id
+                            ? <CircularProgress size={20} sx={{ color: 'white' }} />
+                            : <PlayArrow />
+                          }
+                        </IconButton>
                       </Stack>
                     </CardContent>
                   </Card>
