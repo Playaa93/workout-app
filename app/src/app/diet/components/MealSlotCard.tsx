@@ -103,17 +103,15 @@ export default function MealSlotCard({
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography
-                      variant="caption"
-                      fontWeight={500}
-                      sx={{ fontSize: '0.75rem' }}
-                      noWrap
-                    >
-                      {entry.customName || 'Aliment'}
-                    </Typography>
-                  </Box>
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography
+                    variant="caption"
+                    fontWeight={500}
+                    noWrap
+                    sx={{ flex: 1, minWidth: 0, fontSize: '0.75rem' }}
+                  >
+                    {entry.customName || 'Aliment'}
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
                     <Typography
                       variant="caption"
                       color="text.secondary"

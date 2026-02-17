@@ -20,6 +20,7 @@ export type FoodData = {
   protein: string | null;
   carbohydrates: string | null;
   fat: string | null;
+  servingSize: string | null;
 };
 
 export type CravingData = {
@@ -88,10 +89,9 @@ async function awardDietXp(userId: string, amount: number, reason: string, refer
 
 // Check if this is the first entry of the day
 async function isFirstEntryOfDay(userId: string): Promise<boolean> {
-  const today = new Date().toISOString().split('T')[0];
-  const todayStart = new Date(today);
-  const todayEnd = new Date(today);
-  todayEnd.setDate(todayEnd.getDate() + 1);
+  const todayStr = getLocalDateStr();
+  const todayStart = new Date(todayStr + 'T00:00:00');
+  const todayEnd = new Date(todayStr + 'T23:59:59.999');
 
   const [existing] = await db
     .select({ count: sql<number>`count(*)` })
@@ -122,6 +122,15 @@ export async function getCravings(): Promise<CravingData[]> {
 export async function searchFoods(query: string, limit = 20): Promise<FoodData[]> {
   if (!query || query.length < 2) return [];
 
+  const words = query.toLowerCase().split(/\s+/).filter(w => w.length >= 2);
+  if (words.length === 0) return [];
+
+  // Chaque mot doit être présent dans le nom OU la marque (AND entre mots)
+  const conditions = words.map(w =>
+    sql`(LOWER(${foods.nameFr}) LIKE ${`%${w}%`} OR LOWER(COALESCE(${foods.brand}, '')) LIKE ${`%${w}%`})`
+  );
+  const firstWord = words[0];
+
   const result = await db
     .select({
       id: foods.id,
@@ -132,9 +141,18 @@ export async function searchFoods(query: string, limit = 20): Promise<FoodData[]
       protein: foods.protein,
       carbohydrates: foods.carbohydrates,
       fat: foods.fat,
+      servingSize: foods.servingSize,
     })
     .from(foods)
-    .where(sql`LOWER(${foods.nameFr}) LIKE ${`%${query.toLowerCase()}%`}`)
+    .where(and(...conditions))
+    .orderBy(
+      sql`CASE
+        WHEN LOWER(${foods.nameFr}) LIKE ${`${firstWord}%`} THEN 0
+        WHEN LOWER(${foods.nameFr}) LIKE ${`% ${firstWord}%`} THEN 1
+        ELSE 2
+      END`,
+      sql`LENGTH(${foods.nameFr})`,
+    )
     .limit(limit);
 
   return result;
@@ -143,10 +161,9 @@ export async function searchFoods(query: string, limit = 20): Promise<FoodData[]
 // Get today's entries
 export async function getTodayEntries(): Promise<FoodEntryData[]> {
   const userId = await requireUserId();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const todayStr = getLocalDateStr();
+  const today = new Date(todayStr + 'T00:00:00');
+  const tomorrow = new Date(todayStr + 'T23:59:59.999');
 
   const result = await db
     .select()
@@ -237,6 +254,7 @@ export async function addFoodEntry(data: {
         protein: foods.protein,
         carbohydrates: foods.carbohydrates,
         fat: foods.fat,
+        servingSize: foods.servingSize,
       })
       .from(foods)
       .where(eq(foods.id, data.foodId));
@@ -318,13 +336,16 @@ export async function deleteEntry(entryId: string): Promise<void> {
   await updateDailySummary(userId);
 }
 
+// Retourne la date locale YYYY-MM-DD (évite les décalages UTC)
+function getLocalDateStr(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // Update daily summary
 async function updateDailySummary(userId: string): Promise<void> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = getLocalDateStr();
+  const today = new Date(todayStr + 'T00:00:00');
+  const tomorrow = new Date(todayStr + 'T23:59:59.999');
 
   // Get today's entries
   const entries = await db
@@ -354,6 +375,7 @@ async function updateDailySummary(userId: string): Promise<void> {
   // Calculate 7-day averages
   const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const sevenDaysAgoStr = getLocalDateStr(sevenDaysAgo);
 
   const weekSummaries = await db
     .select()
@@ -361,7 +383,7 @@ async function updateDailySummary(userId: string): Promise<void> {
     .where(
       and(
         eq(nutritionDailySummary.userId, userId),
-        gte(nutritionDailySummary.date, sevenDaysAgo.toISOString().split('T')[0])
+        gte(nutritionDailySummary.date, sevenDaysAgoStr)
       )
     );
 
@@ -417,7 +439,7 @@ export async function getDailySummary(): Promise<{
   avg7d: DailySummaryData;
 } | null> {
   const userId = await requireUserId();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateStr();
 
   const [summary] = await db
     .select()
@@ -479,7 +501,7 @@ export async function getWeekHistory(): Promise<DailySummaryData[]> {
     .where(
       and(
         eq(nutritionDailySummary.userId, userId),
-        gte(nutritionDailySummary.date, sevenDaysAgo.toISOString().split('T')[0])
+        gte(nutritionDailySummary.date, getLocalDateStr(sevenDaysAgo))
       )
     )
     .orderBy(nutritionDailySummary.date);
@@ -695,6 +717,7 @@ export async function lookupBarcode(barcode: string): Promise<FoodData | null> {
       protein: foods.protein,
       carbohydrates: foods.carbohydrates,
       fat: foods.fat,
+      servingSize: foods.servingSize,
     })
     .from(foods)
     .where(eq(foods.barcode, barcode));
@@ -746,6 +769,7 @@ export async function lookupBarcode(barcode: string): Promise<FoodData | null> {
       protein: saved.protein,
       carbohydrates: saved.carbohydrates,
       fat: saved.fat,
+      servingSize: saved.servingSize,
     };
   } catch {
     return null;

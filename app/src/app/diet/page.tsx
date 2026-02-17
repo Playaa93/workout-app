@@ -139,7 +139,6 @@ export default function DietPage() {
     await addFoodEntry({ ...data, mealType: data.mealType || activeMealType });
     triggerHaptic('medium');
     await loadData();
-    setView('main');
   };
 
   const handleAddQuick = async (name: string, calories: number, mealType: string) => {
