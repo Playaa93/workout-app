@@ -222,3 +222,86 @@ export async function endCardioSession(
     caloriesBurned,
   };
 }
+
+export async function importCardioSession(data: {
+  activity: CardioActivity;
+  durationMinutes: number;
+  distanceMeters?: number;
+  avgPaceSecondsPerKm?: number;
+  avgHeartRate?: number;
+  maxHeartRate?: number;
+  caloriesBurned?: number;
+  dateTime?: string;
+}): Promise<{ sessionId: string; xpEarned: number }> {
+  const userId = await requireUserId();
+
+  const startedAt = data.dateTime ? new Date(data.dateTime) : new Date();
+  const endedAt = new Date(startedAt.getTime() + data.durationMinutes * 60000);
+
+  const distanceM = data.distanceMeters || 0;
+  const durationSeconds = data.durationMinutes * 60;
+  const pace = data.avgPaceSecondsPerKm ?? (distanceM > 0 ? calculatePace(durationSeconds, distanceM) : 0);
+  const speed = distanceM > 0 ? calculateSpeed(durationSeconds, distanceM) : 0;
+
+  // Calories: use provided value or estimate
+  let calories = data.caloriesBurned;
+  if (!calories) {
+    const [profile] = await db
+      .select({ weight: nutritionProfiles.weight })
+      .from(nutritionProfiles)
+      .where(eq(nutritionProfiles.userId, userId));
+    const weightKg = profile?.weight ? parseFloat(profile.weight) : 75;
+    calories = estimateCardioCalories(data.activity, data.durationMinutes, weightKg);
+  }
+
+  const [session] = await db
+    .insert(workoutSessions)
+    .values({
+      userId,
+      sessionType: 'cardio',
+      cardioActivity: data.activity,
+      startedAt,
+      endedAt,
+      durationMinutes: data.durationMinutes,
+      distanceMeters: distanceM.toString(),
+      avgPaceSecondsPerKm: pace,
+      avgSpeedKmh: speed.toFixed(2),
+      avgHeartRate: data.avgHeartRate,
+      maxHeartRate: data.maxHeartRate,
+      caloriesBurned: calories,
+    })
+    .returning();
+
+  // XP: 50 base + 5 per 10min + 10 per km
+  const baseXp = 50;
+  const timeBonus = Math.floor(data.durationMinutes / 10) * 5;
+  const distanceBonus = Math.floor(distanceM / 1000) * 10;
+  const totalXp = baseXp + timeBonus + distanceBonus;
+
+  await db.insert(xpTransactions).values({
+    userId,
+    amount: totalXp,
+    reason: 'cardio_completed',
+    referenceType: 'workout_session',
+    referenceId: session.id,
+  });
+
+  await db
+    .insert(userGamification)
+    .values({
+      userId,
+      totalXp,
+      lastActivityDate: new Date().toISOString().split('T')[0],
+    })
+    .onConflictDoUpdate({
+      target: userGamification.userId,
+      set: {
+        totalXp: sql`${userGamification.totalXp} + ${totalXp}`,
+        lastActivityDate: new Date().toISOString().split('T')[0],
+        currentStreak: sql`${userGamification.currentStreak} + 1`,
+        updatedAt: new Date(),
+      },
+    });
+
+  return { sessionId: session.id, xpEarned: totalXp };
+}

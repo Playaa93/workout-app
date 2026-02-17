@@ -12,8 +12,9 @@ import {
   type WorkoutSession,
   type WorkoutTemplate,
 } from './actions';
-import { startCardioSession } from './cardio-actions';
+import { startCardioSession, importCardioSession } from './cardio-actions';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
+import type { CardioActivity as CardioActivityType } from '@/db/schema';
 import type { CardioActivity } from '@/db/schema';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -36,6 +37,9 @@ import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
+import TextField from '@mui/material/TextField';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import FitnessCenter from '@mui/icons-material/FitnessCenter';
 import PlayArrow from '@mui/icons-material/PlayArrow';
@@ -44,7 +48,18 @@ import Add from '@mui/icons-material/Add';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import Close from '@mui/icons-material/Close';
 import Delete from '@mui/icons-material/Delete';
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import BottomNav from '@/components/BottomNav';
+
+const MUSCLE_LABELS: Record<string, string> = {
+  chest: 'Pecs',
+  back: 'Dos',
+  shoulders: 'Épaules',
+  arms: 'Bras',
+  legs: 'Jambes',
+  core: 'Abdos',
+  full_body: 'Full body',
+};
 
 export default function WorkoutPage() {
   const router = useRouter();
@@ -55,8 +70,26 @@ export default function WorkoutPage() {
   const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
-  const [showCardioDrawer, setShowCardioDrawer] = useState(false);
+  const [showNewSessionDrawer, setShowNewSessionDrawer] = useState(false);
+  const [drawerView, setDrawerView] = useState<'main' | 'cardio'>('main');
   const [startingCardio, setStartingCardio] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importData, setImportData] = useState<{
+    activity: string;
+    durationMinutes: number | null;
+    distanceMeters: number | null;
+    avgPaceSecondsPerKm: number | null;
+    avgHeartRate: number | null;
+    maxHeartRate: number | null;
+    caloriesBurned: number | null;
+    dateTime: string | null;
+    confidence: number;
+  } | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importSaving, setImportSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false, message: '', severity: 'success',
+  });
 
   useEffect(() => {
     async function load() {
@@ -123,7 +156,94 @@ export default function WorkoutPage() {
     } catch (error) {
       console.error('Error starting cardio:', error);
       setStartingCardio(false);
-      setShowCardioDrawer(false);
+      setShowNewSessionDrawer(false);
+    }
+  };
+
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxSize = 1024;
+          let { width, height } = img;
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = (height / width) * maxSize;
+              width = maxSize;
+            } else {
+              width = (width / height) * maxSize;
+              height = maxSize;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImportScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    setImportLoading(true);
+    setShowNewSessionDrawer(false);
+    try {
+      const imageBase64 = await compressImage(file);
+      const res = await fetch('/api/recognize-workout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64 }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.workout) {
+        setSnackbar({ open: true, message: json.error || 'Erreur de reconnaissance', severity: 'error' });
+        return;
+      }
+      setImportData(json.workout);
+      setImportDialogOpen(true);
+    } catch {
+      setSnackbar({ open: true, message: 'Erreur lors de l\'import', severity: 'error' });
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!importData || !importData.durationMinutes) return;
+    setImportSaving(true);
+    try {
+      const result = await importCardioSession({
+        activity: importData.activity as CardioActivityType,
+        durationMinutes: importData.durationMinutes,
+        distanceMeters: importData.distanceMeters ?? undefined,
+        avgPaceSecondsPerKm: importData.avgPaceSecondsPerKm ?? undefined,
+        avgHeartRate: importData.avgHeartRate ?? undefined,
+        maxHeartRate: importData.maxHeartRate ?? undefined,
+        caloriesBurned: importData.caloriesBurned ?? undefined,
+        dateTime: importData.dateTime ?? undefined,
+      });
+      setImportDialogOpen(false);
+      setImportData(null);
+      setSnackbar({ open: true, message: `Séance importée ! +${result.xpEarned} XP`, severity: 'success' });
+      // Refresh sessions list
+      const sessionsData = await getRecentSessions();
+      setSessions(sessionsData);
+    } catch {
+      setSnackbar({ open: true, message: 'Erreur lors de la sauvegarde', severity: 'error' });
+    } finally {
+      setImportSaving(false);
     }
   };
 
@@ -150,13 +270,13 @@ export default function WorkoutPage() {
 
       <Box sx={{ px: 2.5, mt: -1 }}>
         <Stack spacing={2}>
-          {/* Hero CTA - Séance libre */}
+          {/* CTA Nouvelle séance */}
           <Card sx={{
             background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
             color: 'white',
             borderRadius: 4,
           }}>
-            <CardActionArea onClick={handleStartWorkout} disabled={isStarting}>
+            <CardActionArea onClick={() => { setDrawerView('main'); setShowNewSessionDrawer(true); }}>
               <CardContent sx={{ py: 3.5, px: 3 }}>
                 <Stack direction="row" alignItems="center" spacing={2.5}>
                   <Box sx={{
@@ -164,47 +284,17 @@ export default function WorkoutPage() {
                     bgcolor: 'rgba(255,255,255,0.2)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    {isStarting
-                      ? <CircularProgress size={28} sx={{ color: 'white' }} />
-                      : <Bolt sx={{ fontSize: 30 }} />
-                    }
+                    <Add sx={{ fontSize: 30 }} />
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="h6" fontWeight={700}>
-                      {isStarting ? 'Démarrage...' : 'Séance libre'}
+                      Nouvelle séance
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                      Choisis tes exercices au fur et à mesure
+                      Musculation, cardio ou import
                     </Typography>
                   </Box>
                   <ChevronRight sx={{ opacity: 0.5 }} />
-                </Stack>
-              </CardContent>
-            </CardActionArea>
-          </Card>
-
-          {/* CTA Cardio */}
-          <Card sx={{ border: 1, borderColor: 'divider', borderRadius: 4 }}>
-            <CardActionArea onClick={() => setShowCardioDrawer(true)}>
-              <CardContent sx={{ py: 3, px: 3 }}>
-                <Stack direction="row" alignItems="center" spacing={2.5}>
-                  <Box sx={{
-                    width: 56, height: 56, borderRadius: '50%',
-                    bgcolor: 'action.hover',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.5rem',
-                  }}>
-                    🏃
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={700}>
-                      Séance cardio
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Course, vélo, rameur...
-                    </Typography>
-                  </Box>
-                  <ChevronRight sx={{ color: 'text.disabled' }} />
                 </Stack>
               </CardContent>
             </CardActionArea>
@@ -298,9 +388,16 @@ export default function WorkoutPage() {
                         </Box>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography variant="body1" fontWeight={600} noWrap>{t.name}</Typography>
-                          <Typography variant="caption" color="text.secondary" noWrap>
-                            {t.targetMuscles.join(' · ')}{t.estimatedDuration ? ` · ~${t.estimatedDuration} min` : ''}
-                          </Typography>
+                          <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
+                            {t.targetMuscles.map((m) => (
+                              <Chip
+                                key={m}
+                                label={MUSCLE_LABELS[m] || m}
+                                size="small"
+                                sx={{ height: 20, fontSize: '0.65rem', fontWeight: 500 }}
+                              />
+                            ))}
+                          </Stack>
                         </Box>
                         <Button
                           size="small"
@@ -405,47 +502,230 @@ export default function WorkoutPage() {
         </DialogActions>
       </Dialog>
 
-      {/* Cardio Activity Drawer */}
+      {/* New Session Drawer */}
       <Drawer
         anchor="bottom"
-        open={showCardioDrawer}
-        onClose={() => setShowCardioDrawer(false)}
+        open={showNewSessionDrawer}
+        onClose={() => { setShowNewSessionDrawer(false); setDrawerView('main'); }}
         PaperProps={{
           sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.paper', maxHeight: '70vh' },
         }}
       >
         <Box sx={{ p: 2 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-            <Typography variant="h6" fontWeight={600}>
-              Choisir une activité
-            </Typography>
-            <IconButton onClick={() => setShowCardioDrawer(false)}>
+            {drawerView === 'cardio' ? (
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <IconButton size="small" onClick={() => setDrawerView('main')}>
+                  <ArrowBack fontSize="small" />
+                </IconButton>
+                <Typography variant="h6" fontWeight={600}>
+                  Choisir une activité
+                </Typography>
+              </Stack>
+            ) : (
+              <Typography variant="h6" fontWeight={600}>
+                Nouvelle séance
+              </Typography>
+            )}
+            <IconButton onClick={() => { setShowNewSessionDrawer(false); setDrawerView('main'); }}>
               <Close />
             </IconButton>
           </Stack>
-          {startingCardio ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+
+          {isStarting || startingCardio || importLoading ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, gap: 1 }}>
               <CircularProgress />
-            </Box>
-          ) : (
-            <List>
-              {(Object.entries(CARDIO_ACTIVITIES) as [CardioActivity, { label: string; emoji: string }][]).map(
-                ([key, { label, emoji }]) => (
-                  <ListItemButton
-                    key={key}
-                    onClick={() => handleStartCardio(key)}
-                    sx={{ borderRadius: 2, mb: 0.5 }}
-                  >
-                    <Typography sx={{ fontSize: '1.3rem', mr: 2 }}>{emoji}</Typography>
-                    <ListItemText primary={label} />
-                    <ChevronRight sx={{ color: 'text.disabled' }} />
-                  </ListItemButton>
-                )
+              {importLoading && (
+                <Typography variant="body2" color="text.secondary">
+                  Analyse du screenshot...
+                </Typography>
               )}
+            </Box>
+          ) : drawerView === 'main' ? (
+            <List>
+              <ListItemButton
+                onClick={handleStartWorkout}
+                sx={{ borderRadius: 2, mb: 0.5 }}
+              >
+                <Box sx={{
+                  width: 40, height: 40, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  mr: 2,
+                }}>
+                  <Bolt sx={{ color: 'white', fontSize: 22 }} />
+                </Box>
+                <ListItemText
+                  primary="Séance libre"
+                  secondary="Choisis tes exercices au fur et à mesure"
+                />
+                <ChevronRight sx={{ color: 'text.disabled' }} />
+              </ListItemButton>
+              <ListItemButton
+                onClick={() => setDrawerView('cardio')}
+                sx={{ borderRadius: 2, mb: 0.5 }}
+              >
+                <Box sx={{
+                  width: 40, height: 40, borderRadius: '50%',
+                  bgcolor: 'action.hover',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  mr: 2, fontSize: '1.2rem',
+                }}>
+                  🏃
+                </Box>
+                <ListItemText
+                  primary="Séance cardio"
+                  secondary="Course, vélo, rameur..."
+                />
+                <ChevronRight sx={{ color: 'text.disabled' }} />
+              </ListItemButton>
             </List>
+          ) : (
+            <>
+              <List>
+                {(Object.entries(CARDIO_ACTIVITIES) as [CardioActivity, { label: string; emoji: string }][]).map(
+                  ([key, { label, emoji }]) => (
+                    <ListItemButton
+                      key={key}
+                      onClick={() => handleStartCardio(key)}
+                      sx={{ borderRadius: 2, mb: 0.5 }}
+                    >
+                      <Typography sx={{ fontSize: '1.3rem', mr: 2 }}>{emoji}</Typography>
+                      <ListItemText primary={label} />
+                      <ChevronRight sx={{ color: 'text.disabled' }} />
+                    </ListItemButton>
+                  )
+                )}
+              </List>
+              <Divider sx={{ my: 1 }} />
+              <Button
+                component="label"
+                size="small"
+                fullWidth
+                startIcon={<PhotoCamera />}
+                sx={{ textTransform: 'none', color: 'text.secondary', fontWeight: 500 }}
+              >
+                Importer depuis un screenshot
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleImportScreenshot}
+                />
+              </Button>
+            </>
           )}
         </Box>
       </Drawer>
+      {/* Import Confirmation Dialog */}
+      <Dialog
+        open={importDialogOpen}
+        onClose={() => { setImportDialogOpen(false); setImportData(null); }}
+        fullWidth
+        maxWidth="xs"
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle>Confirmer l&apos;import</DialogTitle>
+        <DialogContent>
+          {importData && (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="Activité"
+                select
+                value={importData.activity}
+                onChange={(e) => setImportData({ ...importData, activity: e.target.value })}
+                size="small"
+                SelectProps={{ native: true }}
+              >
+                {(Object.entries(CARDIO_ACTIVITIES) as [string, { label: string }][]).map(
+                  ([key, { label }]) => (
+                    <option key={key} value={key}>{label}</option>
+                  )
+                )}
+              </TextField>
+              <TextField
+                label="Durée (min)"
+                type="number"
+                value={importData.durationMinutes ?? ''}
+                onChange={(e) => setImportData({ ...importData, durationMinutes: e.target.value ? Number(e.target.value) : null })}
+                size="small"
+              />
+              <TextField
+                label="Distance (m)"
+                type="number"
+                value={importData.distanceMeters ?? ''}
+                onChange={(e) => setImportData({ ...importData, distanceMeters: e.target.value ? Number(e.target.value) : null })}
+                size="small"
+              />
+              <TextField
+                label="Allure (sec/km)"
+                type="number"
+                value={importData.avgPaceSecondsPerKm ?? ''}
+                onChange={(e) => setImportData({ ...importData, avgPaceSecondsPerKm: e.target.value ? Number(e.target.value) : null })}
+                size="small"
+              />
+              <Stack direction="row" spacing={1}>
+                <TextField
+                  label="FC moy (bpm)"
+                  type="number"
+                  value={importData.avgHeartRate ?? ''}
+                  onChange={(e) => setImportData({ ...importData, avgHeartRate: e.target.value ? Number(e.target.value) : null })}
+                  size="small"
+                  fullWidth
+                />
+                <TextField
+                  label="FC max (bpm)"
+                  type="number"
+                  value={importData.maxHeartRate ?? ''}
+                  onChange={(e) => setImportData({ ...importData, maxHeartRate: e.target.value ? Number(e.target.value) : null })}
+                  size="small"
+                  fullWidth
+                />
+              </Stack>
+              <TextField
+                label="Calories"
+                type="number"
+                value={importData.caloriesBurned ?? ''}
+                onChange={(e) => setImportData({ ...importData, caloriesBurned: e.target.value ? Number(e.target.value) : null })}
+                size="small"
+              />
+              {importData.confidence < 0.7 && (
+                <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                  Confiance faible ({Math.round(importData.confidence * 100)}%) — vérifie les données
+                </Alert>
+              )}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => { setImportDialogOpen(false); setImportData(null); }} color="inherit">
+            Annuler
+          </Button>
+          <Button
+            onClick={handleImportConfirm}
+            variant="contained"
+            disabled={importSaving || !importData?.durationMinutes}
+          >
+            {importSaving ? <CircularProgress size={20} /> : 'Importer'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%', borderRadius: 2 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
@@ -470,6 +750,11 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
   const distanceM = session.distanceMeters ? parseFloat(session.distanceMeters) : 0;
   const [showDelete, setShowDelete] = useState(false);
 
+  const mins = session.durationMinutes || 0;
+  const durationFormatted = mins >= 60
+    ? `${Math.floor(mins / 60)}h${(mins % 60).toString().padStart(2, '0')}`
+    : `${mins}min`;
+
   return (
     <Box
       sx={{ px: 2.5, py: 2 }}
@@ -493,6 +778,7 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
           <Typography variant="caption" color="text.secondary">
             {isCardio ? formattedDate : formattedTime}
           </Typography>
+          <Chip label={durationFormatted} size="small" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600 }} />
         </Stack>
         {showDelete ? (
           <IconButton
@@ -516,14 +802,6 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
           overflow: 'hidden',
         }}
       >
-        <Box sx={{ flex: 1, py: 1, textAlign: 'center', borderRight: 1, borderColor: 'divider' }}>
-          <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
-            {session.durationMinutes || 0} min
-          </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-            Durée
-          </Typography>
-        </Box>
         {isCardio ? (
           <>
             <Box sx={{ flex: 1, py: 1, textAlign: 'center', borderRight: 1, borderColor: 'divider' }}>
@@ -534,12 +812,20 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
                 Distance
               </Typography>
             </Box>
-            <Box sx={{ flex: 1, py: 1, textAlign: 'center' }}>
+            <Box sx={{ flex: 1, py: 1, textAlign: 'center', borderRight: 1, borderColor: 'divider' }}>
               <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
                 {session.avgPaceSecondsPerKm ? formatPace(session.avgPaceSecondsPerKm) : '—'}
               </Typography>
               <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
                 Allure
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1, py: 1, textAlign: 'center' }}>
+              <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                {session.caloriesBurned || '—'}
+              </Typography>
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
+                kcal
               </Typography>
             </Box>
           </>
