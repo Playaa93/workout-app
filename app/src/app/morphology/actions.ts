@@ -66,9 +66,9 @@ const MORPHO_QUESTIONS: MorphoQuestion[] = [
     category: 'structure',
     helpText: 'Impacte le développé couché',
     options: [
-      { label: 'Cage profonde et bombée (thorax épais)', value: 'wide', description: 'Avantage bench' },
+      { label: 'Cage profonde et bombée (thorax épais)', value: 'wide', description: 'Avantage développé couché' },
       { label: 'Cage moyenne', value: 'medium', description: 'Standard' },
-      { label: 'Cage plate et étroite', value: 'narrow', description: 'Grande amplitude bench' },
+      { label: 'Cage plate et étroite', value: 'narrow', description: 'Grande amplitude au développé couché' },
     ],
     orderIndex: 3,
   },
@@ -98,9 +98,9 @@ const MORPHO_QUESTIONS: MorphoQuestion[] = [
     category: 'proportions',
     helpText: 'Ex: taille 175cm, distance bras 180cm = bras longs',
     options: [
-      { label: 'Distance bras < taille (bras courts)', value: 'short', description: 'Avantage bench' },
+      { label: 'Distance bras < taille (bras courts)', value: 'short', description: 'Avantage développé couché' },
       { label: 'Distance bras = taille (± 2cm)', value: 'medium', description: 'Standard' },
-      { label: 'Distance bras > taille (bras longs)', value: 'long', description: 'Avantage deadlift' },
+      { label: 'Distance bras > taille (bras longs)', value: 'long', description: 'Avantage soulevé de terre' },
     ],
     orderIndex: 5,
   },
@@ -264,9 +264,9 @@ const MORPHO_QUESTIONS: MorphoQuestion[] = [
     category: 'metabolism',
     helpText: 'Identifier tes points forts génétiques',
     options: [
-      { label: 'Dos et épaules', value: 'back_shoulders', description: 'Pulling movements' },
-      { label: 'Pectoraux et bras', value: 'chest_arms', description: 'Pushing movements' },
-      { label: 'Jambes (quadriceps, fessiers)', value: 'legs', description: 'Lower body' },
+      { label: 'Dos et épaules', value: 'back_shoulders', description: 'Exercices de tirage' },
+      { label: 'Pectoraux et bras', value: 'chest_arms', description: 'Exercices de poussée' },
+      { label: 'Jambes (quadriceps, fessiers)', value: 'legs', description: 'Bas du corps' },
       { label: 'Tout est difficile / Je débute', value: 'none', description: 'Travail global nécessaire' },
     ],
     orderIndex: 16,
@@ -306,7 +306,7 @@ export async function calculateMorphotype(answers: Record<string, string>): Prom
   const recommendedExercises = [...squat.variants.slice(0, 2), ...deadlift.variants.slice(0, 2), ...bench.variants.slice(0, 2)];
   const exercisesToAvoid = [
     ...squat.disadvantages.length > 1 ? ['Squat ATG lourd'] : [],
-    ...bench.disadvantages.length > 1 ? ['Bench prise très large'] : [],
+    ...bench.disadvantages.length > 1 ? ['Développé couché prise très large'] : [],
   ];
 
   return {
@@ -525,7 +525,7 @@ function generateSquatRecommendation(
   // Disadvantages
   if (longFemurs) {
     disadvantages.push('Fémurs longs = inclinaison du buste importante');
-    tips.push('Écarter les pieds en stance large');
+    tips.push('Écarter les pieds (position pieds largeur > épaules)');
   }
   if (limitedAnkle) {
     disadvantages.push('Mobilité cheville limitée');
@@ -535,7 +535,7 @@ function generateSquatRecommendation(
     disadvantages.push('Valgus prononcé = risque blessure');
     tips.push('Élastique autour des genoux', 'Renforcer fessiers avant de charger lourd');
   } else if (kneeValgus) {
-    tips.push('Attention au tracking des genoux', 'Activation fessiers en échauffement');
+    tips.push('Attention à l\'alignement des genoux', 'Activer les fessiers en échauffement');
   }
 
   // Build variants based on suitability (best first, never recommend unsuitable)
@@ -543,21 +543,21 @@ function generateSquatRecommendation(
 
   if (freeSquatIssues >= 2) {
     // Multiple issues = avoid free squat, prioritize machines
-    variants.push('Hack squat machine', 'Leg press pieds hauts', 'Belt squat');
-    if (longFemurs && !severeValgus) variants.push('Box squat');
+    variants.push('Hack squat (machine guidée)', 'Presse à cuisses pieds hauts', 'Squat à la ceinture');
+    if (longFemurs && !severeValgus) variants.push('Squat sur box (assis-debout)');
   } else if (longFemurs) {
     // Long femurs only = modified free squat OK
-    variants.push('Box squat', 'Hack squat', 'Squat stance large');
-    if (!limitedAnkle) variants.push('Safety bar squat');
+    variants.push('Squat sur box (assis-debout)', 'Hack squat (machine guidée)', 'Squat pieds écartés');
+    if (!limitedAnkle) variants.push('Squat barre de sécurité (safety bar)');
   } else if (limitedAnkle) {
     // Ankle only = heeled squat OK
-    variants.push('Back squat avec talonnettes', 'Hack squat', 'Goblet squat surélevé');
+    variants.push('Squat barre avec talonnettes', 'Hack squat (machine guidée)', 'Squat gobelet sur cales');
   } else if (shortFemurs) {
     // Ideal proportions
-    variants.push('Back squat classique', 'Front squat', 'Squat ATG');
+    variants.push('Squat barre classique', 'Squat barre devant (front squat)', 'Squat complet (fesses aux talons)');
   } else {
     // Average - most options work
-    variants.push('Back squat', 'Goblet squat', 'Front squat');
+    variants.push('Squat barre', 'Squat gobelet (haltère devant)', 'Squat barre devant');
   }
 
   return { exercise: 'Squat', advantages, disadvantages, variants, tips };
@@ -597,7 +597,7 @@ function generateDeadliftRecommendation(
     tips.push('Gainage strict obligatoire');
   }
   if (longTorso && shortArms) {
-    disadvantages.push('Combinaison défavorable pour le deadlift');
+    disadvantages.push('Combinaison défavorable pour le soulevé de terre');
   }
 
   // Build variants based on severity
@@ -605,47 +605,47 @@ function generateDeadliftRecommendation(
 
   if (deadliftRiskFactors >= 2) {
     // High risk profile - prioritize alternatives to classic deadlift
-    tips.push('Le deadlift classique n\'est pas idéal pour toi');
+    tips.push('Le soulevé de terre classique n\'est pas idéal pour toi');
     tips.push('Privilégie les alternatives ci-dessous');
 
-    variants.push('Romanian deadlift (RDL)'); // Less lower back stress
-    variants.push('Trap bar (poignées hautes)'); // Reduced ROM
-    variants.push('Hip thrust'); // Posterior chain without spinal load
-    variants.push('Tirage rack (au-dessus du genou)'); // Partial ROM
+    variants.push('Soulevé roumain (jambes semi-tendues)'); // Less lower back stress
+    variants.push('Barre hexagonale (poignées hautes)'); // Reduced ROM
+    variants.push('Poussée de hanches (hip thrust)'); // Posterior chain without spinal load
+    variants.push('Tirage partiel (au-dessus du genou)'); // Partial ROM
 
     if (longFemurs && !shortArms) {
-      variants.push('Sumo (si mobilité hanches OK)');
+      variants.push('Sumo (pieds très écartés, si mobilité hanches OK)');
     }
   } else if (longTorso) {
     // Moderate risk - modified deadlifts OK
     tips.push('Éviter les charges maximales en conventionnel');
 
-    variants.push('Trap bar');
-    variants.push('Sumo');
-    variants.push('RDL');
+    variants.push('Barre hexagonale');
+    variants.push('Sumo (pieds très écartés)');
+    variants.push('Soulevé roumain (jambes semi-tendues)');
     if (longArms) variants.push('Conventionnel (charges modérées)');
   } else if (shortArms) {
     // Short arms only - sumo/trap bar preferred
-    tips.push('Sumo ou trap bar réduisent l\'amplitude');
+    tips.push('Le sumo ou la barre hexagonale réduisent le mouvement');
 
-    variants.push('Sumo');
-    variants.push('Trap bar');
+    variants.push('Sumo (pieds très écartés)');
+    variants.push('Barre hexagonale');
     if (shortFemurs) variants.push('Conventionnel');
   } else {
     // Favorable or neutral profile
     if (longArms && shortTorso) {
-      tips.push('Excellent profil pour le deadlift conventionnel');
+      tips.push('Excellent profil pour le soulevé de terre conventionnel');
       variants.push('Conventionnel');
-      variants.push('Sumo');
-      variants.push('Déficit deadlift');
+      variants.push('Sumo (pieds très écartés)');
+      variants.push('Soulevé en déficit (sur cale)');
     } else if (longFemurs) {
       tips.push('Le sumo exploite tes fémurs longs');
-      variants.push('Sumo');
+      variants.push('Sumo (pieds très écartés)');
       variants.push('Conventionnel');
     } else {
       variants.push('Conventionnel');
-      variants.push('Sumo');
-      variants.push('Trap bar');
+      variants.push('Sumo (pieds très écartés)');
+      variants.push('Barre hexagonale');
     }
   }
 
@@ -701,7 +701,7 @@ function generateBenchRecommendation(
 
   // Build variants based on suitability (best first)
   if (longArms) {
-    variants.push('Floor press'); // Best for long arms
+    variants.push('Développé couché au sol'); // Best for long arms
     variants.push('Développé haltères'); // Good for long arms
     if (!narrowRibcage && !wristIssues) {
       variants.push('Développé couché barre'); // OK if no other issues
@@ -713,7 +713,7 @@ function generateBenchRecommendation(
     }
   } else if (wristIssues) {
     variants.push('Développé haltères prise neutre');
-    variants.push('Floor press');
+    variants.push('Développé couché au sol');
   } else {
     // No disadvantages - barbell is great
     variants.push('Développé couché barre');
@@ -772,7 +772,7 @@ function generateCurlsRecommendation(
   } else if (wristIssues) {
     // Moderate: prefer EZ but dumbbells OK
     if (highInsertion) {
-      variants.push('Curl barre EZ', 'Curl incliné haltères', 'Preacher curl');
+      variants.push('Curl barre EZ', 'Curl incliné haltères', 'Curl au pupitre (Larry Scott)');
     } else if (lowInsertion) {
       variants.push('Curl concentration', 'Curl pupitre', 'Curl barre EZ');
     } else {
@@ -781,7 +781,7 @@ function generateCurlsRecommendation(
   } else {
     // No wrist issues: all options available
     if (highInsertion) {
-      variants.push('Curl barre droite', 'Curl incliné', 'Preacher curl');
+      variants.push('Curl barre droite', 'Curl incliné', 'Curl au pupitre (Larry Scott)');
     } else if (lowInsertion) {
       variants.push('Curl concentration', 'Curl pupitre', 'Curl incliné');
     } else {
@@ -813,7 +813,7 @@ function generateMobilityWork(mobility: MobilityProfile, proportions: Proportion
     work.push({
       area: 'Chaîne postérieure',
       priority: 'high',
-      exercises: ['Good morning léger', 'Étirement ischio-jambiers', 'Romanian deadlift léger'],
+      exercises: ['Flexion du buste barre légère (good morning)', 'Étirement ischio-jambiers', 'Soulevé roumain léger (jambes semi-tendues)'],
     });
   }
 
@@ -822,17 +822,17 @@ function generateMobilityWork(mobility: MobilityProfile, proportions: Proportion
       area: 'Poignets (valgus)',
       priority: 'high',
       exercises: [
-        'Renforcement avant-bras (wrist curls)',
+        'Renforcement avant-bras (flexion/extension poignets)',
         'Étirements fléchisseurs et extenseurs',
         'Pompes sur poignées parallèles',
-        'Éviter barre droite au curl et bench',
+        'Éviter barre droite au curl et développé couché',
       ],
     });
   } else if (mobility.wristMobility === 'slight') {
     work.push({
       area: 'Poignets',
       priority: 'medium',
-      exercises: ['Échauffement poignets avant pressing', 'Rotations de poignets'],
+      exercises: ['Échauffement poignets avant exercices de poussée', 'Rotations de poignets'],
     });
   }
 
@@ -840,7 +840,7 @@ function generateMobilityWork(mobility: MobilityProfile, proportions: Proportion
     work.push({
       area: 'Fessiers / Abducteurs',
       priority: proportions.kneeValgus === 'pronounced' ? 'high' : 'medium',
-      exercises: ['Clamshells', 'Monster walks (élastique)', 'Abductions hanche', 'Squats avec élastique genoux'],
+      exercises: ['Ouverture de hanches allongé (clamshells)', 'Marche latérale avec élastique', 'Abductions de hanche', 'Squats avec élastique aux genoux'],
     });
   }
 
@@ -859,11 +859,11 @@ function generateStrengths(
 ): string[] {
   const strengths: string[] = [];
 
-  if (proportions.armLength === 'long') strengths.push('Deadlift : bras longs avantageux');
-  if (proportions.armLength === 'short') strengths.push('Bench : bras courts = course réduite');
+  if (proportions.armLength === 'long') strengths.push('Soulevé de terre : bras longs avantageux');
+  if (proportions.armLength === 'short') strengths.push('Développé couché : bras courts = course réduite');
   if (proportions.femurLength === 'short') strengths.push('Squat : fémurs courts = position idéale');
-  if (proportions.femurLength === 'long') strengths.push('Deadlift sumo : fémurs longs avantageux');
-  if (structure.ribcageDepth === 'wide') strengths.push('Bench : cage profonde réduit l\'amplitude');
+  if (proportions.femurLength === 'long') strengths.push('Soulevé sumo : fémurs longs avantageux');
+  if (structure.ribcageDepth === 'wide') strengths.push('Développé couché : cage profonde réduit l\'amplitude');
   if (structure.shoulderToHip === 'wide') strengths.push('Épaules larges = bonne stabilité');
   if (insertions.biceps === 'high') strengths.push('Fort potentiel biceps (insertion basse)');
   if (insertions.calves === 'high') strengths.push('Fort potentiel mollets');
@@ -885,10 +885,10 @@ function generateWeaknesses(
   const weaknesses: string[] = [];
 
   if (proportions.femurLength === 'long') weaknesses.push('Squat : fémurs longs = inclinaison du buste');
-  if (proportions.armLength === 'long') weaknesses.push('Bench : bras longs = grande amplitude');
-  if (proportions.armLength === 'short') weaknesses.push('Deadlift : bras courts = amplitude augmentée');
-  if (proportions.torsoLength === 'long') weaknesses.push('Deadlift : torse long = stress lombaire');
-  if (structure.ribcageDepth === 'narrow') weaknesses.push('Bench : cage plate = amplitude augmentée');
+  if (proportions.armLength === 'long') weaknesses.push('Développé couché : bras longs = grande amplitude');
+  if (proportions.armLength === 'short') weaknesses.push('Soulevé de terre : bras courts = amplitude augmentée');
+  if (proportions.torsoLength === 'long') weaknesses.push('Soulevé de terre : torse long = stress lombaire');
+  if (structure.ribcageDepth === 'narrow') weaknesses.push('Développé couché : cage plate = amplitude augmentée');
   if (structure.shoulderToHip === 'narrow') weaknesses.push('Épaules étroites à développer');
   if (structure.frameSize === 'fine') weaknesses.push('Ossature fine = prise de masse plus lente');
   if (mobility.ankleDorsiflexion === 'limited') weaknesses.push('Chevilles raides = squat limité');

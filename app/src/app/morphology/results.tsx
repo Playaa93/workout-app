@@ -25,19 +25,17 @@ type Props = {
   onRetake: () => void;
 };
 
-// Function to generate dynamic description based on actual proportions
-function getGlobalDescription(result: MorphotypeResult): { emoji: string; title: string; subtitle: string; description: string; gradient: string } {
+function getGlobalDescription(result: MorphotypeResult): { emoji: string; title: string; subtitle: string; description: string } {
   const { torsoLength, armLength, femurLength } = result.proportions;
 
-  const baseInfo: Record<string, { emoji: string; title: string; gradient: string }> = {
-    longiligne: { emoji: '🦒', title: 'Longiligne', gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)' },
-    breviligne: { emoji: '🦍', title: 'Bréviligne', gradient: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
-    balanced: { emoji: '⚖️', title: 'Équilibré', gradient: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)' },
+  const baseInfo: Record<string, { emoji: string; title: string }> = {
+    longiligne: { emoji: '🦒', title: 'Longiligne' },
+    breviligne: { emoji: '🦍', title: 'Bréviligne' },
+    balanced: { emoji: '⚖️', title: 'Équilibré' },
   };
 
   const base = baseInfo[result.globalType];
 
-  // Build dynamic description based on actual segments
   const segments: string[] = [];
   if (torsoLength === 'long') segments.push('torse long');
   if (torsoLength === 'short') segments.push('torse court');
@@ -48,7 +46,6 @@ function getGlobalDescription(result: MorphotypeResult): { emoji: string; title:
 
   const subtitle = segments.length > 0 ? segments.join(', ') : 'Proportions moyennes';
 
-  // Generate description based on actual advantages
   const advantages: string[] = [];
   const challenges: string[] = [];
 
@@ -72,10 +69,10 @@ function getGlobalDescription(result: MorphotypeResult): { emoji: string; title:
   return { ...base, subtitle, description: description.trim() };
 }
 
-const insertionLabels: Record<InsertionPotential, { label: string; color: string }> = {
-  high: { label: 'Fort potentiel', color: '#10b981' },
-  medium: { label: 'Potentiel moyen', color: '#f59e0b' },
-  low: { label: 'Potentiel limité', color: '#ef4444' },
+const insertionLabels: Record<InsertionPotential, string> = {
+  high: 'Fort',
+  medium: 'Moyen',
+  low: 'Limité',
 };
 
 const segmentLabels: Record<string, string> = {
@@ -99,28 +96,34 @@ const segmentLabels: Record<string, string> = {
   high: 'Élevée',
 };
 
+const sectionLabel = { textTransform: 'uppercase' as const, letterSpacing: 1 };
+
 export function Results({ result, onRetake }: Props) {
   const globalInfo = getGlobalDescription(result);
 
   return (
     <Stack spacing={2.5}>
-      {/* Main Result Card - Global Type */}
-      <Card sx={{ background: globalInfo.gradient, color: 'white', overflow: 'hidden' }}>
+      {/* Main Result Card */}
+      <Card sx={{ border: 1, borderColor: 'divider' }}>
         <CardContent sx={{ py: 3, textAlign: 'center' }}>
-          <Typography variant="h1" sx={{ fontSize: '3.5rem', mb: 1 }}>{globalInfo.emoji}</Typography>
+          <Typography sx={{ fontSize: '3rem', mb: 0.5 }}>{globalInfo.emoji}</Typography>
           <Typography variant="h5" fontWeight={700}>{globalInfo.title}</Typography>
-          <Typography sx={{ opacity: 0.85, mb: 2 }}>{globalInfo.subtitle}</Typography>
-          <Typography sx={{ opacity: 0.9, lineHeight: 1.7 }}>{globalInfo.description}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontStyle: 'italic' }}>
+            {globalInfo.subtitle}
+          </Typography>
+          <Box sx={{ width: 40, height: 2, bgcolor: 'divider', mx: 'auto', my: 1.5 }} />
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+            {globalInfo.description}
+          </Typography>
         </CardContent>
       </Card>
 
       {/* Structure Osseuse */}
       <Card>
         <CardContent>
-          <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 2 }}>
-            <Typography variant="h6">🦴</Typography>
-            <Typography variant="subtitle1" fontWeight={600}>Structure osseuse</Typography>
-          </Stack>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center' }}>
+            Structure osseuse
+          </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
             <SegmentChip label="Ossature" value={result.structure.frameSize} />
             <SegmentChip label="Épaules" value={result.structure.shoulderToHip} />
@@ -132,10 +135,9 @@ export function Results({ result, onRetake }: Props) {
       {/* Proportions */}
       <Card>
         <CardContent>
-          <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 2 }}>
-            <Typography variant="h6">📐</Typography>
-            <Typography variant="subtitle1" fontWeight={600}>Proportions</Typography>
-          </Stack>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center' }}>
+            Proportions
+          </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
             <SegmentChip label="Torse" value={result.proportions.torsoLength} />
             <SegmentChip label="Bras" value={result.proportions.armLength} />
@@ -152,10 +154,9 @@ export function Results({ result, onRetake }: Props) {
       {/* Mobilité */}
       <Card>
         <CardContent>
-          <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 2 }}>
-            <Typography variant="h6">🤸</Typography>
-            <Typography variant="subtitle1" fontWeight={600}>Mobilité</Typography>
-          </Stack>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center' }}>
+            Mobilité
+          </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
             <SegmentChip
               label="Chevilles"
@@ -177,23 +178,22 @@ export function Results({ result, onRetake }: Props) {
       </Card>
 
       {/* Exercise Recommendations */}
-      <Typography variant="subtitle1" fontWeight={600} sx={{ pt: 1, textAlign: 'center' }}>
-        🏋️ Recommandations par exercice
+      <Typography variant="subtitle2" fontWeight={600} sx={{ pt: 1, textAlign: 'center' }}>
+        Recommandations par exercice
       </Typography>
 
-      <ExerciseCard recommendation={result.squat} color="#10b981" />
-      <ExerciseCard recommendation={result.deadlift} color="#f59e0b" />
-      <ExerciseCard recommendation={result.bench} color="#3b82f6" />
-      <ExerciseCard recommendation={result.curls} color="#8b5cf6" />
+      <ExerciseCard recommendation={result.squat} />
+      <ExerciseCard recommendation={result.deadlift} />
+      <ExerciseCard recommendation={result.bench} />
+      <ExerciseCard recommendation={result.curls} />
 
       {/* Mobility Work */}
       {result.mobilityWork.length > 0 && (
         <Card>
           <CardContent>
-            <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 2 }}>
-              <Typography variant="h6">🔧</Typography>
-              <Typography variant="subtitle1" fontWeight={600}>Travail correctif</Typography>
-            </Stack>
+            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center' }}>
+              Travail correctif
+            </Typography>
             <Stack spacing={1.5}>
               {result.mobilityWork.map((work) => (
                 <MobilityWorkItem key={work.area} work={work} />
@@ -206,10 +206,9 @@ export function Results({ result, onRetake }: Props) {
       {/* Muscle Insertions */}
       <Card>
         <CardContent>
-          <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 2 }}>
-            <Typography variant="h6">🧬</Typography>
-            <Typography variant="subtitle1" fontWeight={600}>Potentiel musculaire</Typography>
-          </Stack>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center' }}>
+            Potentiel musculaire
+          </Typography>
           <Stack spacing={1.5}>
             <InsertionBar label="Biceps" potential={result.insertions.biceps} />
             <InsertionBar label="Mollets" potential={result.insertions.calves} />
@@ -222,25 +221,16 @@ export function Results({ result, onRetake }: Props) {
       {result.strengths.length > 0 && (
         <Card>
           <CardContent>
-            <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 2 }}>
-              <Typography variant="h6">💪</Typography>
-              <Typography variant="subtitle1" fontWeight={600}>Tes points forts</Typography>
-            </Stack>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center' }}>
+              Tes points forts
+            </Typography>
+            <Stack spacing={0.5}>
               {result.strengths.map((strength) => (
-                <Chip
-                  key={strength}
-                  label={strength}
-                  size="small"
-                  sx={{
-                    bgcolor: 'rgba(16,185,129,0.15)',
-                    color: 'success.main',
-                    border: 1,
-                    borderColor: 'success.main',
-                  }}
-                />
+                <Typography key={strength} variant="body2" color="text.secondary">
+                  + {strength}
+                </Typography>
               ))}
-            </Box>
+            </Stack>
           </CardContent>
         </Card>
       )}
@@ -249,25 +239,16 @@ export function Results({ result, onRetake }: Props) {
       {result.weaknesses.length > 0 && (
         <Card>
           <CardContent>
-            <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 2 }}>
-              <Typography variant="h6">🎯</Typography>
-              <Typography variant="subtitle1" fontWeight={600}>Points à travailler</Typography>
-            </Stack>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center' }}>
+              Points à travailler
+            </Typography>
+            <Stack spacing={0.5}>
               {result.weaknesses.map((weakness) => (
-                <Chip
-                  key={weakness}
-                  label={weakness}
-                  size="small"
-                  sx={{
-                    bgcolor: 'rgba(249,115,22,0.15)',
-                    color: 'warning.main',
-                    border: 1,
-                    borderColor: 'warning.main',
-                  }}
-                />
+                <Typography key={weakness} variant="body2" color="text.secondary">
+                  - {weakness}
+                </Typography>
               ))}
-            </Box>
+            </Stack>
           </CardContent>
         </Card>
       )}
@@ -279,7 +260,6 @@ export function Results({ result, onRetake }: Props) {
           href="/workout/program"
           variant="contained"
           size="large"
-          startIcon={<span>🏋️</span>}
           sx={{
             py: 1.5,
             background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
@@ -314,25 +294,24 @@ function SegmentChip({ label, value, warning }: { label: string; value: string; 
     <Box
       sx={{
         p: 1.5,
-        bgcolor: warning ? 'rgba(249,115,22,0.1)' : 'action.hover',
+        bgcolor: 'action.hover',
         borderRadius: 2,
-        border: warning ? '1px solid' : 'none',
-        borderColor: warning ? 'warning.main' : 'transparent',
+        border: warning ? '1px dashed' : 'none',
+        borderColor: 'text.disabled',
         textAlign: 'center',
       }}
     >
       <Typography variant="caption" color="text.secondary" display="block">
         {label}
       </Typography>
-      <Typography variant="body2" fontWeight={600} color={warning ? 'warning.main' : 'text.primary'}>
-        {segmentLabels[value] || value}
+      <Typography variant="body2" fontWeight={600} color="text.primary">
+        {segmentLabels[value] || value} {warning && '⚠'}
       </Typography>
     </Box>
   );
 }
 
 function InsertionBar({ label, potential }: { label: string; potential: InsertionPotential }) {
-  const info = insertionLabels[potential];
   const valueMap: Record<InsertionPotential, number> = {
     high: 100,
     medium: 60,
@@ -343,7 +322,9 @@ function InsertionBar({ label, potential }: { label: string; potential: Insertio
     <Box>
       <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
         <Typography variant="body2" color="text.secondary">{label}</Typography>
-        <Typography variant="body2" sx={{ color: info.color }}>{info.label}</Typography>
+        <Typography variant="body2" fontWeight={500} color="text.primary">
+          {insertionLabels[potential]}
+        </Typography>
       </Stack>
       <LinearProgress
         variant="determinate"
@@ -352,14 +333,14 @@ function InsertionBar({ label, potential }: { label: string; potential: Insertio
           height: 6,
           borderRadius: 3,
           bgcolor: 'action.hover',
-          '& .MuiLinearProgress-bar': { bgcolor: info.color, borderRadius: 3 },
+          '& .MuiLinearProgress-bar': { bgcolor: 'text.secondary', borderRadius: 3 },
         }}
       />
     </Box>
   );
 }
 
-function ExerciseCard({ recommendation, color }: { recommendation: ExerciseRecommendation; color: string }) {
+function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendation }) {
   const hasContent =
     recommendation.advantages.length > 0 ||
     recommendation.disadvantages.length > 0 ||
@@ -378,84 +359,64 @@ function ExerciseCard({ recommendation, color }: { recommendation: ExerciseRecom
         overflow: 'hidden',
       }}
     >
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
-        sx={{
-          bgcolor: `${color}15`,
-          borderLeft: `4px solid ${color}`,
-          '&:hover': { bgcolor: `${color}20` },
-        }}
-      >
+      <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: 'action.hover' }}>
         <Typography fontWeight={600}>{recommendation.exercise}</Typography>
       </AccordionSummary>
       <AccordionDetails sx={{ pt: 2 }}>
         <Stack spacing={2}>
-          {/* Advantages */}
           {recommendation.advantages.length > 0 && (
             <Box>
-              <Typography variant="caption" color="success.main" fontWeight={600}>
-                ✓ Avantages
+              <Typography variant="caption" fontWeight={700} color="text.primary" sx={sectionLabel}>
+                Avantages
               </Typography>
               <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                 {recommendation.advantages.map((adv) => (
-                  <Typography key={adv} variant="body2" color="text.secondary">
-                    • {adv}
-                  </Typography>
+                  <Typography key={adv} variant="body2" color="text.secondary">• {adv}</Typography>
                 ))}
               </Stack>
             </Box>
           )}
 
-          {/* Disadvantages */}
           {recommendation.disadvantages.length > 0 && (
             <Box>
-              <Typography variant="caption" color="warning.main" fontWeight={600}>
-                ⚠ À considérer
+              <Typography variant="caption" fontWeight={700} color="text.primary" sx={sectionLabel}>
+                A considérer
               </Typography>
               <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                 {recommendation.disadvantages.map((dis) => (
-                  <Typography key={dis} variant="body2" color="text.secondary">
-                    • {dis}
-                  </Typography>
+                  <Typography key={dis} variant="body2" color="text.secondary">• {dis}</Typography>
                 ))}
               </Stack>
             </Box>
           )}
 
-          {/* Variants */}
           {recommendation.variants.length > 0 && (
             <Box>
-              <Typography variant="caption" color="primary.main" fontWeight={600}>
-                🎯 Variantes recommandées
+              <Typography variant="caption" fontWeight={700} color="text.primary" sx={sectionLabel}>
+                Variantes recommandées
               </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
                 {recommendation.variants.map((variant) => (
                   <Chip
                     key={variant}
                     label={variant}
                     size="small"
-                    sx={{
-                      bgcolor: `${color}20`,
-                      color: color,
-                      fontWeight: 500,
-                    }}
+                    variant="outlined"
+                    sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.primary' }}
                   />
                 ))}
               </Box>
             </Box>
           )}
 
-          {/* Tips */}
           {recommendation.tips.length > 0 && (
             <Box>
-              <Typography variant="caption" color="info.main" fontWeight={600}>
-                💡 Conseils
+              <Typography variant="caption" fontWeight={700} color="text.primary" sx={sectionLabel}>
+                Conseils
               </Typography>
               <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                 {recommendation.tips.map((tip) => (
-                  <Typography key={tip} variant="body2" color="text.secondary">
-                    • {tip}
-                  </Typography>
+                  <Typography key={tip} variant="body2" color="text.secondary">• {tip}</Typography>
                 ))}
               </Stack>
             </Box>
@@ -467,44 +428,23 @@ function ExerciseCard({ recommendation, color }: { recommendation: ExerciseRecom
 }
 
 function MobilityWorkItem({ work }: { work: MobilityWork }) {
-  const priorityColors: Record<string, string> = {
-    high: '#ef4444',
-    medium: '#f59e0b',
-    low: '#3b82f6',
-  };
   const priorityLabels: Record<string, string> = {
-    high: 'Priorité haute',
-    medium: 'Priorité moyenne',
-    low: 'Priorité basse',
+    high: 'Prioritaire',
+    medium: 'Recommandé',
+    low: 'Optionnel',
   };
 
   return (
-    <Box
-      sx={{
-        p: 1.5,
-        bgcolor: 'action.hover',
-        borderRadius: 2,
-        borderLeft: `3px solid ${priorityColors[work.priority]}`,
-      }}
-    >
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+    <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
         <Typography variant="body2" fontWeight={600}>{work.area}</Typography>
-        <Chip
-          label={priorityLabels[work.priority]}
-          size="small"
-          sx={{
-            bgcolor: `${priorityColors[work.priority]}20`,
-            color: priorityColors[work.priority],
-            fontSize: '0.7rem',
-            height: 20,
-          }}
-        />
+        <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          {priorityLabels[work.priority]}
+        </Typography>
       </Stack>
       <Stack spacing={0.25}>
         {work.exercises.map((ex) => (
-          <Typography key={ex} variant="caption" color="text.secondary">
-            • {ex}
-          </Typography>
+          <Typography key={ex} variant="caption" color="text.secondary">• {ex}</Typography>
         ))}
       </Stack>
     </Box>
