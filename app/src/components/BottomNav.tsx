@@ -26,6 +26,9 @@ export default function BottomNav() {
   )?.key;
 
   return (
+    <>
+    {/* Spacer to prevent content from hiding behind fixed nav */}
+    <Box sx={{ height: 80 }} />
     <Paper
       elevation={8}
       sx={{
@@ -83,5 +86,6 @@ export default function BottomNav() {
         })}
       </Stack>
     </Paper>
+    </>
   );
 }
