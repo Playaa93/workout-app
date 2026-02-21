@@ -212,6 +212,17 @@ export async function deleteMeasurement(id: string): Promise<void> {
   await db.delete(measurements).where(eq(measurements.id, id));
 }
 
+// Update photo type
+export async function updatePhotoType(
+  id: string,
+  photoType: 'front' | 'back' | 'side_left' | 'side_right'
+): Promise<void> {
+  await db
+    .update(progressPhotos)
+    .set({ photoType })
+    .where(eq(progressPhotos.id, id));
+}
+
 // Delete photo
 export async function deletePhoto(id: string): Promise<void> {
   await db.delete(progressPhotos).where(eq(progressPhotos.id, id));

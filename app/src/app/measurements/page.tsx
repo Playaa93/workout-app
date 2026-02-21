@@ -9,6 +9,8 @@ import {
   addMeasurement,
   updateMeasurement,
   deleteMeasurement,
+  deletePhoto,
+  updatePhotoType,
   type MeasurementData,
   type MeasurementInput,
   type ProgressPhotoData,
@@ -49,6 +51,8 @@ import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import Straighten from '@mui/icons-material/Straighten';
 import MonitorWeight from '@mui/icons-material/MonitorWeight';
 import InfoOutlined from '@mui/icons-material/InfoOutlined';
+import Delete from '@mui/icons-material/Delete';
+import Edit from '@mui/icons-material/Edit';
 import FileDownload from '@mui/icons-material/FileDownload';
 import TableChart from '@mui/icons-material/TableChart';
 import DataObject from '@mui/icons-material/DataObject';
@@ -707,6 +711,25 @@ function PhotosTab({
   onRefresh: () => void;
 }) {
   const [showUpload, setShowUpload] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhotoData | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingType, setEditingType] = useState(false);
+
+  const handleDeletePhoto = async () => {
+    if (!selectedPhoto) return;
+    await deletePhoto(selectedPhoto.id);
+    setDeleteDialogOpen(false);
+    setSelectedPhoto(null);
+    onRefresh();
+  };
+
+  const handleChangeType = async (newType: 'front' | 'back' | 'side_left' | 'side_right') => {
+    if (!selectedPhoto) return;
+    await updatePhotoType(selectedPhoto.id, newType);
+    setEditingType(false);
+    setSelectedPhoto(null);
+    onRefresh();
+  };
 
   if (photos.length === 0 && !showUpload) {
     return (
@@ -765,12 +788,14 @@ function PhotosTab({
               {datePhotos.map((photo) => (
                 <Box
                   key={photo.id}
+                  onClick={() => { triggerHaptic('light'); setSelectedPhoto(photo); }}
                   sx={{
                     aspectRatio: '3/4',
                     bgcolor: 'action.hover',
                     borderRadius: 2,
                     overflow: 'hidden',
                     position: 'relative',
+                    cursor: 'pointer',
                   }}
                 >
                   <Box
@@ -801,6 +826,135 @@ function PhotosTab({
           onUpload={onRefresh}
         />
       )}
+
+      {/* Photo actions drawer */}
+      <SwipeableDrawer
+        anchor="bottom"
+        open={!!selectedPhoto && !editingType}
+        onClose={() => setSelectedPhoto(null)}
+        onOpen={() => {}}
+        disableSwipeToOpen
+        PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
+          <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: 'action.disabled' }} />
+        </Box>
+        {selectedPhoto && (
+          <Box sx={{ px: 1, pb: 2 }}>
+            <Stack direction="row" spacing={2} sx={{ px: 1.5, pb: 1.5 }} alignItems="center">
+              <Box sx={{
+                width: 56, height: 75, borderRadius: 1.5, overflow: 'hidden', flexShrink: 0,
+              }}>
+                <Box
+                  component="img"
+                  src={selectedPhoto.photoUrl}
+                  alt={selectedPhoto.photoType}
+                  sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'capitalize' }}>
+                  {selectedPhoto.photoType.replace('_', ' ')}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {new Date(selectedPhoto.takenAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </Typography>
+              </Box>
+            </Stack>
+
+            <ListItemButton
+              onClick={() => setEditingType(true)}
+              sx={{ borderRadius: 2 }}
+            >
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <Edit sx={{ color: 'primary.main' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Changer le type de pose"
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+              />
+            </ListItemButton>
+
+            <ListItemButton
+              onClick={() => setDeleteDialogOpen(true)}
+              sx={{ borderRadius: 2 }}
+            >
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <Delete sx={{ color: '#f44336' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Supprimer la photo"
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: '#f44336' }}
+              />
+            </ListItemButton>
+          </Box>
+        )}
+      </SwipeableDrawer>
+
+      {/* Change type drawer */}
+      <SwipeableDrawer
+        anchor="bottom"
+        open={editingType}
+        onClose={() => { setEditingType(false); setSelectedPhoto(null); }}
+        onOpen={() => {}}
+        disableSwipeToOpen
+        PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
+          <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: 'action.disabled' }} />
+        </Box>
+        <Box sx={{ px: 1.5, pb: 2.5 }}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ px: 0.5, pb: 1.5 }}>
+            Type de pose
+          </Typography>
+          {([
+            { key: 'front', label: 'Face' },
+            { key: 'back', label: 'Dos' },
+            { key: 'side_left', label: 'Côté gauche' },
+            { key: 'side_right', label: 'Côté droit' },
+          ] as const).map((type) => (
+            <ListItemButton
+              key={type.key}
+              onClick={() => handleChangeType(type.key)}
+              selected={selectedPhoto?.photoType === type.key}
+              sx={{ borderRadius: 2 }}
+            >
+              <ListItemText
+                primary={type.label}
+                primaryTypographyProps={{
+                  fontWeight: selectedPhoto?.photoType === type.key ? 700 : 500,
+                  fontSize: '0.9rem',
+                }}
+              />
+              {selectedPhoto?.photoType === type.key && (
+                <Typography variant="caption" color="primary">actuel</Typography>
+              )}
+            </ListItemButton>
+          ))}
+        </Box>
+      </SwipeableDrawer>
+
+      {/* Delete confirmation */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => { setDeleteDialogOpen(false); setSelectedPhoto(null); }}
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle>Supprimer la photo ?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Cette action est irréversible.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => { setDeleteDialogOpen(false); setSelectedPhoto(null); }} color="inherit">
+            Annuler
+          </Button>
+          <Button onClick={handleDeletePhoto} color="error" variant="contained">
+            Supprimer
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
