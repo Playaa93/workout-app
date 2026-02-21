@@ -115,6 +115,7 @@ export const measurements = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
     measuredAt: timestamp('measured_at', { withTimezone: true }).defaultNow(),
+    height: decimal('height', { precision: 5, scale: 1 }), // Taille en cm
     weight: decimal('weight', { precision: 5, scale: 2 }),
     bodyFatPercentage: decimal('body_fat_percentage', { precision: 4, scale: 1 }),
     neck: decimal('neck', { precision: 5, scale: 2 }),

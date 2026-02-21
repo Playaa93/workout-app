@@ -7,6 +7,7 @@ import {
   getProgressSummary,
   getProgressPhotos,
   addMeasurement,
+  updateMeasurement,
   deleteMeasurement,
   type MeasurementData,
   type MeasurementInput,
@@ -47,7 +48,23 @@ import PhotoLibrary from '@mui/icons-material/PhotoLibrary';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import Straighten from '@mui/icons-material/Straighten';
 import MonitorWeight from '@mui/icons-material/MonitorWeight';
+import InfoOutlined from '@mui/icons-material/InfoOutlined';
+import FileDownload from '@mui/icons-material/FileDownload';
+import TableChart from '@mui/icons-material/TableChart';
+import DataObject from '@mui/icons-material/DataObject';
+import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
+import InputAdornment from '@mui/material/InputAdornment';
+import Tooltip from '@mui/material/Tooltip';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
 import BottomNav from '@/components/BottomNav';
+
+// Format decimal: remove trailing zeros (110.00 → 110, 34.20 → 34.2, 82.75 → 82.75)
+const fmt = (val: string | null | undefined): string => {
+  if (!val) return '--';
+  return parseFloat(val).toString();
+};
 
 // Haptic feedback helper
 const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
@@ -68,6 +85,8 @@ export default function MeasurementsPage() {
   const [summary, setSummary] = useState<Awaited<ReturnType<typeof getProgressSummary>> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingMeasurement, setEditingMeasurement] = useState<MeasurementData | null>(null);
+  const [showExport, setShowExport] = useState(false);
 
   const loadData = async () => {
     const [measurementsData, latestData, summaryData, photosData] = await Promise.all([
@@ -94,6 +113,13 @@ export default function MeasurementsPage() {
     setShowAddForm(false);
   };
 
+  const handleUpdateMeasurement = async (data: MeasurementInput) => {
+    if (!editingMeasurement) return;
+    await updateMeasurement(editingMeasurement.id, data);
+    await loadData();
+    setEditingMeasurement(null);
+  };
+
   const handleDeleteMeasurement = async (id: string) => {
     await deleteMeasurement(id);
     await loadData();
@@ -113,6 +139,14 @@ export default function MeasurementsPage() {
           <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>
             Mensurations
           </Typography>
+          <IconButton
+            size="small"
+            sx={{ color: 'text.secondary' }}
+            onClick={() => { triggerHaptic('light'); setShowExport(true); }}
+            disabled={measurements.length === 0}
+          >
+            <FileDownload fontSize="small" />
+          </IconButton>
           <IconButton
             size="small"
             sx={{ color: 'text.secondary' }}
@@ -172,6 +206,8 @@ export default function MeasurementsPage() {
                 summary={summary}
                 onGoToPhotos={() => setActiveTab('photos')}
                 onGoToHistory={() => setActiveTab('history')}
+                onAddMeasurement={() => { triggerHaptic('light'); setShowAddForm(true); }}
+                onEditLatest={() => { if (latest) { triggerHaptic('light'); setEditingMeasurement(latest); } }}
               />
             )}
             {activeTab === 'history' && (
@@ -208,6 +244,23 @@ export default function MeasurementsPage() {
           onClose={() => setShowAddForm(false)}
         />
       )}
+
+      {/* Edit Form Modal */}
+      {editingMeasurement && (
+        <AddMeasurementForm
+          lastMeasurement={null}
+          editingMeasurement={editingMeasurement}
+          onSubmit={handleUpdateMeasurement}
+          onClose={() => setEditingMeasurement(null)}
+        />
+      )}
+
+      {/* Export Drawer */}
+      <ExportDrawer
+        open={showExport}
+        onClose={() => setShowExport(false)}
+        measurements={measurements}
+      />
     </Box>
   );
 }
@@ -240,12 +293,16 @@ function OverviewTab({
   summary,
   onGoToPhotos,
   onGoToHistory,
+  onAddMeasurement,
+  onEditLatest,
 }: {
   latest: MeasurementData | null;
   previous: MeasurementData | null;
   summary: Awaited<ReturnType<typeof getProgressSummary>> | null;
   onGoToPhotos: () => void;
   onGoToHistory: () => void;
+  onAddMeasurement: () => void;
+  onEditLatest: () => void;
 }) {
   if (!latest) {
     return (
@@ -260,6 +317,7 @@ function OverviewTab({
         <Button
           variant="contained"
           startIcon={<Add />}
+          onClick={onAddMeasurement}
           sx={{
             px: 4, py: 1.5, borderRadius: 3, fontWeight: 700,
             background: 'linear-gradient(135deg, #6750a4, #9a67ea)',
@@ -293,6 +351,7 @@ function OverviewTab({
     { label: 'Épaules', field: 'shoulders' },
     { label: 'Cou', field: 'neck' },
     { label: 'Hanches', field: 'hips', inverse: true },
+    { label: 'Fesses', field: 'glutes' },
     { label: 'Bras G', field: 'leftArm' },
     { label: 'Bras D', field: 'rightArm' },
     { label: 'Av-bras G', field: 'leftForearm' },
@@ -313,21 +372,23 @@ function OverviewTab({
           background: 'linear-gradient(135deg, rgba(103,80,164,0.12) 0%, rgba(63,81,181,0.06) 100%)',
           border: 1, borderColor: 'divider',
         }}>
-          <CardContent sx={{ py: 3, textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary" fontWeight={500}>
-              Poids actuel
-            </Typography>
-            <Typography variant="h2" fontWeight={800} sx={{ my: 1, lineHeight: 1 }}>
-              {latest.weight || '--'}
-              <Typography component="span" variant="h5" color="text.secondary" fontWeight={400}> kg</Typography>
-            </Typography>
-            {weightChange !== null && (
-              <TrendBadge value={weightChange} unit=" kg" inverse />
-            )}
-            <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1 }}>
-              {formattedDate}
-            </Typography>
-          </CardContent>
+          <CardActionArea onClick={onEditLatest}>
+            <CardContent sx={{ py: 3, textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                Poids actuel
+              </Typography>
+              <Typography variant="h2" fontWeight={800} sx={{ my: 1, lineHeight: 1 }}>
+                {fmt(latest.weight)}
+                <Typography component="span" variant="h5" color="text.secondary" fontWeight={400}> kg</Typography>
+              </Typography>
+              {weightChange !== null && (
+                <TrendBadge value={weightChange} unit=" kg" inverse />
+              )}
+              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1 }}>
+                {formattedDate} · Toucher pour modifier
+              </Typography>
+            </CardContent>
+          </CardActionArea>
         </Card>
 
         {/* Sparkline / Weight Chart */}
@@ -339,7 +400,7 @@ function OverviewTab({
             <CardContent sx={{ py: 2, textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary">Masse grasse</Typography>
               <Typography variant="h5" fontWeight={700} sx={{ my: 0.5 }}>
-                {latest.bodyFatPercentage ? `${latest.bodyFatPercentage}%` : '--'}
+                {latest.bodyFatPercentage ? `${fmt(latest.bodyFatPercentage)}%` : '--'}
               </Typography>
               {calcChange('bodyFatPercentage') !== null && (
                 <TrendBadge value={calcChange('bodyFatPercentage')!} unit="%" inverse />
@@ -350,7 +411,7 @@ function OverviewTab({
             <CardContent sx={{ py: 2, textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary">Tour de taille</Typography>
               <Typography variant="h5" fontWeight={700} sx={{ my: 0.5 }}>
-                {latest.waist ? `${latest.waist} cm` : '--'}
+                {latest.waist ? `${fmt(latest.waist)} cm` : '--'}
               </Typography>
               {calcChange('waist') !== null && (
                 <TrendBadge value={calcChange('waist')!} unit=" cm" inverse />
@@ -422,7 +483,7 @@ function ListRow({ label, value, unit, change, inverse = false }: {
     }}>
       <Typography variant="body2" color="text.secondary">{label}</Typography>
       <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
-        {value} {unit}
+        {fmt(value)} {unit}
       </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
         {change !== null ? (
@@ -536,19 +597,19 @@ function HistoryTab({
           const isExpanded = expanded === m.id;
 
           const allFields: { label: string; value: string | null }[] = [
-            { label: 'Poids', value: m.weight ? `${m.weight} kg` : null },
-            { label: '% Gras', value: m.bodyFatPercentage ? `${m.bodyFatPercentage}%` : null },
-            { label: 'Cou', value: m.neck ? `${m.neck} cm` : null },
-            { label: 'Épaules', value: m.shoulders ? `${m.shoulders} cm` : null },
-            { label: 'Poitrine', value: m.chest ? `${m.chest} cm` : null },
-            { label: 'Taille', value: m.waist ? `${m.waist} cm` : null },
-            { label: 'Hanches', value: m.hips ? `${m.hips} cm` : null },
-            { label: 'Bras G', value: m.leftArm ? `${m.leftArm} cm` : null },
-            { label: 'Bras D', value: m.rightArm ? `${m.rightArm} cm` : null },
-            { label: 'Cuisse G', value: m.leftThigh ? `${m.leftThigh} cm` : null },
-            { label: 'Cuisse D', value: m.rightThigh ? `${m.rightThigh} cm` : null },
-            { label: 'Mollet G', value: m.leftCalf ? `${m.leftCalf} cm` : null },
-            { label: 'Mollet D', value: m.rightCalf ? `${m.rightCalf} cm` : null },
+            { label: 'Poids', value: m.weight ? `${fmt(m.weight)} kg` : null },
+            { label: '% Gras', value: m.bodyFatPercentage ? `${fmt(m.bodyFatPercentage)}%` : null },
+            { label: 'Cou', value: m.neck ? `${fmt(m.neck)} cm` : null },
+            { label: 'Épaules', value: m.shoulders ? `${fmt(m.shoulders)} cm` : null },
+            { label: 'Poitrine', value: m.chest ? `${fmt(m.chest)} cm` : null },
+            { label: 'Taille', value: m.waist ? `${fmt(m.waist)} cm` : null },
+            { label: 'Hanches', value: m.hips ? `${fmt(m.hips)} cm` : null },
+            { label: 'Bras G', value: m.leftArm ? `${fmt(m.leftArm)} cm` : null },
+            { label: 'Bras D', value: m.rightArm ? `${fmt(m.rightArm)} cm` : null },
+            { label: 'Cuisse G', value: m.leftThigh ? `${fmt(m.leftThigh)} cm` : null },
+            { label: 'Cuisse D', value: m.rightThigh ? `${fmt(m.rightThigh)} cm` : null },
+            { label: 'Mollet G', value: m.leftCalf ? `${fmt(m.leftCalf)} cm` : null },
+            { label: 'Mollet D', value: m.rightCalf ? `${fmt(m.rightCalf)} cm` : null },
           ].filter((f) => f.value !== null);
 
           return (
@@ -563,7 +624,7 @@ function HistoryTab({
                       {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {m.weight ? `${m.weight} kg` : ''}{m.waist ? ` · Taille ${m.waist} cm` : ''}
+                      {m.weight ? `${fmt(m.weight)} kg` : ''}{m.waist ? ` · Taille ${fmt(m.waist)} cm` : ''}
                     </Typography>
                   </Box>
                   <ExpandMore sx={{
@@ -977,18 +1038,53 @@ function PhotoUploadModal({
 // =========================================================
 function AddMeasurementForm({
   lastMeasurement,
+  editingMeasurement,
   onSubmit,
   onClose,
 }: {
   lastMeasurement: MeasurementData | null;
+  editingMeasurement?: MeasurementData | null;
   onSubmit: (data: MeasurementInput) => void;
   onClose: () => void;
 }) {
-  const [data, setData] = useState<MeasurementInput>({
-    weight: lastMeasurement?.weight ? parseFloat(lastMeasurement.weight) : undefined,
-  });
+  const isEditing = !!editingMeasurement;
+  const source = editingMeasurement || lastMeasurement;
+
+  const parseField = (val: string | null | undefined): number | undefined =>
+    val ? parseFloat(val) : undefined;
+
+  const [data, setData] = useState<MeasurementInput>(
+    isEditing && editingMeasurement
+      ? {
+          height: parseField(editingMeasurement.height),
+          weight: parseField(editingMeasurement.weight),
+          bodyFatPercentage: parseField(editingMeasurement.bodyFatPercentage),
+          neck: parseField(editingMeasurement.neck),
+          shoulders: parseField(editingMeasurement.shoulders),
+          chest: parseField(editingMeasurement.chest),
+          leftArm: parseField(editingMeasurement.leftArm),
+          rightArm: parseField(editingMeasurement.rightArm),
+          leftForearm: parseField(editingMeasurement.leftForearm),
+          rightForearm: parseField(editingMeasurement.rightForearm),
+          waist: parseField(editingMeasurement.waist),
+          abdomen: parseField(editingMeasurement.abdomen),
+          hips: parseField(editingMeasurement.hips),
+          glutes: parseField(editingMeasurement.glutes),
+          leftThigh: parseField(editingMeasurement.leftThigh),
+          rightThigh: parseField(editingMeasurement.rightThigh),
+          leftCalf: parseField(editingMeasurement.leftCalf),
+          rightCalf: parseField(editingMeasurement.rightCalf),
+          wrist: parseField(editingMeasurement.wrist),
+          ankle: parseField(editingMeasurement.ankle),
+          notes: editingMeasurement.notes || undefined,
+        }
+      : {
+          weight: lastMeasurement?.weight ? parseFloat(lastMeasurement.weight) : undefined,
+        }
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showMore, setShowMore] = useState(false);
+  const hasExtraFields = isEditing && !!(data.neck || data.shoulders || data.leftArm || data.rightArm || data.hips || data.glutes || data.leftThigh || data.rightThigh || data.leftCalf || data.rightCalf);
+  const [showMore, setShowMore] = useState(hasExtraFields);
   const [showCalculator, setShowCalculator] = useState(false);
   const [height, setHeight] = useState('175');
   const [isMale, setIsMale] = useState(true);
@@ -1041,7 +1137,7 @@ function AddMeasurementForm({
             Annuler
           </Button>
           <Typography fontWeight={600} fontSize="1.1rem">
-            Nouvelle mesure
+            {isEditing ? 'Modifier la mesure' : 'Nouvelle mesure'}
           </Typography>
           <Button
             onClick={handleSubmit}
@@ -1057,13 +1153,24 @@ function AddMeasurementForm({
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         <Stack spacing={2.5}>
           {/* Main metrics */}
-          <MeasureInput
-            label="Poids"
-            unit="kg"
-            value={data.weight}
-            onChange={(v) => updateField('weight', v)}
-            placeholder={lastMeasurement?.weight || '80'}
-          />
+          <Stack direction="row" spacing={2}>
+            <MeasureInput
+              label="Poids"
+              unit="kg"
+              value={data.weight}
+              onChange={(v) => updateField('weight', v)}
+              placeholder={lastMeasurement?.weight || '80'}
+              tip="Le matin au réveil, après les toilettes, avant de manger. Toujours dans les mêmes conditions."
+            />
+            <MeasureInput
+              label="Taille"
+              unit="cm"
+              value={data.height}
+              onChange={(v) => updateField('height', v)}
+              placeholder={lastMeasurement?.height || '175'}
+              tip="Pieds nus, le matin (on est plus grand le matin qu'en fin de journée). Dos droit contre un mur."
+            />
+          </Stack>
 
           <Stack direction="row" spacing={2}>
             <MeasureInput
@@ -1072,6 +1179,7 @@ function AddMeasurementForm({
               value={data.waist}
               onChange={(v) => updateField('waist', v)}
               placeholder={lastMeasurement?.waist || ''}
+              tip="Au niveau du nombril, debout détendu. Ne pas rentrer le ventre. Mesurer après une expiration normale."
             />
             <MeasureInput
               label="Poitrine"
@@ -1079,6 +1187,7 @@ function AddMeasurementForm({
               value={data.chest}
               onChange={(v) => updateField('chest', v)}
               placeholder={lastMeasurement?.chest || ''}
+              tip="Au niveau des tétons, bras le long du corps. Ruban horizontal, ne pas gonfler la poitrine."
             />
           </Stack>
 
@@ -1088,6 +1197,7 @@ function AddMeasurementForm({
             value={data.bodyFatPercentage}
             onChange={(v) => updateField('bodyFatPercentage', v)}
             placeholder={lastMeasurement?.bodyFatPercentage || ''}
+            tip="Utilise une balance impédancemètre ou le calculateur Navy ci-dessous. Mesure le matin à jeun pour plus de fiabilité."
           />
 
           {/* Body Fat Calculator */}
@@ -1189,24 +1299,40 @@ function AddMeasurementForm({
           <Collapse in={showMore}>
             <Stack spacing={2}>
               <Stack direction="row" spacing={2}>
-                <MeasureInput label="Cou" unit="cm" value={data.neck} onChange={(v) => updateField('neck', v)} placeholder="" />
-                <MeasureInput label="Épaules" unit="cm" value={data.shoulders} onChange={(v) => updateField('shoulders', v)} placeholder="" />
+                <MeasureInput label="Cou" unit="cm" value={data.neck} onChange={(v) => updateField('neck', v)} placeholder=""
+                  tip="Au milieu du cou, sous la pomme d'Adam. Ruban bien horizontal, ne pas serrer." />
+                <MeasureInput label="Épaules" unit="cm" value={data.shoulders} onChange={(v) => updateField('shoulders', v)} placeholder=""
+                  tip="Au point le plus large des épaules (deltoïdes). Bras détendus le long du corps. Demande de l'aide pour bien placer le ruban." />
               </Stack>
               <Stack direction="row" spacing={2}>
-                <MeasureInput label="Bras G" unit="cm" value={data.leftArm} onChange={(v) => updateField('leftArm', v)} placeholder="" />
-                <MeasureInput label="Bras D" unit="cm" value={data.rightArm} onChange={(v) => updateField('rightArm', v)} placeholder="" />
+                <MeasureInput label="Bras G" unit="cm" value={data.leftArm} onChange={(v) => updateField('leftArm', v)} placeholder=""
+                  tip="Au point le plus épais du biceps, bras fléchi à 90° et contracté. Toujours mesurer au même degré de contraction." />
+                <MeasureInput label="Bras D" unit="cm" value={data.rightArm} onChange={(v) => updateField('rightArm', v)} placeholder=""
+                  tip="Au point le plus épais du biceps, bras fléchi à 90° et contracté. Toujours mesurer au même degré de contraction." />
               </Stack>
               <Stack direction="row" spacing={2}>
-                <MeasureInput label="Hanches" unit="cm" value={data.hips} onChange={(v) => updateField('hips', v)} placeholder="" />
-                <MeasureInput label="Fesses" unit="cm" value={data.glutes} onChange={(v) => updateField('glutes', v)} placeholder="" />
+                <MeasureInput label="Av-bras G" unit="cm" value={data.leftForearm} onChange={(v) => updateField('leftForearm', v)} placeholder=""
+                  tip="Au point le plus large de l'avant-bras, environ 3 cm sous le coude. Bras tendu, poing fermé sans serrer." />
+                <MeasureInput label="Av-bras D" unit="cm" value={data.rightForearm} onChange={(v) => updateField('rightForearm', v)} placeholder=""
+                  tip="Au point le plus large de l'avant-bras, environ 3 cm sous le coude. Bras tendu, poing fermé sans serrer." />
               </Stack>
               <Stack direction="row" spacing={2}>
-                <MeasureInput label="Cuisse G" unit="cm" value={data.leftThigh} onChange={(v) => updateField('leftThigh', v)} placeholder="" />
-                <MeasureInput label="Cuisse D" unit="cm" value={data.rightThigh} onChange={(v) => updateField('rightThigh', v)} placeholder="" />
+                <MeasureInput label="Hanches" unit="cm" value={data.hips} onChange={(v) => updateField('hips', v)} placeholder=""
+                  tip="Au niveau des os de la hanche (crête iliaque). Ruban bien horizontal." />
+                <MeasureInput label="Fesses" unit="cm" value={data.glutes} onChange={(v) => updateField('glutes', v)} placeholder=""
+                  tip="Au point le plus large des fessiers, pieds joints. Ruban horizontal, sans comprimer." />
               </Stack>
               <Stack direction="row" spacing={2}>
-                <MeasureInput label="Mollet G" unit="cm" value={data.leftCalf} onChange={(v) => updateField('leftCalf', v)} placeholder="" />
-                <MeasureInput label="Mollet D" unit="cm" value={data.rightCalf} onChange={(v) => updateField('rightCalf', v)} placeholder="" />
+                <MeasureInput label="Cuisse G" unit="cm" value={data.leftThigh} onChange={(v) => updateField('leftThigh', v)} placeholder=""
+                  tip="Au point le plus épais de la cuisse, environ 15 cm sous le pli de l'aine. Debout, poids réparti sur les deux pieds." />
+                <MeasureInput label="Cuisse D" unit="cm" value={data.rightThigh} onChange={(v) => updateField('rightThigh', v)} placeholder=""
+                  tip="Au point le plus épais de la cuisse, environ 15 cm sous le pli de l'aine. Debout, poids réparti sur les deux pieds." />
+              </Stack>
+              <Stack direction="row" spacing={2}>
+                <MeasureInput label="Mollet G" unit="cm" value={data.leftCalf} onChange={(v) => updateField('leftCalf', v)} placeholder=""
+                  tip="Au point le plus large du mollet. Debout, poids réparti sur les deux pieds, jambe détendue." />
+                <MeasureInput label="Mollet D" unit="cm" value={data.rightCalf} onChange={(v) => updateField('rightCalf', v)} placeholder=""
+                  tip="Au point le plus large du mollet. Debout, poids réparti sur les deux pieds, jambe détendue." />
               </Stack>
             </Stack>
           </Collapse>
@@ -1229,6 +1355,207 @@ function AddMeasurementForm({
 }
 
 // =========================================================
+// Export Drawer
+// =========================================================
+const EXPORT_FIELDS: { key: keyof MeasurementData; label: string; unit: string }[] = [
+  { key: 'height', label: 'Taille', unit: 'cm' },
+  { key: 'weight', label: 'Poids', unit: 'kg' },
+  { key: 'bodyFatPercentage', label: 'Masse grasse', unit: '%' },
+  { key: 'neck', label: 'Cou', unit: 'cm' },
+  { key: 'shoulders', label: 'Épaules', unit: 'cm' },
+  { key: 'chest', label: 'Poitrine', unit: 'cm' },
+  { key: 'waist', label: 'Tour de taille', unit: 'cm' },
+  { key: 'hips', label: 'Hanches', unit: 'cm' },
+  { key: 'glutes', label: 'Fesses', unit: 'cm' },
+  { key: 'leftArm', label: 'Bras G', unit: 'cm' },
+  { key: 'rightArm', label: 'Bras D', unit: 'cm' },
+  { key: 'leftForearm', label: 'Avant-bras G', unit: 'cm' },
+  { key: 'rightForearm', label: 'Avant-bras D', unit: 'cm' },
+  { key: 'leftThigh', label: 'Cuisse G', unit: 'cm' },
+  { key: 'rightThigh', label: 'Cuisse D', unit: 'cm' },
+  { key: 'leftCalf', label: 'Mollet G', unit: 'cm' },
+  { key: 'rightCalf', label: 'Mollet D', unit: 'cm' },
+  { key: 'notes', label: 'Notes', unit: '' },
+];
+
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function formatDate(d: Date) {
+  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function ExportDrawer({
+  open,
+  onClose,
+  measurements,
+}: {
+  open: boolean;
+  onClose: () => void;
+  measurements: MeasurementData[];
+}) {
+  const exportJSON = () => {
+    const data = measurements.map((m) => {
+      const row: Record<string, string | number | null> = {
+        date: formatDate(m.measuredAt),
+      };
+      for (const f of EXPORT_FIELDS) {
+        const raw = m[f.key] as string | null;
+      row[f.label] = raw ? parseFloat(raw) : null;
+      }
+      return row;
+    });
+    downloadFile(
+      JSON.stringify(data, null, 2),
+      `mensurations_${new Date().toISOString().split('T')[0]}.json`,
+      'application/json'
+    );
+    triggerHaptic('medium');
+    onClose();
+  };
+
+  const exportExcel = () => {
+    const sep = ';';
+    const headers = ['Date', ...EXPORT_FIELDS.map((f) => f.unit ? `${f.label} (${f.unit})` : f.label)];
+    const rows = measurements.map((m) => {
+      const cells = [formatDate(m.measuredAt)];
+      for (const f of EXPORT_FIELDS) {
+        const val = m[f.key] as string | null;
+        cells.push(val != null ? fmt(val) : '');
+      }
+      return cells.join(sep);
+    });
+    // BOM for Excel UTF-8 detection
+    const bom = '\uFEFF';
+    const csv = bom + headers.join(sep) + '\n' + rows.join('\n');
+    downloadFile(
+      csv,
+      `mensurations_${new Date().toISOString().split('T')[0]}.csv`,
+      'text/csv;charset=utf-8'
+    );
+    triggerHaptic('medium');
+    onClose();
+  };
+
+  const exportPDF = () => {
+    const usedFields = EXPORT_FIELDS.filter((f) =>
+      measurements.some((m) => m[f.key] != null)
+    );
+
+    const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>Mensurations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 32px; color: #1a1a1a; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #6750a4; color: white; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e0e0e0; white-space: nowrap; }
+  tr:nth-child(even) td { background: #f8f6ff; }
+  tr:hover td { background: #ece6ff; }
+  .footer { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
+  @media print { body { padding: 16px; } }
+</style>
+</head>
+<body>
+<h1>Mensurations</h1>
+<p class="subtitle">${measurements.length} mesure${measurements.length > 1 ? 's' : ''} &middot; Export du ${formatDate(new Date())}</p>
+<table>
+<thead><tr><th>Date</th>${usedFields.map((f) => `<th>${f.label}${f.unit ? ` (${f.unit})` : ''}</th>`).join('')}</tr></thead>
+<tbody>
+${measurements.map((m) => `<tr><td>${formatDate(m.measuredAt)}</td>${usedFields.map((f) => { const v = m[f.key] as string | null; return `<td>${v != null ? fmt(v) : '-'}</td>`; }).join('')}</tr>`).join('\n')}
+</tbody>
+</table>
+<p class="footer">Généré depuis l'app Workout</p>
+<script>window.onload=function(){window.print()}<\/script>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+    }
+    triggerHaptic('medium');
+    onClose();
+  };
+
+  return (
+    <SwipeableDrawer
+      anchor="bottom"
+      open={open}
+      onClose={onClose}
+      onOpen={() => {}}
+      disableSwipeToOpen
+      PaperProps={{
+        sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+      }}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
+        <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: 'action.disabled' }} />
+      </Box>
+      <Box sx={{ px: 1, pb: 2 }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1 }}>
+          Exporter les mensurations
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ px: 1.5, display: 'block', mb: 1 }}>
+          {measurements.length} mesure{measurements.length > 1 ? 's' : ''}
+        </Typography>
+
+        <ListItemButton onClick={exportExcel} sx={{ borderRadius: 2 }}>
+          <ListItemIcon sx={{ minWidth: 40 }}>
+            <TableChart sx={{ color: '#4caf50' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Excel / CSV"
+            secondary="Fichier .csv compatible Excel, Google Sheets"
+            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+            secondaryTypographyProps={{ fontSize: '0.75rem' }}
+          />
+        </ListItemButton>
+
+        <ListItemButton onClick={exportJSON} sx={{ borderRadius: 2 }}>
+          <ListItemIcon sx={{ minWidth: 40 }}>
+            <DataObject sx={{ color: '#ff9800' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="JSON"
+            secondary="Format brut pour traitement de données"
+            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+            secondaryTypographyProps={{ fontSize: '0.75rem' }}
+          />
+        </ListItemButton>
+
+        <ListItemButton onClick={exportPDF} sx={{ borderRadius: 2 }}>
+          <ListItemIcon sx={{ minWidth: 40 }}>
+            <PictureAsPdf sx={{ color: '#f44336' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="PDF"
+            secondary="Tableau imprimable via le navigateur"
+            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+            secondaryTypographyProps={{ fontSize: '0.75rem' }}
+          />
+        </ListItemButton>
+      </Box>
+    </SwipeableDrawer>
+  );
+}
+
+// =========================================================
 // MeasureInput
 // =========================================================
 function MeasureInput({
@@ -1237,25 +1564,57 @@ function MeasureInput({
   value,
   onChange,
   placeholder,
+  tip,
 }: {
   label: string;
   unit: string;
   value: number | undefined;
   onChange: (value: string) => void;
   placeholder: string;
+  tip?: string;
 }) {
+  const [showTip, setShowTip] = useState(false);
+
   return (
-    <TextField
-      label={label}
-      type="number"
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder || '0'}
-      fullWidth
-      InputProps={{
-        endAdornment: <Typography color="text.secondary">{unit}</Typography>,
-        inputProps: { step: '0.1' },
-      }}
-    />
+    <Box sx={{ position: 'relative' }}>
+      <TextField
+        label={label}
+        type="number"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder || '0'}
+        fullWidth
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              {tip && (
+                <IconButton
+                  size="small"
+                  onClick={() => { triggerHaptic('light'); setShowTip(!showTip); }}
+                  sx={{ mr: -0.5, p: 0.5 }}
+                >
+                  <InfoOutlined sx={{ fontSize: 18, color: showTip ? 'primary.main' : 'text.disabled' }} />
+                </IconButton>
+              )}
+              <Typography color="text.secondary">{unit}</Typography>
+            </InputAdornment>
+          ),
+          inputProps: { step: '0.1' },
+        }}
+      />
+      <Collapse in={showTip}>
+        <Box sx={{
+          mt: 0.5, px: 1.5, py: 1,
+          bgcolor: 'rgba(103,80,164,0.08)',
+          borderRadius: 1.5,
+          borderLeft: '3px solid',
+          borderColor: 'primary.main',
+        }}>
+          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4, display: 'block' }}>
+            {tip}
+          </Typography>
+        </Box>
+      </Collapse>
+    </Box>
   );
 }

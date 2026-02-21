@@ -7,6 +7,7 @@ import { requireUserId } from '@/lib/auth';
 export type MeasurementData = {
   id: string;
   measuredAt: Date;
+  height: string | null;
   weight: string | null;
   bodyFatPercentage: string | null;
   neck: string | null;
@@ -40,6 +41,7 @@ export type ProgressPhotoData = {
 };
 
 export type MeasurementInput = {
+  height?: number;
   weight?: number;
   bodyFatPercentage?: number;
   neck?: number;
@@ -107,6 +109,7 @@ export async function addMeasurement(data: MeasurementInput): Promise<string> {
     .values({
       userId: userId,
       measuredAt: new Date(),
+      height: data.height?.toString(),
       weight: data.weight?.toString(),
       bodyFatPercentage: data.bodyFatPercentage?.toString(),
       neck: data.neck?.toString(),
@@ -172,6 +175,36 @@ export async function addProgressPhoto(
     .returning();
 
   return result.id;
+}
+
+// Update measurement
+export async function updateMeasurement(id: string, data: MeasurementInput): Promise<void> {
+  await db
+    .update(measurements)
+    .set({
+      height: data.height?.toString() ?? null,
+      weight: data.weight?.toString() ?? null,
+      bodyFatPercentage: data.bodyFatPercentage?.toString() ?? null,
+      neck: data.neck?.toString() ?? null,
+      shoulders: data.shoulders?.toString() ?? null,
+      chest: data.chest?.toString() ?? null,
+      leftArm: data.leftArm?.toString() ?? null,
+      rightArm: data.rightArm?.toString() ?? null,
+      leftForearm: data.leftForearm?.toString() ?? null,
+      rightForearm: data.rightForearm?.toString() ?? null,
+      waist: data.waist?.toString() ?? null,
+      abdomen: data.abdomen?.toString() ?? null,
+      hips: data.hips?.toString() ?? null,
+      glutes: data.glutes?.toString() ?? null,
+      leftThigh: data.leftThigh?.toString() ?? null,
+      rightThigh: data.rightThigh?.toString() ?? null,
+      leftCalf: data.leftCalf?.toString() ?? null,
+      rightCalf: data.rightCalf?.toString() ?? null,
+      wrist: data.wrist?.toString() ?? null,
+      ankle: data.ankle?.toString() ?? null,
+      notes: data.notes ?? null,
+    })
+    .where(eq(measurements.id, id));
 }
 
 // Delete measurement
