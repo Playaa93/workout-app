@@ -6,12 +6,14 @@ import {
   cardioIntervals,
   userGamification,
   xpTransactions,
-  nutritionProfiles,
 } from '@/db';
 import type { CardioActivity } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { requireUserId } from '@/lib/auth';
-import { estimateCardioCalories, calculatePace, calculateSpeed } from '@/lib/cardio-utils';
+import { estimateCardioCalories, calculatePace, calculateSpeed, calculateCardioXp } from '@/lib/cardio-utils';
+import { getLocalDateStr } from '@/lib/date-utils';
+import { updateStreak } from '@/app/profile/actions';
+import { getUserWeightKg } from '@/lib/user-utils';
 
 export async function startCardioSession(activity: CardioActivity): Promise<string> {
   const userId = await requireUserId();
@@ -151,11 +153,7 @@ export async function endCardioSession(
   const speed = distanceM > 0 ? calculateSpeed(durationSeconds, distanceM) : 0;
 
   // Get user weight for calorie calc
-  const [profile] = await db
-    .select({ weight: nutritionProfiles.weight })
-    .from(nutritionProfiles)
-    .where(eq(nutritionProfiles.userId, userId));
-  const weightKg = profile?.weight ? parseFloat(profile.weight) : 75;
+  const weightKg = await getUserWeightKg(userId);
 
   const caloriesBurned = estimateCardioCalories(
     session.cardioActivity!,
@@ -182,37 +180,37 @@ export async function endCardioSession(
     .where(eq(workoutSessions.id, sessionId));
 
   // XP: 50 base + 5 per 10min + 10 per km
-  const baseXp = 50;
-  const timeBonus = Math.floor(durationMinutes / 10) * 5;
-  const distanceBonus = Math.floor(distanceM / 1000) * 10;
-  const totalXp = baseXp + timeBonus + distanceBonus;
+  const totalXp = calculateCardioXp(durationMinutes, distanceM);
 
-  // Add XP transaction
-  await db.insert(xpTransactions).values({
-    userId,
-    amount: totalXp,
-    reason: 'cardio_completed',
-    referenceType: 'workout_session',
-    referenceId: sessionId,
-  });
-
-  // Update gamification (streak + XP)
-  await db
-    .insert(userGamification)
-    .values({
-      userId,
-      totalXp,
-      lastActivityDate: new Date().toISOString().split('T')[0],
-    })
-    .onConflictDoUpdate({
-      target: userGamification.userId,
-      set: {
-        totalXp: sql`${userGamification.totalXp} + ${totalXp}`,
-        lastActivityDate: new Date().toISOString().split('T')[0],
-        currentStreak: sql`${userGamification.currentStreak} + 1`,
-        updatedAt: new Date(),
-      },
-    });
+  // Add XP transaction + update gamification (skip if no XP earned)
+  const today = getLocalDateStr();
+  if (totalXp > 0) {
+    await Promise.all([
+      db.insert(xpTransactions).values({
+        userId,
+        amount: totalXp,
+        reason: 'cardio_completed',
+        referenceType: 'workout_session',
+        referenceId: sessionId,
+      }),
+      db
+        .insert(userGamification)
+        .values({
+          userId,
+          totalXp,
+          lastActivityDate: today,
+        })
+        .onConflictDoUpdate({
+          target: userGamification.userId,
+          set: {
+            totalXp: sql`${userGamification.totalXp} + ${totalXp}`,
+            lastActivityDate: today,
+            updatedAt: new Date(),
+          },
+        }),
+    ]);
+    await updateStreak(userId);
+  }
 
   return {
     xpEarned: totalXp,
@@ -233,6 +231,12 @@ export async function importCardioSession(data: {
   caloriesBurned?: number;
   dateTime?: string;
 }): Promise<{ sessionId: string; xpEarned: number }> {
+  // Validation
+  if (!data.durationMinutes || data.durationMinutes <= 0) throw new Error('La durée doit être supérieure à 0');
+  if (data.distanceMeters != null && data.distanceMeters < 0) throw new Error('La distance ne peut pas être négative');
+  if (data.durationMinutes > 1440) throw new Error('La durée ne peut pas dépasser 24h');
+  if (data.distanceMeters && data.distanceMeters > 500000) throw new Error('La distance ne peut pas dépasser 500 km');
+
   const userId = await requireUserId();
 
   const startedAt = data.dateTime ? new Date(data.dateTime) : new Date();
@@ -246,11 +250,7 @@ export async function importCardioSession(data: {
   // Calories: use provided value or estimate
   let calories = data.caloriesBurned;
   if (!calories) {
-    const [profile] = await db
-      .select({ weight: nutritionProfiles.weight })
-      .from(nutritionProfiles)
-      .where(eq(nutritionProfiles.userId, userId));
-    const weightKg = profile?.weight ? parseFloat(profile.weight) : 75;
+    const weightKg = await getUserWeightKg(userId);
     calories = estimateCardioCalories(data.activity, data.durationMinutes, weightKg);
   }
 
@@ -273,35 +273,36 @@ export async function importCardioSession(data: {
     .returning();
 
   // XP: 50 base + 5 per 10min + 10 per km
-  const baseXp = 50;
-  const timeBonus = Math.floor(data.durationMinutes / 10) * 5;
-  const distanceBonus = Math.floor(distanceM / 1000) * 10;
-  const totalXp = baseXp + timeBonus + distanceBonus;
+  const totalXp = calculateCardioXp(data.durationMinutes, distanceM);
 
-  await db.insert(xpTransactions).values({
-    userId,
-    amount: totalXp,
-    reason: 'cardio_completed',
-    referenceType: 'workout_session',
-    referenceId: session.id,
-  });
-
-  await db
-    .insert(userGamification)
-    .values({
-      userId,
-      totalXp,
-      lastActivityDate: new Date().toISOString().split('T')[0],
-    })
-    .onConflictDoUpdate({
-      target: userGamification.userId,
-      set: {
-        totalXp: sql`${userGamification.totalXp} + ${totalXp}`,
-        lastActivityDate: new Date().toISOString().split('T')[0],
-        currentStreak: sql`${userGamification.currentStreak} + 1`,
-        updatedAt: new Date(),
-      },
-    });
+  const todayStr = getLocalDateStr();
+  if (totalXp > 0) {
+    await Promise.all([
+      db.insert(xpTransactions).values({
+        userId,
+        amount: totalXp,
+        reason: 'cardio_completed',
+        referenceType: 'workout_session',
+        referenceId: session.id,
+      }),
+      db
+        .insert(userGamification)
+        .values({
+          userId,
+          totalXp,
+          lastActivityDate: todayStr,
+        })
+        .onConflictDoUpdate({
+          target: userGamification.userId,
+          set: {
+            totalXp: sql`${userGamification.totalXp} + ${totalXp}`,
+            lastActivityDate: todayStr,
+            updatedAt: new Date(),
+          },
+        }),
+    ]);
+    await updateStreak(userId);
+  }
 
   return { sessionId: session.id, xpEarned: totalXp };
 }

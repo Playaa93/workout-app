@@ -15,6 +15,7 @@ import {
 } from '@/db';
 import { eq, desc, sql, and, count } from 'drizzle-orm';
 import { requireUserId, getAuthenticatedUser } from '@/lib/auth';
+import { getLocalDateStr } from '@/lib/date-utils';
 
 // =====================================================
 // TYPES
@@ -207,46 +208,31 @@ export async function getRecentXp(limit = 10): Promise<XpTransactionData[]> {
 export async function getUserStats(): Promise<StatsData> {
   const userId = await requireUserId();
 
-  const [workoutsResult] = await db
-    .select({ count: count() })
-    .from(workoutSessions)
-    .where(eq(workoutSessions.userId, userId));
-
-  const [foodResult] = await db
-    .select({ count: count() })
-    .from(foodEntries)
-    .where(eq(foodEntries.userId, userId));
-
-  const [measurementsResult] = await db
-    .select({ count: count() })
-    .from(measurements)
-    .where(eq(measurements.userId, userId));
-
-  const [prsResult] = await db
-    .select({ count: count() })
-    .from(personalRecords)
-    .where(eq(personalRecords.userId, userId));
-
-  const [bossResult] = await db
-    .select({ count: count() })
-    .from(bossFights)
-    .where(and(eq(bossFights.userId, userId), eq(bossFights.status, 'completed')));
-
-  // Cardio stats
-  const [cardioResult] = await db
-    .select({
+  const [
+    [workoutsResult],
+    [foodResult],
+    [measurementsResult],
+    [prsResult],
+    [bossResult],
+    [cardioResult],
+  ] = await Promise.all([
+    db.select({ count: count() }).from(workoutSessions).where(and(eq(workoutSessions.userId, userId), sql`${workoutSessions.endedAt} IS NOT NULL`)),
+    db.select({ count: count() }).from(foodEntries).where(and(eq(foodEntries.userId, userId), sql`${foodEntries.calories}::numeric > 0`)),
+    db.select({ count: count() }).from(measurements).where(eq(measurements.userId, userId)),
+    db.select({ count: count() }).from(personalRecords).where(eq(personalRecords.userId, userId)),
+    db.select({ count: count() }).from(bossFights).where(and(eq(bossFights.userId, userId), eq(bossFights.status, 'completed'))),
+    db.select({
       count: count(),
       totalDistance: sql<string>`COALESCE(SUM(${workoutSessions.distanceMeters}::numeric), 0)`,
       totalMinutes: sql<string>`COALESCE(SUM(${workoutSessions.durationMinutes}), 0)`,
-    })
-    .from(workoutSessions)
-    .where(
+    }).from(workoutSessions).where(
       and(
         eq(workoutSessions.userId, userId),
         eq(workoutSessions.sessionType, 'cardio'),
         sql`${workoutSessions.endedAt} IS NOT NULL`
       )
-    );
+    ),
+  ]);
 
   return {
     totalWorkouts: workoutsResult.count,
@@ -389,11 +375,11 @@ export async function checkAchievements(): Promise<AchievementData[]> {
 }
 
 // Update streak
-export async function updateStreak(): Promise<{ currentStreak: number; isNewRecord: boolean }> {
-  const userId = await requireUserId();
+export async function updateStreak(existingUserId?: string): Promise<{ currentStreak: number; isNewRecord: boolean }> {
+  const userId = existingUserId ?? await requireUserId();
   const gamification = await getOrCreateGamification(userId);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateStr();
   const lastActivity = gamification.lastActivityDate;
 
   let newStreak = gamification.currentStreak || 0;
@@ -479,4 +465,77 @@ export async function saveGeminiApiKey(apiKey: string): Promise<void> {
       target: userSettings.userId,
       set: { geminiApiKey: apiKey, updatedAt: new Date() },
     });
+}
+
+// =====================================================
+// HUAWEI HEALTH
+// =====================================================
+
+export type HuaweiCredentials = {
+  clientId: string | null;
+  clientSecret: string | null;
+  isConnected: boolean;
+  tokenExpiresAt: Date | null;
+};
+
+export async function getHuaweiCredentials(): Promise<HuaweiCredentials> {
+  const userId = await requireUserId();
+  const [settings] = await db
+    .select({
+      clientId: userSettings.huaweiClientId,
+      clientSecret: userSettings.huaweiClientSecret,
+      accessToken: userSettings.huaweiAccessToken,
+      tokenExpiresAt: userSettings.huaweiTokenExpiresAt,
+    })
+    .from(userSettings)
+    .where(eq(userSettings.userId, userId));
+
+  return {
+    clientId: settings?.clientId || null,
+    clientSecret: settings?.clientSecret || null,
+    isConnected: !!settings?.accessToken,
+    tokenExpiresAt: settings?.tokenExpiresAt || null,
+  };
+}
+
+export async function saveHuaweiCredentials(clientId: string, clientSecret: string): Promise<void> {
+  const userId = await requireUserId();
+  await db
+    .insert(userSettings)
+    .values({ userId, huaweiClientId: clientId, huaweiClientSecret: clientSecret })
+    .onConflictDoUpdate({
+      target: userSettings.userId,
+      set: { huaweiClientId: clientId, huaweiClientSecret: clientSecret, updatedAt: new Date() },
+    });
+}
+
+export async function saveHuaweiTokens(
+  accessToken: string,
+  refreshToken: string,
+  expiresInSeconds: number
+): Promise<void> {
+  const userId = await requireUserId();
+  const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+  await db
+    .update(userSettings)
+    .set({
+      huaweiAccessToken: accessToken,
+      huaweiRefreshToken: refreshToken,
+      huaweiTokenExpiresAt: expiresAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(userSettings.userId, userId));
+}
+
+export async function disconnectHuawei(): Promise<void> {
+  const userId = await requireUserId();
+  await db
+    .update(userSettings)
+    .set({
+      huaweiAccessToken: null,
+      huaweiRefreshToken: null,
+      huaweiTokenExpiresAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(userSettings.userId, userId));
 }

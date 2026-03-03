@@ -3,12 +3,15 @@
 import { db, foods, foodCravings, foodEntries, nutritionDailySummary, nutritionProfiles, userGamification, xpTransactions } from '@/db';
 import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
 import { requireUserId } from '@/lib/auth';
+import { getLocalDateStr } from '@/lib/date-utils';
+import { updateStreak } from '@/app/profile/actions';
 
 // XP rewards for diet actions
 const XP_REWARDS = {
   FOOD_ENTRY: 5,      // Log a food entry
   CRAVING_LOGGED: 10, // Log a craving ("J'ai envie de...")
   FIRST_ENTRY_OF_DAY: 15, // First entry of the day bonus
+  DAILY_CAP: 50,      // Max XP from diet per day
 };
 
 export type FoodData = {
@@ -56,35 +59,60 @@ export type DailySummaryData = {
   entriesCount: number;
 };
 
-// Award XP for diet actions
+// Get diet XP earned today
+async function getDietXpToday(userId: string, todayStr?: string): Promise<number> {
+  todayStr = todayStr ?? getLocalDateStr();
+  const todayStart = new Date(todayStr + 'T00:00:00');
+  const todayEnd = new Date(todayStr + 'T23:59:59');
+  const result = await db
+    .select({ total: sql<number>`COALESCE(SUM(${xpTransactions.amount}), 0)` })
+    .from(xpTransactions)
+    .where(and(
+      eq(xpTransactions.userId, userId),
+      eq(xpTransactions.referenceType, 'food_entry'),
+      gte(xpTransactions.createdAt, todayStart),
+      lte(xpTransactions.createdAt, todayEnd),
+    ));
+  return Number(result[0]?.total ?? 0);
+}
+
+// Award XP for diet actions (respects daily cap)
 async function awardDietXp(userId: string, amount: number, reason: string, referenceId?: string) {
+  // Check daily cap
+  const today = getLocalDateStr();
+  const earnedToday = await getDietXpToday(userId, today);
+  const remaining = Math.max(0, XP_REWARDS.DAILY_CAP - earnedToday);
+  const actualAmount = Math.min(amount, remaining);
+  if (actualAmount <= 0) return;
+
   // Add XP transaction
   await db.insert(xpTransactions).values({
     userId,
-    amount,
+    amount: actualAmount,
     reason,
     referenceType: 'food_entry',
     referenceId,
   });
 
   // Update user gamification
-  const today = new Date().toISOString().split('T')[0];
   await db
     .insert(userGamification)
     .values({
       userId,
-      totalXp: amount,
+      totalXp: actualAmount,
       lastActivityDate: today,
       currentStreak: 1,
     })
     .onConflictDoUpdate({
       target: userGamification.userId,
       set: {
-        totalXp: sql`${userGamification.totalXp} + ${amount}`,
+        totalXp: sql`${userGamification.totalXp} + ${actualAmount}`,
         lastActivityDate: today,
         updatedAt: new Date(),
       },
     });
+
+  await updateStreak(userId);
 }
 
 // Check if this is the first entry of the day
@@ -236,6 +264,8 @@ export async function addFoodEntry(data: {
   fat?: number;
   notes?: string;
 }): Promise<{ id: string; xpEarned: number }> {
+  if (!data.quantity || data.quantity <= 0) throw new Error('La quantité doit être supérieure à 0');
+
   const userId = await requireUserId();
 
   // Check if first entry of day (before inserting)
@@ -336,56 +366,45 @@ export async function deleteEntry(entryId: string): Promise<void> {
   await updateDailySummary(userId);
 }
 
-// Retourne la date locale YYYY-MM-DD (évite les décalages UTC)
-function getLocalDateStr(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 // Update daily summary
 async function updateDailySummary(userId: string): Promise<void> {
   const todayStr = getLocalDateStr();
   const today = new Date(todayStr + 'T00:00:00');
   const tomorrow = new Date(todayStr + 'T23:59:59.999');
 
-  // Get today's entries
-  const entries = await db
-    .select()
-    .from(foodEntries)
-    .where(
+  // Calculate 7-day averages date range
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const sevenDaysAgoStr = getLocalDateStr(sevenDaysAgo);
+
+  // Get today's totals via SQL SUM + week summaries in parallel
+  const [[todayTotals], weekSummaries] = await Promise.all([
+    db.select({
+      totalCalories: sql<string>`COALESCE(SUM(${foodEntries.calories}::numeric), 0)`,
+      totalProtein: sql<string>`COALESCE(SUM(${foodEntries.protein}::numeric), 0)`,
+      totalCarbs: sql<string>`COALESCE(SUM(${foodEntries.carbohydrates}::numeric), 0)`,
+      totalFat: sql<string>`COALESCE(SUM(${foodEntries.fat}::numeric), 0)`,
+      entriesCount: sql<number>`count(*)`,
+    }).from(foodEntries).where(
       and(
         eq(foodEntries.userId, userId),
         gte(foodEntries.loggedAt, today),
         lte(foodEntries.loggedAt, tomorrow)
       )
-    );
-
-  // Calculate totals
-  let totalCalories = 0;
-  let totalProtein = 0;
-  let totalCarbs = 0;
-  let totalFat = 0;
-
-  entries.forEach((e) => {
-    if (e.calories) totalCalories += parseFloat(e.calories);
-    if (e.protein) totalProtein += parseFloat(e.protein);
-    if (e.carbohydrates) totalCarbs += parseFloat(e.carbohydrates);
-    if (e.fat) totalFat += parseFloat(e.fat);
-  });
-
-  // Calculate 7-day averages
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const sevenDaysAgoStr = getLocalDateStr(sevenDaysAgo);
-
-  const weekSummaries = await db
-    .select()
-    .from(nutritionDailySummary)
-    .where(
+    ),
+    db.select().from(nutritionDailySummary).where(
       and(
         eq(nutritionDailySummary.userId, userId),
         gte(nutritionDailySummary.date, sevenDaysAgoStr)
       )
-    );
+    ),
+  ]);
+
+  const totalCalories = parseFloat(todayTotals.totalCalories);
+  const totalProtein = parseFloat(todayTotals.totalProtein);
+  const totalCarbs = parseFloat(todayTotals.totalCarbs);
+  const totalFat = parseFloat(todayTotals.totalFat);
+  const entriesCount = todayTotals.entriesCount;
 
   const daysWithData = weekSummaries.length + 1; // +1 for today
   const avgCalories =
@@ -415,7 +434,7 @@ async function updateDailySummary(userId: string): Promise<void> {
       avg7dProtein: avgProtein.toString(),
       avg7dCarbs: avgCarbs.toString(),
       avg7dFat: avgFat.toString(),
-      entriesCount: entries.length,
+      entriesCount,
     })
     .onConflictDoUpdate({
       target: [nutritionDailySummary.userId, nutritionDailySummary.date],
@@ -428,7 +447,7 @@ async function updateDailySummary(userId: string): Promise<void> {
         avg7dProtein: avgProtein.toString(),
         avg7dCarbs: avgCarbs.toString(),
         avg7dFat: avgFat.toString(),
-        entriesCount: entries.length,
+        entriesCount,
       },
     });
 }
@@ -592,7 +611,7 @@ function calculateNutritionTargets(
   const targetFat = Math.round((targetCalories * fatRatio) / 9);
   // Remaining calories from carbs
   const carbCalories = targetCalories - (targetProtein * 4) - (targetFat * 9);
-  const targetCarbs = Math.round(carbCalories / 4);
+  const targetCarbs = Math.max(0, Math.round(carbCalories / 4));
 
   return { tdee, targetCalories, targetProtein, targetCarbs, targetFat };
 }

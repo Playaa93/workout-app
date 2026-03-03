@@ -14,7 +14,7 @@ import {
 } from './actions';
 import { startCardioSession, importCardioSession } from './cardio-actions';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
-import type { CardioActivity as CardioActivityType } from '@/db/schema';
+import { compressImage } from '@/lib/image-utils';
 import type { CardioActivity } from '@/db/schema';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -49,17 +49,9 @@ import ChevronRight from '@mui/icons-material/ChevronRight';
 import Close from '@mui/icons-material/Close';
 import Delete from '@mui/icons-material/Delete';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import Watch from '@mui/icons-material/Watch';
+import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import BottomNav from '@/components/BottomNav';
-
-const MUSCLE_LABELS: Record<string, string> = {
-  chest: 'Pecs',
-  back: 'Dos',
-  shoulders: 'Épaules',
-  arms: 'Bras',
-  legs: 'Jambes',
-  core: 'Abdos',
-  full_body: 'Full body',
-};
 
 export default function WorkoutPage() {
   const router = useRouter();
@@ -160,38 +152,6 @@ export default function WorkoutPage() {
     }
   };
 
-  const compressImage = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const maxSize = 1024;
-          let { width, height } = img;
-          if (width > maxSize || height > maxSize) {
-            if (width > height) {
-              height = (height / width) * maxSize;
-              width = maxSize;
-            } else {
-              width = (width / height) * maxSize;
-              height = maxSize;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d')!;
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.8));
-        };
-        img.onerror = reject;
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   const handleImportScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -225,7 +185,7 @@ export default function WorkoutPage() {
     setImportSaving(true);
     try {
       const result = await importCardioSession({
-        activity: importData.activity as CardioActivityType,
+        activity: importData.activity as CardioActivity,
         durationMinutes: importData.durationMinutes,
         distanceMeters: importData.distanceMeters ?? undefined,
         avgPaceSecondsPerKm: importData.avgPaceSecondsPerKm ?? undefined,
@@ -608,6 +568,41 @@ export default function WorkoutPage() {
                   onChange={handleImportScreenshot}
                 />
               </Button>
+              <Button
+                size="small"
+                fullWidth
+                startIcon={<Watch />}
+                onClick={async () => {
+                  setShowNewSessionDrawer(false);
+                  setImportLoading(true);
+                  try {
+                    const res = await fetch('/api/huawei/sync', { method: 'POST' });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      setSnackbar({ open: true, message: data.error || 'Erreur sync Huawei', severity: 'error' });
+                      return;
+                    }
+                    setSnackbar({
+                      open: true,
+                      message: data.imported > 0
+                        ? `${data.imported} séance(s) Huawei importée(s) ! +${data.totalXp} XP`
+                        : 'Aucune nouvelle séance Huawei',
+                      severity: 'success',
+                    });
+                    if (data.imported > 0) {
+                      const sessionsData = await getRecentSessions();
+                      setSessions(sessionsData);
+                    }
+                  } catch {
+                    setSnackbar({ open: true, message: 'Erreur sync Huawei', severity: 'error' });
+                  } finally {
+                    setImportLoading(false);
+                  }
+                }}
+                sx={{ textTransform: 'none', color: 'text.secondary', fontWeight: 500 }}
+              >
+                Sync Huawei Health
+              </Button>
             </>
           )}
         </Box>
@@ -834,14 +829,16 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
                 Volume
               </Typography>
             </Box>
-            <Box sx={{ flex: 1, py: 1, textAlign: 'center' }}>
-              <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                {session.caloriesBurned || 0}
-              </Typography>
-              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-                kcal
-              </Typography>
-            </Box>
+            {session.caloriesBurned != null && session.caloriesBurned > 0 && (
+              <Box sx={{ flex: 1, py: 1, textAlign: 'center' }}>
+                <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {session.caloriesBurned}
+                </Typography>
+                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
+                  kcal
+                </Typography>
+              </Box>
+            )}
           </>
         )}
       </Stack>

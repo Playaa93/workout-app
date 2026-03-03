@@ -54,6 +54,14 @@ export function calculateSpeed(durationSeconds: number, distanceMeters: number):
   return (distanceMeters / 1000) / (durationSeconds / 3600);
 }
 
+/** Calculate XP earned for a cardio session: 50 base + 5 per 10min + 10 per km */
+export function calculateCardioXp(durationMinutes: number, distanceMeters: number): number {
+  const baseXp = (durationMinutes >= 5 || distanceMeters >= 500) ? 50 : 0;
+  const timeBonus = Math.floor(durationMinutes / 10) * 5;
+  const distanceBonus = Math.floor(distanceMeters / 1000) * 10;
+  return baseXp + timeBonus + distanceBonus;
+}
+
 /** Estimate calories for a cardio session */
 export function estimateCardioCalories(
   activity: CardioActivity,

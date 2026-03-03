@@ -28,12 +28,7 @@ export const MEAL_CONFIG = {
   dinner: { label: 'Dîner', icon: DinnerDining, color: '#7c3aed' },
 } as const;
 
-export const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
-  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-    const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
-    navigator.vibrate(patterns[style]);
-  }
-};
+export { triggerHaptic } from '@/lib/haptic';
 
 export function MacroBar({
   label,
@@ -55,7 +50,7 @@ export function MacroBar({
       </Typography>
       <LinearProgress
         variant="determinate"
-        value={Math.min((current / target) * 100, 100)}
+        value={target > 0 ? Math.min((current / target) * 100, 100) : 0}
         sx={{
           height: 6,
           borderRadius: 3,

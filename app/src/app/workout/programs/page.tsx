@@ -138,7 +138,7 @@ export default function ProgramsPage() {
                 template={template}
                 onStart={() => handleStartFromTemplate(template.id)}
                 onDelete={() => handleDeleteTemplate(template.id)}
-                isStarting={startingTemplateId === template.id}
+                isStarting={startingTemplateId !== null}
               />
             ))}
           </Stack>
@@ -148,16 +148,7 @@ export default function ProgramsPage() {
   );
 }
 
-// Traduction des muscles
-const MUSCLE_LABELS: Record<string, string> = {
-  chest: 'Pectoraux',
-  back: 'Dos',
-  shoulders: 'Épaules',
-  arms: 'Bras',
-  legs: 'Jambes',
-  core: 'Abdos',
-  full_body: 'Full Body',
-};
+import { MUSCLE_LABELS } from '@/lib/workout-constants';
 
 function ProgramCard({
   template,

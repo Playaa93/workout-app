@@ -114,7 +114,7 @@ export default function SearchView({
   };
 
   if (selectedFood) {
-    const multiplier = parseFloat(quantity) / 100;
+    const multiplier = (parseFloat(quantity) || 0) / 100;
     const calories = selectedFood.calories ? parseFloat(selectedFood.calories) * multiplier : 0;
 
     return (

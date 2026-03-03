@@ -1,9 +1,12 @@
 'use server';
 
-import { db, exercises, workoutSessions, workoutSets, userGamification, xpTransactions, personalRecords, morphoProfiles, workoutTemplates, workoutTemplateExercises } from '@/db';
+import { db, exercises, workoutSessions, workoutSets, userGamification, xpTransactions, personalRecords, workoutTemplates, workoutTemplateExercises } from '@/db';
 import { eq, desc, and, sql, gte, lte } from 'drizzle-orm';
-import type { MorphotypeResult } from '@/app/morphology/types';
 import { requireUserId } from '@/lib/auth';
+import { getLocalDateStr } from '@/lib/date-utils';
+import { updateStreak } from '@/app/profile/actions';
+import { getUserWeightKg } from '@/lib/user-utils';
+import { getUserMorphotype as getUserMorphotypeImpl } from '@/lib/morphotype-utils';
 
 export type Exercise = {
   id: string;
@@ -247,18 +250,21 @@ export async function addSet(
   // Get current PR for this exercise (1RM estimation: weight * (1 + reps/30))
   const estimated1RM = weight * (1 + reps / 30);
 
-  const [currentPR] = await db
-    .select()
-    .from(personalRecords)
-    .where(
-      and(
-        eq(personalRecords.userId, userId),
-        eq(personalRecords.exerciseId, exerciseId),
-        eq(personalRecords.recordType, '1rm')
-      )
-    );
+  let isPr = false;
+  if (weight > 0 && reps > 0 && !isWarmup) {
+    const [currentPR] = await db
+      .select()
+      .from(personalRecords)
+      .where(
+        and(
+          eq(personalRecords.userId, userId),
+          eq(personalRecords.exerciseId, exerciseId),
+          eq(personalRecords.recordType, '1rm')
+        )
+      );
 
-  const isPr = !currentPR || estimated1RM > parseFloat(currentPR.value);
+    isPr = !currentPR || estimated1RM > parseFloat(currentPR.value);
+  }
 
   // Insert the set
   const [set] = await db
@@ -278,7 +284,7 @@ export async function addSet(
     .returning();
 
   // Update PR if this is a new record
-  if (isPr && !isWarmup) {
+  if (isPr) {
     await db
       .insert(personalRecords)
       .values({
@@ -299,18 +305,19 @@ export async function addSet(
       });
   }
 
-  return { id: set.id, isPr: isPr && !isWarmup };
+  return { id: set.id, isPr };
 }
 
-// Delete a set
+// Delete a set (and clean up orphaned PR if applicable)
 export async function deleteSet(setId: string): Promise<void> {
+  await db.delete(personalRecords).where(eq(personalRecords.workoutSetId, setId));
   await db.delete(workoutSets).where(eq(workoutSets.id, setId));
 }
 
 // Estimate calories burned during strength training
 // Based on MET values: ~5 MET for moderate strength training
 // Formula: Calories = MET × weight(kg) × duration(hours)
-function estimateCaloriesBurned(durationMinutes: number, totalVolume: number, perceivedDifficulty?: number): number {
+function estimateCaloriesBurned(durationMinutes: number, totalVolume: number, weightKg: number, perceivedDifficulty?: number): number {
   // Base MET for strength training (3.5-6 depending on intensity)
   let met = 4.5;
 
@@ -318,9 +325,6 @@ function estimateCaloriesBurned(durationMinutes: number, totalVolume: number, pe
   if (perceivedDifficulty) {
     met = 3.5 + (perceivedDifficulty / 10) * 2.5; // Range 3.5-6
   }
-
-  // Assume average weight of 75kg if not available
-  const weightKg = 75;
   const durationHours = durationMinutes / 60;
 
   // Base calories from duration
@@ -347,6 +351,8 @@ export async function endWorkoutSession(
   const startTime = new Date(session.session.startedAt);
   const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
 
+  const userId = await requireUserId();
+
   // Calculate total volume (sum of weight * reps for all sets)
   let totalVolume = 0;
   let prCount = 0;
@@ -357,8 +363,11 @@ export async function endWorkoutSession(
     if (set.isPr) prCount++;
   }
 
+  // Fetch user weight for calorie estimation
+  const userWeightKg = await getUserWeightKg(userId);
+
   // Calculate calories burned
-  const caloriesBurned = estimateCaloriesBurned(durationMinutes, totalVolume, perceivedDifficulty);
+  const caloriesBurned = estimateCaloriesBurned(durationMinutes, totalVolume, userWeightKg, perceivedDifficulty);
 
   // Update session
   await db
@@ -374,40 +383,41 @@ export async function endWorkoutSession(
     .where(eq(workoutSessions.id, sessionId));
 
   // Award XP
-  const userId = await requireUserId();
-
-  // Base XP + bonus for volume and PRs
-  const baseXp = 50;
+  // Base XP + bonus for volume and PRs (no XP for empty sessions)
+  const baseXp = (durationMinutes > 0 || totalVolume > 0) ? 50 : 0;
   const volumeBonus = Math.floor(totalVolume / 1000) * 10; // 10 XP per 1000kg
   const prBonus = prCount * 25; // 25 XP per PR
   const totalXp = baseXp + volumeBonus + prBonus;
 
-  // Add XP transaction
-  await db.insert(xpTransactions).values({
-    userId,
-    amount: totalXp,
-    reason: 'workout_completed',
-    referenceType: 'workout_session',
-    referenceId: sessionId,
-  });
-
-  // Update user gamification
-  await db
-    .insert(userGamification)
-    .values({
-      userId,
-      totalXp,
-      lastActivityDate: new Date().toISOString().split('T')[0],
-    })
-    .onConflictDoUpdate({
-      target: userGamification.userId,
-      set: {
-        totalXp: sql`${userGamification.totalXp} + ${totalXp}`,
-        lastActivityDate: new Date().toISOString().split('T')[0],
-        currentStreak: sql`${userGamification.currentStreak} + 1`,
-        updatedAt: new Date(),
-      },
-    });
+  // Add XP transaction + update gamification in parallel (skip if no XP earned)
+  const today = getLocalDateStr();
+  if (totalXp > 0) {
+    await Promise.all([
+      db.insert(xpTransactions).values({
+        userId,
+        amount: totalXp,
+        reason: 'workout_completed',
+        referenceType: 'workout_session',
+        referenceId: sessionId,
+      }),
+      db
+        .insert(userGamification)
+        .values({
+          userId,
+          totalXp,
+          lastActivityDate: today,
+        })
+        .onConflictDoUpdate({
+          target: userGamification.userId,
+          set: {
+            totalXp: sql`${userGamification.totalXp} + ${totalXp}`,
+            lastActivityDate: today,
+            updatedAt: new Date(),
+          },
+        }),
+    ]);
+    await updateStreak(userId);
+  }
 
   return {
     xpEarned: totalXp,
@@ -478,70 +488,9 @@ export async function getLastSetsForExercise(exerciseId: string, limit = 5): Pro
   }));
 }
 
-// Get user's morphotype result for exercise scoring
-export async function getUserMorphotype(): Promise<MorphotypeResult | null> {
-  const userId = await requireUserId();
-
-  const profile = await db
-    .select()
-    .from(morphoProfiles)
-    .where(eq(morphoProfiles.userId, userId))
-    .limit(1);
-
-  if (profile.length === 0) return null;
-
-  // Reconstruct MorphotypeResult from stored profile
-  const stored = profile[0];
-  const scores = stored.morphotypeScore as Record<string, unknown> | null;
-
-  if (!scores) return null;
-
-  return {
-    globalType: (scores.globalType as 'longiligne' | 'breviligne' | 'balanced') || 'balanced',
-    structure: (scores.structure as MorphotypeResult['structure']) || {
-      frameSize: 'medium',
-      shoulderToHip: 'medium',
-      ribcageDepth: 'medium',
-    },
-    proportions: (scores.proportions as MorphotypeResult['proportions']) || {
-      torsoLength: stored.torsoProportion || 'medium',
-      armLength: stored.armProportion || 'medium',
-      femurLength: stored.legProportion || 'medium',
-      kneeValgus: 'none',
-    },
-    mobility: (scores.mobility as MorphotypeResult['mobility']) || {
-      ankleDorsiflexion: 'average',
-      posteriorChain: 'average',
-      wristMobility: 'none',
-    },
-    insertions: (scores.insertions as MorphotypeResult['insertions']) || {
-      biceps: 'medium',
-      calves: 'medium',
-      chest: 'medium',
-    },
-    metabolism: (scores.metabolism as MorphotypeResult['metabolism']) || {
-      weightTendency: 'balanced',
-      naturalStrength: 'average',
-      bestResponders: 'none',
-    },
-    // Legacy fields
-    squat: { exercise: 'Squat', advantages: [], disadvantages: [], variants: [], tips: [] },
-    deadlift: { exercise: 'Deadlift', advantages: [], disadvantages: [], variants: [], tips: [] },
-    bench: { exercise: 'Bench', advantages: [], disadvantages: [], variants: [], tips: [] },
-    curls: { exercise: 'Curls', advantages: [], disadvantages: [], variants: [], tips: [] },
-    mobilityWork: [],
-    primary: stored.primaryMorphotype,
-    secondary: stored.secondaryMorphotype,
-    scores: {
-      ecto: (scores.ecto as number) || 0,
-      meso: (scores.meso as number) || 0,
-      endo: (scores.endo as number) || 0,
-    },
-    strengths: stored.strengths || [],
-    weaknesses: stored.weaknesses || [],
-    recommendedExercises: stored.recommendedExercises || [],
-    exercisesToAvoid: stored.exercisesToAvoid || [],
-  };
+// Re-export for "use server" compatibility
+export async function getUserMorphotype() {
+  return getUserMorphotypeImpl();
 }
 
 // Get all workout templates for the user
