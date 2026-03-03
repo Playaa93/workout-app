@@ -39,6 +39,11 @@ interface EnrichedExercise {
   common_mistakes: string[];
   source: string;
   video_url?: string;
+  goal_scores?: { strength: number; hypertrophy: number; athletic: number; rehab: number };
+  programming_priority?: string;
+  morpho_protocols?: Record<string, unknown>;
+  rest_modifiers?: Record<string, number>;
+  tempo_recommendations?: Record<string, string>;
 }
 
 interface ExerciseData {
@@ -90,7 +95,12 @@ async function seedEnrichedExercises() {
           common_mistakes,
           source,
           video_url,
-          is_custom
+          is_custom,
+          goal_scores,
+          programming_priority,
+          morpho_protocols,
+          rest_modifiers,
+          tempo_recommendations
         )
         VALUES (
           ${ex.name_fr},
@@ -112,7 +122,12 @@ async function seedEnrichedExercises() {
           ${ex.common_mistakes || []},
           ${ex.source || 'manual'},
           ${ex.video_url || null},
-          false
+          false,
+          ${JSON.stringify(ex.goal_scores || null)},
+          ${ex.programming_priority || null},
+          ${JSON.stringify(ex.morpho_protocols || null)},
+          ${JSON.stringify(ex.rest_modifiers || null)},
+          ${JSON.stringify(ex.tempo_recommendations || null)}
         )
       `;
       successCount++;

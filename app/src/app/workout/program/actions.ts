@@ -1,9 +1,10 @@
 'use server';
 
-import { db, exercises, workoutTemplates, workoutTemplateExercises, morphoProfiles } from '@/db';
+import { db, exercises, workoutTemplates, workoutTemplateExercises } from '@/db';
 import { eq } from 'drizzle-orm';
 import type { MorphotypeResult } from '@/app/morphology/types';
 import { requireUserId } from '@/lib/auth';
+import { getUserMorphotype } from '@/lib/morphotype-utils';
 import {
   type ProgramGoal,
   type ProgramApproach,
@@ -46,69 +47,6 @@ export type GeneratedProgram = {
   workouts: GeneratedWorkout[];
   config: ProgramConfig;
 };
-
-// Get user morphotype for program generation
-async function getUserMorphotype(): Promise<MorphotypeResult | null> {
-  const userId = await requireUserId();
-
-  const profile = await db
-    .select()
-    .from(morphoProfiles)
-    .where(eq(morphoProfiles.userId, userId))
-    .limit(1);
-
-  if (profile.length === 0) return null;
-
-  const stored = profile[0];
-  const scores = stored.morphotypeScore as Record<string, unknown> | null;
-  if (!scores) return null;
-
-  return {
-    globalType: (scores.globalType as 'longiligne' | 'breviligne' | 'balanced') || 'balanced',
-    structure: (scores.structure as MorphotypeResult['structure']) || {
-      frameSize: 'medium',
-      shoulderToHip: 'medium',
-      ribcageDepth: 'medium',
-    },
-    proportions: (scores.proportions as MorphotypeResult['proportions']) || {
-      torsoLength: stored.torsoProportion || 'medium',
-      armLength: stored.armProportion || 'medium',
-      femurLength: stored.legProportion || 'medium',
-      kneeValgus: 'none',
-    },
-    mobility: (scores.mobility as MorphotypeResult['mobility']) || {
-      ankleDorsiflexion: 'average',
-      posteriorChain: 'average',
-      wristMobility: 'none',
-    },
-    insertions: (scores.insertions as MorphotypeResult['insertions']) || {
-      biceps: 'medium',
-      calves: 'medium',
-      chest: 'medium',
-    },
-    metabolism: (scores.metabolism as MorphotypeResult['metabolism']) || {
-      weightTendency: 'balanced',
-      naturalStrength: 'average',
-      bestResponders: 'none',
-    },
-    squat: { exercise: 'Squat', advantages: [], disadvantages: [], variants: [], tips: [] },
-    deadlift: { exercise: 'Deadlift', advantages: [], disadvantages: [], variants: [], tips: [] },
-    bench: { exercise: 'Bench', advantages: [], disadvantages: [], variants: [], tips: [] },
-    curls: { exercise: 'Curls', advantages: [], disadvantages: [], variants: [], tips: [] },
-    mobilityWork: [],
-    primary: stored.primaryMorphotype,
-    secondary: stored.secondaryMorphotype,
-    scores: {
-      ecto: (scores.ecto as number) || 0,
-      meso: (scores.meso as number) || 0,
-      endo: (scores.endo as number) || 0,
-    },
-    strengths: stored.strengths || [],
-    weaknesses: stored.weaknesses || [],
-    recommendedExercises: stored.recommendedExercises || [],
-    exercisesToAvoid: stored.exercisesToAvoid || [],
-  };
-}
 
 // Convert morphotype result to morphotype criteria for matching
 function getMorphotypeCriteria(morphotype: MorphotypeResult): MorphotypeCriterion[] {
@@ -384,6 +322,18 @@ const PRIORITY_ORDER: Record<string, number> = {
   finisher: 3,
 };
 
+// Score combiné morpho + objectif
+const combinedScore = (ex: { morphoScore: number; goalScore: number }) =>
+  ex.morphoScore * 0.6 + ex.goalScore * 0.4;
+
+// Quotas compound/isolation par split
+const EXERCISE_SLOTS: Record<ProgramSplit, { compoundPerMuscle: number; isolationPerMuscle: number; maxTotal: number }> = {
+  full_body:   { compoundPerMuscle: 1, isolationPerMuscle: 0, maxTotal: 8 },
+  ppl:         { compoundPerMuscle: 1, isolationPerMuscle: 1, maxTotal: 6 },
+  upper_lower: { compoundPerMuscle: 1, isolationPerMuscle: 1, maxTotal: 6 },
+  bro_split:   { compoundPerMuscle: 2, isolationPerMuscle: 2, maxTotal: 6 },
+};
+
 // Generate program based on config, morphotype, and approach
 export async function generateProgram(config: ProgramConfig): Promise<GeneratedProgram> {
   const morphotype = await getUserMorphotype();
@@ -403,13 +353,22 @@ export async function generateProgram(config: ProgramConfig): Promise<GeneratedP
       // If day has pattern restrictions (PPL), filter by movement pattern
       if (day.patterns && day.patterns.length > 0) {
         const exPattern = ex.movementPattern || 'isolation';
-        // For push days: only push and push-related isolation
-        if (day.patterns.includes('push') && !['push', 'isolation'].includes(exPattern)) {
-          if (exPattern === 'pull') return false;
-        }
-        // For pull days: pull, hinge, and isolation
-        if (day.patterns.includes('pull') && !['pull', 'hinge', 'isolation'].includes(exPattern)) {
-          if (exPattern === 'push') return false;
+
+        // Pour les bras en PPL : séparer biceps (pull) et triceps (push)
+        if (ex.muscleGroup.toLowerCase() === 'arms') {
+          const PUSH_ARM_MUSCLES = ['triceps_long_head', 'triceps_lateral_head', 'triceps_medial_head'];
+          const PULL_ARM_MUSCLES = ['biceps_long_head', 'biceps_short_head', 'brachialis', 'brachioradialis'];
+          const primaryMuscles = (ex.primaryMuscles || []) as string[];
+
+          if (day.patterns.includes('push') && !primaryMuscles.some(m => PUSH_ARM_MUSCLES.includes(m))) return false;
+          if (day.patterns.includes('pull') && !primaryMuscles.some(m => PULL_ARM_MUSCLES.includes(m))) return false;
+        } else {
+          if (day.patterns.includes('push') && !['push', 'isolation'].includes(exPattern)) {
+            if (exPattern === 'pull') return false;
+          }
+          if (day.patterns.includes('pull') && !['pull', 'hinge', 'isolation'].includes(exPattern)) {
+            if (exPattern === 'push') return false;
+          }
         }
       }
 
@@ -455,8 +414,8 @@ export async function generateProgram(config: ProgramConfig): Promise<GeneratedP
       }
 
       // Within same priority, sort by combined score
-      const aScore = (a.morphoScore * 0.6) + (a.goalScore * 0.4);
-      const bScore = (b.morphoScore * 0.6) + (b.goalScore * 0.4);
+      const aScore = combinedScore(a);
+      const bScore = combinedScore(b);
 
       if (config.approach === 'fix_weaknesses') {
         return aScore - bScore; // Lowest morpho first for weakness work
@@ -464,72 +423,114 @@ export async function generateProgram(config: ProgramConfig): Promise<GeneratedP
       return bScore - aScore; // Highest combined first otherwise
     });
 
-    // Select exercises based on split
-    const exercisesPerMuscle = config.split === 'bro_split' ? 4 : config.split === 'full_body' ? 1 : 2;
+    // Helper: build a GeneratedExercise from a scored exercise
+    const buildGeneratedExercise = (ex: typeof sortedExercises[number]): GeneratedExercise => {
+      let sets = goalScheme.sets;
+      let reps = goalScheme.reps;
+      let tempo = goalScheme.tempo || ex.tempo;
+      let restSeconds = goalScheme.rest;
+
+      if (ex.morphoProtocol) {
+        sets = Math.max(2, Math.min(6, sets + ex.morphoProtocol.sets_modifier));
+        reps = ex.morphoProtocol.reps;
+        tempo = ex.morphoProtocol.tempo;
+      }
+
+      restSeconds = Math.round(restSeconds * ex.restModifier);
+
+      if (config.approach === 'fix_weaknesses' && ex.morphoScore < 60) {
+        sets = Math.min(5, sets + 1);
+      } else if (ex.morphoScore < 50) {
+        sets = Math.max(2, sets - 1);
+      }
+
+      const approachNotes = [...ex.notes];
+      if (config.approach === 'fix_weaknesses' && ex.morphoScore < 60) {
+        approachNotes.push('Focus correctif - technique prioritaire');
+      } else if (config.approach === 'leverage_strengths' && ex.morphoScore >= 80) {
+        approachNotes.push('Point fort - pousser l\'intensité');
+      }
+
+      return {
+        exerciseId: ex.id,
+        exerciseName: ex.nameFr,
+        muscleGroup: ex.muscleGroup,
+        movementPattern: ex.movementPattern || 'isolation',
+        exerciseType: ex.exerciseType || 'isolation',
+        sets,
+        reps,
+        restSeconds,
+        morphoScore: ex.morphoScore,
+        goalScore: ex.goalScore,
+        priority: ex.priority,
+        tempo,
+        notes: approachNotes,
+      };
+    };
+
+    // --- Sélection en 2 phases : compounds puis isolations ---
+    const slots = EXERCISE_SLOTS[config.split];
     const selectedExercises: GeneratedExercise[] = [];
-    const usedMuscles = new Set<string>();
+    const usedExerciseIds = new Set<string>();
+    const compoundCounts = new Map<string, number>();
+    const isolationCounts = new Map<string, number>();
 
-    for (const ex of sortedExercises) {
-      const muscleCount = Array.from(usedMuscles).filter((m) =>
-        ex.muscleGroup.toLowerCase().includes(m)
-      ).length;
+    // Quotas dynamiques selon le nombre de groupes musculaires du jour
+    // Ex PPL Push (3 muscles) : 1 compound + 1 isolation par muscle = 6
+    // Ex PPL Legs (1 muscle)  : 3 compounds + 3 isolations = 6
+    const numMuscles = day.muscles.length;
+    const compoundPerMuscle = Math.max(slots.compoundPerMuscle, Math.ceil(Math.floor(slots.maxTotal / 2) / numMuscles));
+    const isolationPerMuscle = Math.max(slots.isolationPerMuscle, Math.ceil(Math.floor(slots.maxTotal / 2) / numMuscles));
 
-      if (muscleCount < exercisesPerMuscle) {
-        // Calculate sets: base from goal, modified by morpho protocol
-        let sets = goalScheme.sets;
-        let reps = goalScheme.reps;
-        let tempo = goalScheme.tempo || ex.tempo;
-        let restSeconds = goalScheme.rest;
+    // Séparer compounds et isolations
+    const compounds = sortedExercises.filter(ex => ex.exerciseType === 'compound');
+    const isolations = sortedExercises.filter(ex => ex.exerciseType !== 'compound');
 
-        // Apply morpho protocol if available
-        if (ex.morphoProtocol) {
-          sets = Math.max(2, Math.min(6, sets + ex.morphoProtocol.sets_modifier));
-          reps = ex.morphoProtocol.reps;
-          tempo = ex.morphoProtocol.tempo;
-        }
+    // Phase 1 : Sélectionner les compounds
+    for (const ex of compounds) {
+      if (selectedExercises.length >= slots.maxTotal) break;
+      const muscle = ex.muscleGroup.toLowerCase();
+      const count = compoundCounts.get(muscle) ?? 0;
+      if (count < compoundPerMuscle && !usedExerciseIds.has(ex.id)) {
+        selectedExercises.push(buildGeneratedExercise(ex));
+        usedExerciseIds.add(ex.id);
+        compoundCounts.set(muscle, count + 1);
+      }
+    }
 
-        // Apply rest modifier
-        restSeconds = Math.round(restSeconds * ex.restModifier);
-
-        // Adjust for approach
-        if (config.approach === 'fix_weaknesses' && ex.morphoScore < 60) {
-          sets = Math.min(5, sets + 1);
-        } else if (ex.morphoScore < 50) {
-          sets = Math.max(2, sets - 1);
-        }
-
-        // Build notes
-        const approachNotes = [...ex.notes];
-        if (config.approach === 'fix_weaknesses' && ex.morphoScore < 60) {
-          approachNotes.push('Focus correctif - technique prioritaire');
-        } else if (config.approach === 'leverage_strengths' && ex.morphoScore >= 80) {
-          approachNotes.push('Point fort - pousser l\'intensité');
-        }
-
-        selectedExercises.push({
-          exerciseId: ex.id,
-          exerciseName: ex.nameFr,
-          muscleGroup: ex.muscleGroup,
-          movementPattern: ex.movementPattern || 'isolation',
-          exerciseType: ex.exerciseType || 'isolation',
-          sets,
-          reps,
-          restSeconds,
-          morphoScore: ex.morphoScore,
-          goalScore: ex.goalScore,
-          priority: ex.priority,
-          tempo,
-          notes: approachNotes,
-        });
-
-        usedMuscles.add(ex.muscleGroup.toLowerCase());
-
-        // Limit total exercises per workout
-        if (selectedExercises.length >= (config.split === 'full_body' ? 8 : 6)) {
-          break;
+    // Phase 2 : Sélectionner les isolations
+    if (isolationPerMuscle > 0) {
+      for (const ex of isolations) {
+        if (selectedExercises.length >= slots.maxTotal) break;
+        const muscle = ex.muscleGroup.toLowerCase();
+        const count = isolationCounts.get(muscle) ?? 0;
+        if (count < isolationPerMuscle && !usedExerciseIds.has(ex.id)) {
+          selectedExercises.push(buildGeneratedExercise(ex));
+          usedExerciseIds.add(ex.id);
+          isolationCounts.set(muscle, count + 1);
         }
       }
     }
+
+    // Ordre des exercices selon le type de split
+    const muscleOrder = new Map<string, number>();
+    day.muscles.forEach((m, i) => muscleOrder.set(m, i));
+
+    // Compounds d'abord (charges lourdes quand frais), puis isolations par score
+    // Fonctionne pour tous les splits : bro_split n'a qu'un muscle donc muscleOrder est un no-op
+    selectedExercises.sort((a, b) => {
+      const aIsCompound = a.exerciseType === 'compound' ? 0 : 1;
+      const bIsCompound = b.exerciseType === 'compound' ? 0 : 1;
+      if (aIsCompound !== bIsCompound) return aIsCompound - bIsCompound;
+
+      if (aIsCompound === 0) {
+        const aOrder = muscleOrder.get(a.muscleGroup.toLowerCase()) ?? 99;
+        const bOrder = muscleOrder.get(b.muscleGroup.toLowerCase()) ?? 99;
+        return aOrder - bOrder;
+      }
+
+      return combinedScore(b) - combinedScore(a);
+    });
 
     return {
       name: day.name,

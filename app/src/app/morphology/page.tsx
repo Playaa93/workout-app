@@ -16,17 +16,10 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import ArrowBack from '@mui/icons-material/ArrowBack';
+import { triggerHaptic } from '@/lib/haptic';
 import BottomNav from '@/components/BottomNav';
 
 type ViewState = 'loading' | 'intro' | 'questionnaire' | 'results';
-
-// Haptic feedback helper
-const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
-  if ('vibrate' in navigator) {
-    const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
-    navigator.vibrate(patterns[style]);
-  }
-};
 
 export default function MorphologyPage() {
   const [view, setView] = useState<ViewState>('loading');

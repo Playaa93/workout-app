@@ -420,8 +420,8 @@ function PreviewStep({ program }: { program: GeneratedProgram }) {
                     </Stack>
                   </Stack>
                   {ex.notes.length > 0 && (
-                    <Typography variant="caption" color="info.main" sx={{ display: 'block', ml: 5, mt: 0.5 }}>
-                      💡 {ex.notes[0]}
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 5, mt: 0.5, fontStyle: 'italic' }}>
+                      {ex.notes[0]}
                     </Typography>
                   )}
                   {exIdx < workout.exercises.length - 1 && <Divider sx={{ mt: 1.5 }} />}

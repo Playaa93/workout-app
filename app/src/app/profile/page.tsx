@@ -11,11 +11,15 @@ import {
   getUserStats,
   getGeminiApiKey,
   saveGeminiApiKey,
+  getHuaweiCredentials,
+  saveHuaweiCredentials,
+  disconnectHuawei,
   type UserProfileData,
   type GamificationData,
   type AchievementData,
   type XpTransactionData,
   type StatsData,
+  type HuaweiCredentials,
 } from './actions';
 import { getMorphoProfile } from '../morphology/actions';
 import Box from '@mui/material/Box';
@@ -49,16 +53,13 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Key from '@mui/icons-material/Key';
+import Watch from '@mui/icons-material/Watch';
+import Sync from '@mui/icons-material/Sync';
+import LinkOff from '@mui/icons-material/LinkOff';
+import Link2 from '@mui/icons-material/Link';
 import { logout } from '@/lib/auth-actions';
+import { triggerHaptic } from '@/lib/haptic';
 import BottomNav from '@/components/BottomNav';
-
-// Haptic feedback helper
-const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
-  if ('vibrate' in navigator) {
-    const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
-    navigator.vibrate(patterns[style]);
-  }
-};
 
 type MorphoProfileData = {
   primaryMorphotype: string;
@@ -560,6 +561,13 @@ function SettingsTab() {
   const [apiKeyLoaded, setApiKeyLoaded] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [savingKey, setSavingKey] = useState(false);
+  // Huawei
+  const [huaweiCreds, setHuaweiCreds] = useState<HuaweiCredentials | null>(null);
+  const [hwClientId, setHwClientId] = useState('');
+  const [hwClientSecret, setHwClientSecret] = useState('');
+  const [showHwSecret, setShowHwSecret] = useState(false);
+  const [savingHw, setSavingHw] = useState(false);
+  const [syncingHw, setSyncingHw] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
   });
@@ -570,6 +578,23 @@ function SettingsTab() {
       if (key) setApiKey(key);
       setApiKeyLoaded(true);
     });
+    getHuaweiCredentials().then((creds) => {
+      setHuaweiCreds(creds);
+      if (creds.clientId) setHwClientId(creds.clientId);
+      if (creds.clientSecret) setHwClientSecret(creds.clientSecret);
+    });
+    // Check URL params for Huawei OAuth callback
+    const params = new URLSearchParams(window.location.search);
+    const huaweiStatus = params.get('huawei');
+    if (huaweiStatus === 'success') {
+      setSnackbar({ open: true, message: 'Huawei Health connecté !', severity: 'success' });
+      window.history.replaceState({}, '', window.location.pathname);
+      getHuaweiCredentials().then(setHuaweiCreds);
+    } else if (huaweiStatus === 'error') {
+      const msg = params.get('message') || 'Erreur de connexion';
+      setSnackbar({ open: true, message: `Huawei: ${msg}`, severity: 'error' });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   const handleSaveApiKey = async () => {
@@ -724,6 +749,156 @@ function SettingsTab() {
           sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.8rem' }}
         >
           Obtenir une clé gratuite →
+        </Button>
+      </Box>
+
+      <Divider />
+
+      {/* Huawei Health */}
+      <Box>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+          <Watch sx={{ fontSize: 20, color: 'error.main' }} />
+          <Typography variant="subtitle2" color="text.secondary">
+            Huawei Health
+          </Typography>
+          {huaweiCreds?.isConnected && (
+            <Chip label="Connecté" size="small" color="success" sx={{ height: 20, fontSize: '0.65rem' }} />
+          )}
+        </Stack>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+          Connecte ta montre Huawei pour synchroniser tes séances cardio automatiquement.
+        </Typography>
+
+        <Stack spacing={1.5}>
+          <TextField
+            size="small"
+            fullWidth
+            label="Client ID"
+            placeholder="1234567890"
+            value={hwClientId}
+            onChange={(e) => setHwClientId(e.target.value)}
+          />
+          <TextField
+            size="small"
+            fullWidth
+            label="Client Secret"
+            type={showHwSecret ? 'text' : 'password'}
+            value={hwClientSecret}
+            onChange={(e) => setHwClientSecret(e.target.value)}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setShowHwSecret(!showHwSecret)} edge="end">
+                      {showHwSecret ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={async () => {
+                if (!hwClientId.trim() || !hwClientSecret.trim()) {
+                  setSnackbar({ open: true, message: 'Client ID et Secret requis', severity: 'error' });
+                  return;
+                }
+                setSavingHw(true);
+                try {
+                  await saveHuaweiCredentials(hwClientId.trim(), hwClientSecret.trim());
+                  setSnackbar({ open: true, message: 'Credentials sauvegardés', severity: 'success' });
+                  setHuaweiCreds((prev) => prev ? { ...prev, clientId: hwClientId.trim(), clientSecret: hwClientSecret.trim() } : prev);
+                } catch {
+                  setSnackbar({ open: true, message: 'Erreur de sauvegarde', severity: 'error' });
+                } finally {
+                  setSavingHw(false);
+                }
+              }}
+              disabled={savingHw || !hwClientId.trim() || !hwClientSecret.trim()}
+              sx={{ textTransform: 'none', flex: 1 }}
+            >
+              {savingHw ? <CircularProgress size={18} /> : 'Sauvegarder'}
+            </Button>
+
+            {huaweiCreds?.isConnected ? (
+              <>
+                <Button
+                  variant="contained"
+                  size="small"
+                  color="success"
+                  startIcon={syncingHw ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <Sync />}
+                  onClick={async () => {
+                    setSyncingHw(true);
+                    try {
+                      const res = await fetch('/api/huawei/sync', { method: 'POST' });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        setSnackbar({ open: true, message: data.error || 'Erreur sync', severity: 'error' });
+                        return;
+                      }
+                      setSnackbar({
+                        open: true,
+                        message: data.imported > 0
+                          ? `${data.imported} séance(s) importée(s) ! +${data.totalXp} XP`
+                          : 'Aucune nouvelle séance à importer',
+                        severity: 'success',
+                      });
+                    } catch {
+                      setSnackbar({ open: true, message: 'Erreur de synchronisation', severity: 'error' });
+                    } finally {
+                      setSyncingHw(false);
+                    }
+                  }}
+                  disabled={syncingHw}
+                  sx={{ textTransform: 'none', flex: 1 }}
+                >
+                  Sync
+                </Button>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={async () => {
+                    await disconnectHuawei();
+                    setHuaweiCreds((prev) => prev ? { ...prev, isConnected: false, tokenExpiresAt: null } : prev);
+                    setSnackbar({ open: true, message: 'Huawei déconnecté', severity: 'success' });
+                  }}
+                >
+                  <LinkOff fontSize="small" />
+                </IconButton>
+              </>
+            ) : (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<Link2 />}
+                onClick={() => {
+                  if (!hwClientId.trim() || !hwClientSecret.trim()) {
+                    setSnackbar({ open: true, message: 'Sauvegarde d\'abord tes credentials', severity: 'error' });
+                    return;
+                  }
+                  window.location.href = '/api/huawei/auth';
+                }}
+                disabled={!huaweiCreds?.clientId}
+                sx={{ textTransform: 'none', flex: 1 }}
+              >
+                Connecter
+              </Button>
+            )}
+          </Stack>
+        </Stack>
+
+        <Button
+          component="a"
+          href="https://developer.huawei.com/consumer/en/service/josp/agc/index.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          size="small"
+          sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.8rem' }}
+        >
+          Huawei Developer Console →
         </Button>
       </Box>
 

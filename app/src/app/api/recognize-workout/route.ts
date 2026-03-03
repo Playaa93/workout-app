@@ -1,36 +1,12 @@
 import { NextResponse } from 'next/server';
-import { requireUserId } from '@/lib/auth';
-import { getGeminiApiKey } from '@/app/profile/actions';
+import { getGeminiContext, callGeminiVision, extractImageFromRequest } from '@/lib/gemini';
 
 export async function POST(request: Request) {
-  // Verify auth
-  try {
-    await requireUserId();
-  } catch {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  }
+  const ctx = await getGeminiContext();
+  if ('error' in ctx) return ctx.error;
 
-  const apiKey = await getGeminiApiKey() || process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: 'Clé API Gemini non configurée. Ajoute-la dans Profil > Paramètres.' },
-      { status: 400 }
-    );
-  }
-
-  let imageBase64: string;
-  try {
-    const body = await request.json();
-    imageBase64 = body.imageBase64;
-    if (!imageBase64) {
-      return NextResponse.json({ error: 'Image manquante' }, { status: 400 });
-    }
-  } catch {
-    return NextResponse.json({ error: 'Body invalide' }, { status: 400 });
-  }
-
-  // Strip data URL prefix if present
-  const base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+  const img = await extractImageFromRequest(request);
+  if ('error' in img) return img.error;
 
   const prompt = `Analyse ce screenshot d'une application de fitness/santé (Huawei Health, Garmin, Strava, Apple Health, Samsung Health, etc.) et extrais les données de la séance cardio.
 
@@ -67,89 +43,35 @@ Règles :
 Si tu ne vois aucune donnée de séance sportive, réponds : {"activity": null, "confidence": 0}`;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inline_data: {
-                    mime_type: 'image/jpeg',
-                    data: base64Data,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 2048,
-          },
-        }),
-        signal: AbortSignal.timeout(30000),
-      }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('Gemini API error:', errText);
-      return NextResponse.json(
-        { error: 'Erreur API Gemini' },
-        { status: 502 }
-      );
-    }
-
-    const data = await response.json();
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    // Extract JSON from the response (handle potential markdown wrapping)
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return NextResponse.json(
-        { error: 'Réponse IA invalide' },
-        { status: 502 }
-      );
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = await callGeminiVision(ctx.apiKey, img.base64Data, prompt, 0.1);
 
     if (!parsed.activity) {
       return NextResponse.json(
-        { error: 'Aucune séance détectée dans l\'image' },
+        { error: "Aucune séance détectée dans l'image" },
         { status: 422 }
       );
     }
 
-    // Sanitize and validate
     const validActivities = [
       'running', 'walking', 'cycling', 'rowing', 'jump_rope',
       'swimming', 'elliptical', 'stepper', 'hiit', 'other',
     ];
 
     const workout = {
-      activity: validActivities.includes(parsed.activity) ? parsed.activity : 'other',
-      durationMinutes: parsed.durationMinutes != null ? Math.max(0, Math.round(parsed.durationMinutes)) : null,
-      distanceMeters: parsed.distanceMeters != null ? Math.max(0, Math.round(parsed.distanceMeters)) : null,
-      avgPaceSecondsPerKm: parsed.avgPaceSecondsPerKm != null ? Math.max(0, Math.round(parsed.avgPaceSecondsPerKm)) : null,
-      avgHeartRate: parsed.avgHeartRate != null ? Math.max(0, Math.round(parsed.avgHeartRate)) : null,
-      maxHeartRate: parsed.maxHeartRate != null ? Math.max(0, Math.round(parsed.maxHeartRate)) : null,
-      caloriesBurned: parsed.caloriesBurned != null ? Math.max(0, Math.round(parsed.caloriesBurned)) : null,
-      dateTime: parsed.dateTime || null,
-      confidence: Math.min(1, Math.max(0, parsed.confidence || 0.5)),
+      activity: validActivities.includes(parsed.activity as string) ? parsed.activity : 'other',
+      durationMinutes: parsed.durationMinutes != null ? Math.max(0, Math.round(parsed.durationMinutes as number)) : null,
+      distanceMeters: parsed.distanceMeters != null ? Math.max(0, Math.round(parsed.distanceMeters as number)) : null,
+      avgPaceSecondsPerKm: parsed.avgPaceSecondsPerKm != null ? Math.max(0, Math.round(parsed.avgPaceSecondsPerKm as number)) : null,
+      avgHeartRate: parsed.avgHeartRate != null ? Math.max(0, Math.round(parsed.avgHeartRate as number)) : null,
+      maxHeartRate: parsed.maxHeartRate != null ? Math.max(0, Math.round(parsed.maxHeartRate as number)) : null,
+      caloriesBurned: parsed.caloriesBurned != null ? Math.max(0, Math.round(parsed.caloriesBurned as number)) : null,
+      dateTime: (parsed.dateTime as string) || null,
+      confidence: Math.min(1, Math.max(0, (parsed.confidence as number) || 0.5)),
     };
 
     return NextResponse.json({ workout });
   } catch (err) {
     console.error('Recognize workout error:', err);
-    return NextResponse.json(
-      { error: 'Erreur lors de la reconnaissance' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erreur lors de la reconnaissance' }, { status: 500 });
   }
 }

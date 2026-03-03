@@ -1,7 +1,7 @@
 'use server';
 
 import { db, measurements, progressPhotos } from '@/db';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, asc, sql, count } from 'drizzle-orm';
 import { requireUserId } from '@/lib/auth';
 
 export type MeasurementData = {
@@ -262,25 +262,27 @@ export async function getProgressSummary(): Promise<{
 }> {
   const userId = await requireUserId();
 
-  const allMeasurements = await db
-    .select()
-    .from(measurements)
-    .where(eq(measurements.userId, userId))
-    .orderBy(desc(measurements.measuredAt));
+  // Fetch only what we need: latest, first, and count — in parallel
+  const [latestArr, firstArr, [countResult]] = await Promise.all([
+    db.select().from(measurements).where(eq(measurements.userId, userId)).orderBy(desc(measurements.measuredAt)).limit(1),
+    db.select().from(measurements).where(eq(measurements.userId, userId)).orderBy(asc(measurements.measuredAt)).limit(1),
+    db.select({ count: count() }).from(measurements).where(eq(measurements.userId, userId)),
+  ]);
 
-  if (allMeasurements.length < 2) {
+  const total = countResult.count;
+  if (total < 2 || !latestArr[0] || !firstArr[0]) {
     return {
       weightChange: null,
       waistChange: null,
       chestChange: null,
       armChange: null,
       daysSinceFirst: 0,
-      totalMeasurements: allMeasurements.length,
+      totalMeasurements: total,
     };
   }
 
-  const latest = allMeasurements[0];
-  const first = allMeasurements[allMeasurements.length - 1];
+  const latest = latestArr[0];
+  const first = firstArr[0];
 
   const calcChange = (latestVal: string | null, firstVal: string | null) => {
     if (!latestVal || !firstVal) return null;
@@ -308,6 +310,6 @@ export async function getProgressSummary(): Promise<{
     chestChange: calcChange(latest.chest, first.chest),
     armChange: latestArm && firstArm ? latestArm - firstArm : null,
     daysSinceFirst,
-    totalMeasurements: allMeasurements.length,
+    totalMeasurements: total,
   };
 }
