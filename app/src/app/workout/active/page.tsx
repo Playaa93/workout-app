@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   getActiveSession,
@@ -51,6 +51,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Divider from '@mui/material/Divider';
+import Collapse from '@mui/material/Collapse';
 import Add from '@mui/icons-material/Add';
 import Close from '@mui/icons-material/Close';
 import Delete from '@mui/icons-material/Delete';
@@ -64,6 +65,7 @@ import VolumeOff from '@mui/icons-material/VolumeOff';
 import Vibration from '@mui/icons-material/Vibration';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import InfoOutlined from '@mui/icons-material/InfoOutlined';
+import ExpandMore from '@mui/icons-material/ExpandMore';
 
 function ActiveWorkoutContent() {
   const router = useRouter();
@@ -91,6 +93,10 @@ function ActiveWorkoutContent() {
 
   // Exercise info modal
   const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
+
+  // Auto-scroll to latest exercise
+  const lastExerciseRef = useRef<HTMLDivElement>(null);
+  const prevSetCount = useRef(0);
 
   // Swap exercise state
   const [swapExerciseId, setSwapExerciseId] = useState<string | null>(null);
@@ -226,6 +232,17 @@ function ActiveWorkoutContent() {
       console.error('Error swapping exercise:', error);
     }
   };
+
+  // Auto-scroll to last exercise when sets change
+  const currentSetCount = session?.sets.length || 0;
+  useEffect(() => {
+    if (currentSetCount > prevSetCount.current && prevSetCount.current > 0) {
+      setTimeout(() => {
+        lastExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+    prevSetCount.current = currentSetCount;
+  }, [currentSetCount]);
 
   if (!sessionId) {
     return (
@@ -520,23 +537,28 @@ function ActiveWorkoutContent() {
           )}
 
           {/* Sets from exercises not in template */}
-          {Array.from(setsByExercise.entries())
-            .filter(([exerciseId]) => !templateExercises.some(t => t.exerciseId === exerciseId))
-            .map(([exerciseId, sets]) => {
+          {(() => {
+            const freeExercises = Array.from(setsByExercise.entries())
+              .filter(([exerciseId]) => !templateExercises.some(t => t.exerciseId === exerciseId));
+            return freeExercises.map(([exerciseId, sets], index) => {
               const exercise = session?.exercises.get(exerciseId);
+              const isLast = index === freeExercises.length - 1;
               return (
-                <ExerciseCard
-                  key={exerciseId}
-                  exercise={exercise}
-                  sets={sets}
-                  sessionId={sessionId}
-                  defaultRestTime={lastRestTime}
-                  onSetAdded={loadSession}
-                  onSetDeleted={loadSession}
-                  onStartTimer={startTimer}
-                />
+                <div key={exerciseId} ref={isLast ? lastExerciseRef : undefined}>
+                  <ExerciseCard
+                    exercise={exercise}
+                    sets={sets}
+                    sessionId={sessionId}
+                    defaultRestTime={lastRestTime}
+                    isLastExercise={isLast}
+                    onSetAdded={loadSession}
+                    onSetDeleted={loadSession}
+                    onStartTimer={startTimer}
+                  />
+                </div>
               );
-            })}
+            });
+          })()}
 
           {/* Add Exercise Button */}
           <Button
@@ -768,6 +790,7 @@ function ExerciseCard({
   sets,
   sessionId,
   defaultRestTime = 90,
+  isLastExercise = false,
   onSetAdded,
   onSetDeleted,
   onStartTimer,
@@ -776,6 +799,7 @@ function ExerciseCard({
   sets: WorkoutSet[];
   sessionId: string;
   defaultRestTime?: number;
+  isLastExercise?: boolean;
   onSetAdded: () => void;
   onSetDeleted: () => void;
   onStartTimer: (duration?: number) => void;
@@ -783,6 +807,13 @@ function ExerciseCard({
   const [showAddSet, setShowAddSet] = useState(false);
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [previousSets, setPreviousSets] = useState<WorkoutSet[]>([]);
+  const [collapsed, setCollapsed] = useState(!isLastExercise && sets.length > 0);
+
+  // Auto-collapse when this exercise is no longer the last one
+  useEffect(() => {
+    if (!isLastExercise) setCollapsed(true);
+    if (isLastExercise) setCollapsed(false);
+  }, [isLastExercise]);
 
   useEffect(() => {
     if (exercise) {
@@ -795,19 +826,39 @@ function ExerciseCard({
   const workingSets = sets.filter((s) => !s.isWarmup);
   const lastSet = workingSets[workingSets.length - 1];
 
+  const totalVolume = workingSets.reduce((sum, s) => sum + (s.reps || 0) * parseFloat(s.weight || '0'), 0);
+
   return (
     <Card>
-      {/* Exercise Header */}
-      <CardContent sx={{ pb: 0 }}>
+      {/* Exercise Header — tap to collapse/expand */}
+      <CardContent
+        sx={{ pb: collapsed ? undefined : 0, cursor: 'pointer', '&:last-child': collapsed ? { pb: 2 } : undefined }}
+        onClick={() => { triggerHaptic('light'); setCollapsed(!collapsed); }}
+      >
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-          <Box>
-            <Typography variant="subtitle1" fontWeight={600}>{exercise.nameFr}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
-              {exercise.muscleGroup}
-            </Typography>
+          <Box sx={{ flex: 1 }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="subtitle1" fontWeight={600}>{exercise.nameFr}</Typography>
+              <ExpandMore sx={{
+                fontSize: 20,
+                color: 'text.disabled',
+                transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s',
+              }} />
+            </Stack>
+            {collapsed ? (
+              <Typography variant="body2" color="text.secondary">
+                {workingSets.length} série{workingSets.length !== 1 ? 's' : ''}
+                {totalVolume > 0 && <> · {totalVolume.toLocaleString()}kg</>}
+              </Typography>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                {exercise.muscleGroup}
+              </Typography>
+            )}
           </Box>
-          {previousSets.length > 0 && (
-            <Box sx={{ textAlign: 'right' }}>
+          {!collapsed && previousSets.length > 0 && (
+            <Box sx={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
               <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
               <Typography variant="body2" color="text.primary">
                 {previousSets[0].reps} × {previousSets[0].weight}kg
@@ -817,62 +868,67 @@ function ExerciseCard({
         </Stack>
       </CardContent>
 
-      {/* Sets List */}
-      <Box sx={{ px: 2, pb: 1 }}>
-        {sets.map((set) => (
-          editingSetId === set.id ? (
-            <EditSetInline
+      <Collapse in={!collapsed}>
+        {/* Sets List */}
+        <Box sx={{ px: 2, pb: 1 }}>
+          {sets.map((set) => (
+            editingSetId === set.id ? (
+              <EditSetInline
+                key={set.id}
+                set={set}
+                onSave={() => {
+                  setEditingSetId(null);
+                  onSetAdded();
+                }}
+                onDelete={async () => {
+                  setEditingSetId(null);
+                  await deleteSet(set.id);
+                  onSetDeleted();
+                }}
+                onCancel={() => setEditingSetId(null)}
+              />
+            ) : (
+            <Box
               key={set.id}
-              set={set}
-              onSave={async () => {
-                setEditingSetId(null);
-                onSetAdded();
+              onClick={() => setEditingSetId(set.id)}
+              sx={{
+                py: 1.5,
+                borderBottom: 1,
+                borderColor: 'divider',
+                cursor: 'pointer',
+                '&:active': { bgcolor: 'action.selected' },
+                ...(set.isWarmup && { bgcolor: 'action.hover', mx: -2, px: 2 }),
               }}
-              onCancel={() => setEditingSetId(null)}
-            />
-          ) : (
-          <Box
-            key={set.id}
-            onClick={() => setEditingSetId(set.id)}
-            sx={{
-              py: 1.5,
-              borderBottom: 1,
-              borderColor: 'divider',
-              cursor: 'pointer',
-              '&:active': { bgcolor: 'action.selected' },
-              ...(set.isWarmup && { bgcolor: 'action.hover', mx: -2, px: 2 }),
-            }}
-          >
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Stack direction="row" alignItems="center" spacing={2}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    bgcolor: 'action.hover',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                  }}
-                >
-                  {set.isWarmup ? 'W' : set.setNumber}
-                </Box>
-                <Box>
-                  <Typography component="span" fontWeight={500}>{set.reps}</Typography>
-                  <Typography component="span" color="text.secondary" sx={{ mx: 1 }}>×</Typography>
-                  <Typography component="span" fontWeight={500}>{set.weight}kg</Typography>
-                  {set.rpe && <Typography component="span" color="text.secondary" sx={{ ml: 1 }}>RPE {set.rpe}</Typography>}
-                  {set.restTaken && (
-                    <Typography component="span" color="text.disabled" sx={{ ml: 1, fontSize: '0.75rem' }}>
-                      {Math.floor(set.restTaken / 60)}:{(set.restTaken % 60).toString().padStart(2, '0')}
-                    </Typography>
-                  )}
-                </Box>
-              </Stack>
-              <Stack direction="row" alignItems="center" spacing={1}>
+            >
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      bgcolor: 'action.hover',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {set.isWarmup ? 'W' : set.setNumber}
+                  </Box>
+                  <Box>
+                    <Typography component="span" fontWeight={500}>{set.reps}</Typography>
+                    <Typography component="span" color="text.secondary" sx={{ mx: 1 }}>×</Typography>
+                    <Typography component="span" fontWeight={500}>{set.weight}kg</Typography>
+                    {set.rpe && <Typography component="span" color="text.secondary" sx={{ ml: 1 }}>RPE {set.rpe}</Typography>}
+                    {set.restTaken && (
+                      <Typography component="span" color="text.disabled" sx={{ ml: 1, fontSize: '0.75rem' }}>
+                        {Math.floor(set.restTaken / 60)}:{(set.restTaken % 60).toString().padStart(2, '0')}
+                      </Typography>
+                    )}
+                  </Box>
+                </Stack>
                 {set.isPr && (
                   <Chip
                     icon={<EmojiEvents sx={{ fontSize: 16 }} />}
@@ -882,49 +938,38 @@ function ExerciseCard({
                     sx={{ fontWeight: 600 }}
                   />
                 )}
-                <IconButton
-                  size="small"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    await deleteSet(set.id);
-                    onSetDeleted();
-                  }}
-                  sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-                >
-                  <Delete fontSize="small" />
-                </IconButton>
               </Stack>
-            </Stack>
-          </Box>
-          )
-        ))}
-      </Box>
+            </Box>
+            )
+          ))}
+        </Box>
 
-      {/* Add Set Button */}
-      {!showAddSet ? (
-        <Button
-          fullWidth
-          onClick={() => setShowAddSet(true)}
-          sx={{ color: 'primary.main', py: 1.5 }}
-        >
-          + Ajouter une série
-        </Button>
-      ) : (
-        <QuickSetInput
-          exerciseId={exercise.id}
-          sessionId={sessionId}
-          setNumber={workingSets.length + 1}
-          lastWeight={lastSet?.weight ? parseFloat(lastSet.weight) : undefined}
-          lastReps={lastSet?.reps || undefined}
-          defaultRestTime={defaultRestTime}
-          onCancel={() => setShowAddSet(false)}
-          onAdd={(restDuration) => {
-            setShowAddSet(false);
-            onSetAdded();
-            onStartTimer(restDuration);
-          }}
-        />
-      )}
+        {/* Add Set Button */}
+        {!showAddSet ? (
+          <Button
+            fullWidth
+            onClick={() => setShowAddSet(true)}
+            sx={{ color: 'primary.main', py: 1.5 }}
+          >
+            + Ajouter une série
+          </Button>
+        ) : (
+          <QuickSetInput
+            exerciseId={exercise.id}
+            sessionId={sessionId}
+            setNumber={workingSets.length + 1}
+            lastWeight={lastSet?.weight ? parseFloat(lastSet.weight) : undefined}
+            lastReps={lastSet?.reps || undefined}
+            defaultRestTime={defaultRestTime}
+            onCancel={() => setShowAddSet(false)}
+            onAdd={(restDuration) => {
+              setShowAddSet(false);
+              onSetAdded();
+              onStartTimer(restDuration);
+            }}
+          />
+        )}
+      </Collapse>
     </Card>
   );
 }
@@ -999,26 +1044,54 @@ function SetForm({
 function EditSetInline({
   set,
   onSave,
+  onDelete,
   onCancel,
 }: {
   set: WorkoutSet;
   onSave: () => void;
+  onDelete: () => void;
   onCancel: () => void;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   return (
     <Box sx={{ py: 2, borderBottom: 1, borderColor: 'divider' }}>
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1.5 }}>
-        <Box
-          sx={{
-            width: 32, height: 32, borderRadius: '50%',
-            bgcolor: 'primary.main', color: 'primary.contrastText',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.875rem', fontWeight: 500,
-          }}
-        >
-          {set.isWarmup ? 'W' : set.setNumber}
-        </Box>
-        <Typography variant="body2" color="text.secondary">Modifier la série</Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Box
+            sx={{
+              width: 32, height: 32, borderRadius: '50%',
+              bgcolor: 'primary.main', color: 'primary.contrastText',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.875rem', fontWeight: 500,
+            }}
+          >
+            {set.isWarmup ? 'W' : set.setNumber}
+          </Box>
+          <Typography variant="body2" color="text.secondary">Modifier la série</Typography>
+        </Stack>
+        {!confirmDelete ? (
+          <IconButton
+            size="small"
+            onClick={() => { triggerHaptic('light'); setConfirmDelete(true); }}
+            sx={{ color: 'text.disabled' }}
+          >
+            <Delete fontSize="small" />
+          </IconButton>
+        ) : (
+          <Button
+            size="small"
+            onClick={() => { triggerHaptic('heavy'); onDelete(); }}
+            sx={{
+              color: 'error.main',
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              minWidth: 0,
+            }}
+          >
+            Supprimer
+          </Button>
+        )}
       </Stack>
       <SetForm
         initialWeight={parseFloat(set.weight || '0')}

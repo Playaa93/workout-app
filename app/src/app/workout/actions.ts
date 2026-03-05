@@ -234,6 +234,78 @@ export async function getActiveSession(sessionId: string): Promise<ActiveSession
   };
 }
 
+// Get session detail (read-only, with auth check)
+export async function getSessionDetail(sessionId: string): Promise<ActiveSession | null> {
+  const userId = await requireUserId();
+  const [session] = await db
+    .select()
+    .from(workoutSessions)
+    .where(and(eq(workoutSessions.id, sessionId), eq(workoutSessions.userId, userId)));
+  if (!session) return null;
+
+  const sets = await db
+    .select({
+      id: workoutSets.id,
+      exerciseId: workoutSets.exerciseId,
+      exerciseName: exercises.nameFr,
+      setNumber: workoutSets.setNumber,
+      reps: workoutSets.reps,
+      weight: workoutSets.weight,
+      rpe: workoutSets.rpe,
+      isWarmup: workoutSets.isWarmup,
+      isPr: workoutSets.isPr,
+      restTaken: workoutSets.restTaken,
+    })
+    .from(workoutSets)
+    .leftJoin(exercises, eq(workoutSets.exerciseId, exercises.id))
+    .where(eq(workoutSets.sessionId, sessionId))
+    .orderBy(workoutSets.performedAt);
+
+  const exerciseIds = [...new Set(sets.map(s => s.exerciseId).filter(Boolean))];
+  const exercisesData = exerciseIds.length > 0
+    ? await db
+        .select({
+          id: exercises.id,
+          nameFr: exercises.nameFr,
+          nameEn: exercises.nameEn,
+          muscleGroup: exercises.muscleGroup,
+          primaryMuscles: exercises.primaryMuscles,
+          secondaryMuscles: exercises.secondaryMuscles,
+          equipment: exercises.equipment,
+          difficulty: exercises.difficulty,
+          morphotypeRecommendations: exercises.morphotypeRecommendations,
+        })
+        .from(exercises)
+        .where(sql`${exercises.id} IN ${exerciseIds}`)
+    : [];
+
+  const exerciseMap = new Map<string, Exercise>();
+  exercisesData.forEach(e => exerciseMap.set(e.id, e));
+
+  return {
+    session: {
+      id: session.id,
+      startedAt: session.startedAt!,
+      endedAt: session.endedAt,
+      durationMinutes: session.durationMinutes,
+      totalVolume: session.totalVolume,
+      caloriesBurned: session.caloriesBurned,
+      notes: session.notes,
+      sessionType: session.sessionType,
+      cardioActivity: session.cardioActivity,
+      distanceMeters: session.distanceMeters,
+      avgPaceSecondsPerKm: session.avgPaceSecondsPerKm,
+      avgSpeedKmh: session.avgSpeedKmh,
+    },
+    sets: sets.map(s => ({
+      ...s,
+      exerciseId: s.exerciseId!,
+      exerciseName: s.exerciseName || 'Unknown',
+    })),
+    exercises: exerciseMap,
+  };
+}
+
 // Add a set to the session
 export async function addSet(
   sessionId: string,

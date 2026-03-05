@@ -422,7 +422,6 @@ export default function WorkoutPage() {
                     <SessionCard
                       key={session.id}
                       session={session}
-                      onDelete={() => handleDeleteClick(session.id)}
                     />
                   ))}
                 </Stack>
@@ -720,7 +719,8 @@ export default function WorkoutPage() {
   );
 }
 
-function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete: () => void }) {
+function SessionCard({ session }: { session: WorkoutSession }) {
+  const router = useRouter();
   const date = new Date(session.startedAt);
   const formattedDate = date.toLocaleDateString('fr-FR', {
     weekday: 'short',
@@ -738,7 +738,6 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
     : null;
   const volume = session.totalVolume ? parseFloat(session.totalVolume) : 0;
   const distanceM = session.distanceMeters ? parseFloat(session.distanceMeters) : 0;
-  const [showDelete, setShowDelete] = useState(false);
 
   const mins = session.durationMinutes || 0;
   const durationFormatted = mins >= 60
@@ -747,8 +746,8 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
 
   return (
     <Box
-      sx={{ px: 2.5, py: 2 }}
-      onClick={() => setShowDelete(!showDelete)}
+      sx={{ px: 2.5, py: 2, cursor: 'pointer', '&:active': { bgcolor: 'action.hover' } }}
+      onClick={() => router.push(`/workout/session?id=${session.id}`)}
     >
       {/* Row 1: Name + date */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -770,15 +769,7 @@ function SessionCard({ session, onDelete }: { session: WorkoutSession; onDelete:
           </Typography>
           <Chip label={durationFormatted} size="small" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600 }} />
         </Stack>
-        {showDelete ? (
-          <IconButton
-            size="small"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            sx={{ color: 'error.main', ml: 1 }}
-          >
-            <Delete fontSize="small" />
-          </IconButton>
-        ) : null}
+        <ChevronRight sx={{ color: 'text.disabled', fontSize: 20 }} />
       </Stack>
 
       {/* Row 2: Stats bar */}
