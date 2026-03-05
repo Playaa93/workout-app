@@ -27,6 +27,8 @@ import {
   getCategoryDefault,
   type MorphoRecommendation,
 } from '@/lib/morpho-exercise-scoring';
+import { triggerHaptic } from '@/lib/haptic';
+import { useRestTimer } from '@/hooks/useRestTimer';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -81,12 +83,8 @@ function ActiveWorkoutContent() {
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
-  // Timer state
-  const [restTimer, setRestTimer] = useState(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [timerDuration] = useState(90);
-  const [timerSound, setTimerSound] = useState(true);
-  const [timerVibration, setTimerVibration] = useState(true);
+  // Rest timer (absolute time, wake lock, notifications)
+  const timer = useRestTimer();
 
   // Elapsed time
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -138,59 +136,6 @@ function ActiveWorkoutContent() {
     return () => clearInterval(interval);
   }, [session]);
 
-  // Rest timer
-  useEffect(() => {
-    if (!isTimerRunning || restTimer <= 0) return;
-
-    const interval = setInterval(() => {
-      setRestTimer((prev) => {
-        if (prev <= 1) {
-          setIsTimerRunning(false);
-          // Vibration
-          if (timerVibration && 'vibrate' in navigator) {
-            navigator.vibrate([200, 100, 200, 100, 200]);
-          }
-          // Sound - 3 beeps
-          if (timerSound) {
-            try {
-              const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-              const audioContext = new AudioContextClass();
-              [0, 0.25, 0.5].forEach((delay) => {
-                const osc = audioContext.createOscillator();
-                const gain = audioContext.createGain();
-                osc.connect(gain);
-                gain.connect(audioContext.destination);
-                osc.frequency.value = 880;
-                osc.type = 'sine';
-                gain.gain.setValueAtTime(0.4, audioContext.currentTime + delay);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + 0.2);
-                osc.start(audioContext.currentTime + delay);
-                osc.stop(audioContext.currentTime + delay + 0.2);
-              });
-            } catch {
-              // Audio not supported
-            }
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isTimerRunning, restTimer, timerSound, timerVibration]);
-
-  const startTimer = (duration?: number, sound?: boolean, vibration?: boolean) => {
-    setRestTimer(duration || timerDuration);
-    if (sound !== undefined) setTimerSound(sound);
-    if (vibration !== undefined) setTimerVibration(vibration);
-    setIsTimerRunning(true);
-  };
-
-  const stopTimer = () => {
-    setIsTimerRunning(false);
-    setRestTimer(0);
-  };
 
   const handleSelectExercise = (exercise: Exercise) => {
     setSelectedExercise(exercise);
@@ -313,7 +258,7 @@ function ActiveWorkoutContent() {
       </Paper>
 
       {/* Rest Timer (sticky) - Apple-style minimal */}
-      {(isTimerRunning || restTimer > 0) && (
+      {(timer.isRunning || timer.remaining > 0) && (
         <Box
           sx={{
             position: 'sticky',
@@ -333,17 +278,17 @@ function ActiveWorkoutContent() {
               fontWeight: 200,
               fontFamily: 'system-ui, -apple-system, sans-serif',
               letterSpacing: '-0.02em',
-              color: restTimer <= 10 ? 'error.main' : 'text.primary',
+              color: timer.remaining <= 10 ? 'error.main' : 'text.primary',
               transition: 'color 0.3s ease',
             }}
           >
-            {formatTime(restTimer)}
+            {formatTime(timer.remaining)}
           </Typography>
 
           {/* Controls */}
           <Stack direction="row" justifyContent="center" alignItems="center" spacing={3} sx={{ mt: 1 }}>
             <Typography
-              onClick={() => setRestTimer((prev) => Math.max(0, prev - 30))}
+              onClick={() => timer.adjust(-30)}
               sx={{
                 cursor: 'pointer',
                 fontSize: '0.9rem',
@@ -357,7 +302,7 @@ function ActiveWorkoutContent() {
             </Typography>
 
             <Typography
-              onClick={() => setRestTimer((prev) => prev + 30)}
+              onClick={() => timer.adjust(30)}
               sx={{
                 cursor: 'pointer',
                 fontSize: '0.9rem',
@@ -371,7 +316,7 @@ function ActiveWorkoutContent() {
             </Typography>
 
             <Typography
-              onClick={stopTimer}
+              onClick={timer.stop}
               sx={{
                 cursor: 'pointer',
                 fontSize: '0.9rem',
@@ -389,31 +334,31 @@ function ActiveWorkoutContent() {
             <Box
               onClick={() => {
                 triggerHaptic('light');
-                setTimerSound(!timerSound);
+                timer.setSound(!timer.sound);
               }}
               sx={{
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                color: timerSound ? 'text.secondary' : 'text.disabled',
-                opacity: timerSound ? 0.7 : 0.3,
+                color: timer.sound ? 'text.secondary' : 'text.disabled',
+                opacity: timer.sound ? 0.7 : 0.3,
                 transition: 'all 0.2s ease',
                 '&:active': { opacity: 1 },
               }}
             >
-              {timerSound ? <VolumeUp sx={{ fontSize: 20 }} /> : <VolumeOff sx={{ fontSize: 20 }} />}
+              {timer.sound ? <VolumeUp sx={{ fontSize: 20 }} /> : <VolumeOff sx={{ fontSize: 20 }} />}
             </Box>
             <Box
               onClick={() => {
                 triggerHaptic('light');
-                setTimerVibration(!timerVibration);
+                timer.setVibration(!timer.vibration);
               }}
               sx={{
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                color: timerVibration ? 'text.secondary' : 'text.disabled',
-                opacity: timerVibration ? 0.7 : 0.3,
+                color: timer.vibration ? 'text.secondary' : 'text.disabled',
+                opacity: timer.vibration ? 0.7 : 0.3,
                 transition: 'all 0.2s ease',
                 '&:active': { opacity: 1 },
               }}
@@ -553,7 +498,7 @@ function ActiveWorkoutContent() {
                     isLastExercise={isLast}
                     onSetAdded={loadSession}
                     onSetDeleted={loadSession}
-                    onStartTimer={startTimer}
+                    onStartTimer={timer.start}
                   />
                 </div>
               );
@@ -598,7 +543,7 @@ function ActiveWorkoutContent() {
             onClose={() => setSelectedExercise(null)}
             onSetAdded={(restDuration) => {
               loadSession();
-              startTimer(restDuration);
+              timer.start(restDuration);
             }}
           />
         )}
@@ -1586,13 +1531,6 @@ function ExercisePicker({
   );
 }
 
-// Haptic feedback helper
-const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
-  if ('vibrate' in navigator) {
-    const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
-    navigator.vibrate(patterns[style]);
-  }
-};
 
 // Rest Time Picker (Ultra minimal - presets + fine-tune)
 function RestTimePicker({
