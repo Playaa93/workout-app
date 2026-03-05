@@ -308,8 +308,44 @@ export async function addSet(
   return { id: set.id, isPr };
 }
 
+async function verifySetOwnership(setId: string, userId: string): Promise<void> {
+  const [set] = await db
+    .select({ sessionId: workoutSets.sessionId })
+    .from(workoutSets)
+    .where(eq(workoutSets.id, setId));
+  if (!set?.sessionId) throw new Error('Set not found');
+  const [session] = await db
+    .select({ userId: workoutSessions.userId })
+    .from(workoutSessions)
+    .where(eq(workoutSessions.id, set.sessionId));
+  if (session?.userId !== userId) throw new Error('Unauthorized');
+}
+
+// Update a set
+export async function updateSet(
+  setId: string,
+  reps: number,
+  weight: number,
+  rpe?: number,
+  restTaken?: number
+): Promise<void> {
+  const userId = await requireUserId();
+  await verifySetOwnership(setId, userId);
+  await db
+    .update(workoutSets)
+    .set({
+      reps,
+      weight: weight.toString(),
+      ...(rpe !== undefined && { rpe }),
+      ...(restTaken !== undefined && { restTaken }),
+    })
+    .where(eq(workoutSets.id, setId));
+}
+
 // Delete a set (and clean up orphaned PR if applicable)
 export async function deleteSet(setId: string): Promise<void> {
+  const userId = await requireUserId();
+  await verifySetOwnership(setId, userId);
   await db.delete(personalRecords).where(eq(personalRecords.workoutSetId, setId));
   await db.delete(workoutSets).where(eq(workoutSets.id, setId));
 }

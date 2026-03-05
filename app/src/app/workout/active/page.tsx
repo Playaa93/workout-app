@@ -6,6 +6,7 @@ import {
   getActiveSession,
   getExercises,
   addSet,
+  updateSet,
   deleteSet,
   endWorkoutSession,
   getLastSetsForExercise,
@@ -492,7 +493,7 @@ function ActiveWorkoutContent() {
                               key={set.id}
                               label={
                                 <Stack direction="row" alignItems="center" spacing={0.5}>
-                                  <span>{set.weight}kg × {set.reps}</span>
+                                  <span>{set.reps} × {set.weight}kg</span>
                                   {set.restTaken && (
                                     <Typography component="span" sx={{ fontSize: '0.6rem', opacity: 0.6 }}>
                                       {Math.floor(set.restTaken / 60)}:{(set.restTaken % 60).toString().padStart(2, '0')}
@@ -780,6 +781,7 @@ function ExerciseCard({
   onStartTimer: (duration?: number) => void;
 }) {
   const [showAddSet, setShowAddSet] = useState(false);
+  const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [previousSets, setPreviousSets] = useState<WorkoutSet[]>([]);
 
   useEffect(() => {
@@ -808,7 +810,7 @@ function ExerciseCard({
             <Box sx={{ textAlign: 'right' }}>
               <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
               <Typography variant="body2" color="text.primary">
-                {previousSets[0].weight}kg × {previousSets[0].reps}
+                {previousSets[0].reps} × {previousSets[0].weight}kg
               </Typography>
             </Box>
           )}
@@ -818,12 +820,26 @@ function ExerciseCard({
       {/* Sets List */}
       <Box sx={{ px: 2, pb: 1 }}>
         {sets.map((set) => (
+          editingSetId === set.id ? (
+            <EditSetInline
+              key={set.id}
+              set={set}
+              onSave={async () => {
+                setEditingSetId(null);
+                onSetAdded();
+              }}
+              onCancel={() => setEditingSetId(null)}
+            />
+          ) : (
           <Box
             key={set.id}
+            onClick={() => setEditingSetId(set.id)}
             sx={{
               py: 1.5,
               borderBottom: 1,
               borderColor: 'divider',
+              cursor: 'pointer',
+              '&:active': { bgcolor: 'action.selected' },
               ...(set.isWarmup && { bgcolor: 'action.hover', mx: -2, px: 2 }),
             }}
           >
@@ -845,13 +861,13 @@ function ExerciseCard({
                   {set.isWarmup ? 'W' : set.setNumber}
                 </Box>
                 <Box>
-                  <Typography component="span" fontWeight={500}>{set.weight}kg</Typography>
-                  <Typography component="span" color="text.secondary" sx={{ mx: 1 }}>×</Typography>
                   <Typography component="span" fontWeight={500}>{set.reps}</Typography>
+                  <Typography component="span" color="text.secondary" sx={{ mx: 1 }}>×</Typography>
+                  <Typography component="span" fontWeight={500}>{set.weight}kg</Typography>
                   {set.rpe && <Typography component="span" color="text.secondary" sx={{ ml: 1 }}>RPE {set.rpe}</Typography>}
                   {set.restTaken && (
                     <Typography component="span" color="text.disabled" sx={{ ml: 1, fontSize: '0.75rem' }}>
-                      ⏱️ {Math.floor(set.restTaken / 60)}:{(set.restTaken % 60).toString().padStart(2, '0')}
+                      {Math.floor(set.restTaken / 60)}:{(set.restTaken % 60).toString().padStart(2, '0')}
                     </Typography>
                   )}
                 </Box>
@@ -868,7 +884,8 @@ function ExerciseCard({
                 )}
                 <IconButton
                   size="small"
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.stopPropagation();
                     await deleteSet(set.id);
                     onSetDeleted();
                   }}
@@ -879,6 +896,7 @@ function ExerciseCard({
               </Stack>
             </Stack>
           </Box>
+          )
         ))}
       </Box>
 
@@ -911,6 +929,111 @@ function ExerciseCard({
   );
 }
 
+// Shared set form (used by both add and edit)
+function SetForm({
+  initialWeight,
+  initialReps,
+  submitLabel,
+  onSubmit,
+  onCancel,
+  children,
+}: {
+  initialWeight: number;
+  initialReps: number;
+  submitLabel: string;
+  onSubmit: (reps: number, weight: number) => Promise<void>;
+  onCancel: () => void;
+  children?: React.ReactNode;
+}) {
+  const [weight, setWeight] = useState(initialWeight);
+  const [reps, setReps] = useState(initialReps);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!weight || !reps) return;
+    setIsSubmitting(true);
+    triggerHaptic('heavy');
+    try {
+      await onSubmit(reps, weight);
+    } catch (error) {
+      console.error('Error submitting set:', error);
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <Stack direction="row" spacing={4} justifyContent="center" sx={{ mb: 2 }}>
+        <StepperInput label="Reps" value={reps} onChange={setReps} step={1} min={0} max={100} />
+        <StepperInput label="Poids" value={weight} onChange={setWeight} step={2.5} unit="kg" />
+      </Stack>
+      {children}
+      <Stack direction="row" spacing={1.5}>
+        <Button
+          fullWidth
+          onClick={onCancel}
+          sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { bgcolor: 'action.hover' } }}
+        >
+          Annuler
+        </Button>
+        <Button
+          fullWidth
+          onClick={handleSubmit}
+          disabled={!weight || !reps || isSubmitting}
+          sx={{
+            bgcolor: 'text.primary',
+            color: 'background.default',
+            fontWeight: 600,
+            '&:hover': { bgcolor: 'text.primary', opacity: 0.9 },
+            '&:disabled': { bgcolor: 'action.disabled', color: 'text.disabled' },
+          }}
+        >
+          {isSubmitting ? '...' : submitLabel}
+        </Button>
+      </Stack>
+    </>
+  );
+}
+
+// Inline Edit for existing set
+function EditSetInline({
+  set,
+  onSave,
+  onCancel,
+}: {
+  set: WorkoutSet;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Box sx={{ py: 2, borderBottom: 1, borderColor: 'divider' }}>
+      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1.5 }}>
+        <Box
+          sx={{
+            width: 32, height: 32, borderRadius: '50%',
+            bgcolor: 'primary.main', color: 'primary.contrastText',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.875rem', fontWeight: 500,
+          }}
+        >
+          {set.isWarmup ? 'W' : set.setNumber}
+        </Box>
+        <Typography variant="body2" color="text.secondary">Modifier la série</Typography>
+      </Stack>
+      <SetForm
+        initialWeight={parseFloat(set.weight || '0')}
+        initialReps={set.reps || 0}
+        submitLabel="Enregistrer"
+        onSubmit={async (reps, weight) => {
+          await updateSet(set.id, reps, weight);
+          onSave();
+        }}
+        onCancel={onCancel}
+      />
+    </Box>
+  );
+}
+
 // Quick Set Input (inline)
 function QuickSetInput({
   exerciseId,
@@ -931,78 +1054,24 @@ function QuickSetInput({
   onCancel: () => void;
   onAdd: (restDuration: number) => void;
 }) {
-  const [weight, setWeight] = useState(lastWeight || 0);
-  const [reps, setReps] = useState(lastReps || 0);
   const [restTime, setRestTime] = useState(defaultRestTime);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!weight || !reps) return;
-    setIsSubmitting(true);
-    triggerHaptic('heavy');
-    try {
-      await addSet(sessionId, exerciseId, setNumber, reps, weight, undefined, false, restTime);
-      onAdd(restTime);
-    } catch (error) {
-      console.error('Error adding set:', error);
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <Box sx={{ py: 2, px: 3 }}>
-      {/* Reps & Weight */}
-      <Stack direction="row" spacing={4} justifyContent="center" sx={{ mb: 2 }}>
-        <StepperInput
-          label="Reps"
-          value={reps}
-          onChange={setReps}
-          step={1}
-          min={0}
-          max={100}
-        />
-        <StepperInput
-          label="Poids"
-          value={weight}
-          onChange={setWeight}
-          step={2.5}
-          unit="kg"
-        />
-      </Stack>
-
-      {/* Rest time */}
-      <Box sx={{ mb: 2 }}>
-        <RestTimePicker value={restTime} onChange={setRestTime} />
-      </Box>
-
-      {/* Actions */}
-      <Stack direction="row" spacing={1.5}>
-        <Button
-          fullWidth
-          onClick={onCancel}
-          sx={{
-            color: 'text.secondary',
-            fontWeight: 500,
-            '&:hover': { bgcolor: 'action.hover' },
-          }}
-        >
-          Annuler
-        </Button>
-        <Button
-          fullWidth
-          onClick={handleSubmit}
-          disabled={!weight || !reps || isSubmitting}
-          sx={{
-            bgcolor: 'text.primary',
-            color: 'background.default',
-            fontWeight: 600,
-            '&:hover': { bgcolor: 'text.primary', opacity: 0.9 },
-            '&:disabled': { bgcolor: 'action.disabled', color: 'text.disabled' },
-          }}
-        >
-          {isSubmitting ? '...' : 'Valider'}
-        </Button>
-      </Stack>
+      <SetForm
+        initialWeight={lastWeight || 0}
+        initialReps={lastReps || 0}
+        submitLabel="Valider"
+        onSubmit={async (reps, weight) => {
+          await addSet(sessionId, exerciseId, setNumber, reps, weight, undefined, false, restTime);
+          onAdd(restTime);
+        }}
+        onCancel={onCancel}
+      >
+        <Box sx={{ mb: 2 }}>
+          <RestTimePicker value={restTime} onChange={setRestTime} />
+        </Box>
+      </SetForm>
     </Box>
   );
 }
@@ -1159,8 +1228,10 @@ function ExercisePicker({
   }, [exercises, morphotype]);
 
   const filteredExercises = useMemo(() => {
+    const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normalizedSearch = normalize(search);
     let filtered = exercisesWithScores.filter(({ exercise }) => {
-      const matchesSearch = exercise.nameFr.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = normalize(exercise.nameFr).includes(normalizedSearch);
       const matchesMuscle = !selectedMuscle || exercise.muscleGroup === selectedMuscle;
 
       // Subcategory filter - match by subcategory name
@@ -1568,11 +1639,27 @@ function StepperInput({
   max?: number;
   unit?: string;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+
   const handleChange = (delta: number) => {
     const newValue = Math.max(min, Math.min(max, value + delta));
     if (newValue !== value) {
       triggerHaptic('light');
       onChange(newValue);
+    }
+  };
+
+  const handleTapValue = () => {
+    setInputValue(value === 0 ? '' : String(value));
+    setIsEditing(true);
+  };
+
+  const handleInputBlur = () => {
+    setIsEditing(false);
+    const parsed = parseFloat(inputValue);
+    if (!isNaN(parsed)) {
+      onChange(Math.max(min, Math.min(max, parsed)));
     }
   };
 
@@ -1607,16 +1694,45 @@ function StepperInput({
           −
         </Typography>
 
-        <Typography
-          sx={{
-            fontSize: '2rem',
-            fontWeight: 600,
-            minWidth: 48,
-            color: 'text.primary',
-          }}
-        >
-          {value}
-        </Typography>
+        {isEditing ? (
+          <input
+            type="number"
+            autoFocus
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onBlur={handleInputBlur}
+            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+            style={{
+              fontSize: '2rem',
+              fontWeight: 600,
+              width: 72,
+              textAlign: 'center',
+              border: 'none',
+              borderBottom: '2px solid',
+              background: 'transparent',
+              color: 'inherit',
+              outline: 'none',
+              padding: 0,
+            }}
+            step={step}
+            min={min}
+            max={max}
+          />
+        ) : (
+          <Typography
+            onClick={handleTapValue}
+            sx={{
+              fontSize: '2rem',
+              fontWeight: 600,
+              minWidth: 48,
+              color: 'text.primary',
+              cursor: 'pointer',
+              '&:active': { opacity: 0.7 },
+            }}
+          >
+            {value}
+          </Typography>
+        )}
 
         <Typography
           onClick={() => handleChange(step)}
@@ -1762,7 +1878,7 @@ function SetInputSheet({
             <Stack alignItems="center" spacing={0.25}>
               <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
               <Typography variant="body2" fontWeight={600}>
-                {previousSets[0].weight}kg × {previousSets[0].reps}
+                {previousSets[0].reps} × {previousSets[0].weight}kg
               </Typography>
             </Stack>
           </Button>
@@ -1780,7 +1896,7 @@ function SetInputSheet({
             <Stack alignItems="center" spacing={0.25}>
               <Typography variant="caption" sx={{ opacity: 0.9 }}>Progression</Typography>
               <Typography variant="body2" fontWeight={600}>
-                {(parseFloat(previousSets[0].weight || '0') + 2.5).toFixed(1)}kg × {previousSets[0].reps}
+                {previousSets[0].reps} × {(parseFloat(previousSets[0].weight || '0') + 2.5).toFixed(1)}kg
               </Typography>
             </Stack>
           </Button>
@@ -1911,7 +2027,7 @@ function SetInputSheet({
           },
         }}
       >
-        {isSubmitting ? 'Enregistrement...' : `Valider ${weight}kg × ${reps}`}
+        {isSubmitting ? 'Enregistrement...' : `Valider ${reps} × ${weight}kg`}
       </Button>
     </Box>
   );
