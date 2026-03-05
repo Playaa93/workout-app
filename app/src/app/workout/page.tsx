@@ -9,8 +9,10 @@ import {
   startWorkoutSession,
   startWorkoutFromTemplate,
   deleteSession,
+  getAllSessionsForExport,
   type WorkoutSession,
   type WorkoutTemplate,
+  type ExportSessionData,
 } from './actions';
 import { startCardioSession, importCardioSession } from './cardio-actions';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
@@ -34,8 +36,10 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import Drawer from '@mui/material/Drawer';
+import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import TextField from '@mui/material/TextField';
 import Snackbar from '@mui/material/Snackbar';
@@ -48,6 +52,10 @@ import Add from '@mui/icons-material/Add';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import Close from '@mui/icons-material/Close';
 import Delete from '@mui/icons-material/Delete';
+import FileDownload from '@mui/icons-material/FileDownload';
+import TableChart from '@mui/icons-material/TableChart';
+import DataObject from '@mui/icons-material/DataObject';
+import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import Watch from '@mui/icons-material/Watch';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
@@ -77,6 +85,7 @@ export default function WorkoutPage() {
     dateTime: string | null;
     confidence: number;
   } | null>(null);
+  const [showExport, setShowExport] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importSaving, setImportSaving] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -397,9 +406,16 @@ export default function WorkoutPage() {
 
           {/* Historique - Style B (inline PR + stats bar) */}
           <Box sx={{ pb: 4 }}>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-              Dernières séances
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Dernières séances
+              </Typography>
+              {completedSessions.length > 0 && (
+                <IconButton size="small" onClick={() => setShowExport(true)} sx={{ color: 'text.secondary' }}>
+                  <FileDownload fontSize="small" />
+                </IconButton>
+              )}
+            </Stack>
 
             {isLoading ? (
               <Skeleton variant="rounded" height={200} sx={{ borderRadius: 2 }} />
@@ -700,6 +716,9 @@ export default function WorkoutPage() {
         </DialogActions>
       </Dialog>
 
+      {/* Export Drawer */}
+      <WorkoutExportDrawer open={showExport} onClose={() => setShowExport(false)} />
+
       {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
@@ -717,6 +736,12 @@ export default function WorkoutPage() {
       </Snackbar>
     </Box>
   );
+}
+
+function formatDuration(mins: number): string {
+  return mins >= 60
+    ? `${Math.floor(mins / 60)}h${(mins % 60).toString().padStart(2, '0')}`
+    : `${mins}min`;
 }
 
 function SessionCard({ session }: { session: WorkoutSession }) {
@@ -740,9 +765,7 @@ function SessionCard({ session }: { session: WorkoutSession }) {
   const distanceM = session.distanceMeters ? parseFloat(session.distanceMeters) : 0;
 
   const mins = session.durationMinutes || 0;
-  const durationFormatted = mins >= 60
-    ? `${Math.floor(mins / 60)}h${(mins % 60).toString().padStart(2, '0')}`
-    : `${mins}min`;
+  const durationFormatted = formatDuration(mins);
 
   return (
     <Box
@@ -834,5 +857,241 @@ function SessionCard({ session }: { session: WorkoutSession }) {
         )}
       </Stack>
     </Box>
+  );
+}
+
+// =========================================================
+// Export Drawer
+// =========================================================
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function fmtDate(d: Date) {
+  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function fmtTime(d: Date) {
+  return new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function WorkoutExportDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [data, setData] = useState<ExportSessionData[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setData(null);
+      return;
+    }
+    setLoading(true);
+    getAllSessionsForExport()
+      .then(d => setData(d))
+      .catch(() => setData([]))
+      .finally(() => setLoading(false));
+  }, [open]);
+
+  const sessions = data || [];
+
+  const exportCSV = () => {
+    const sep = ';';
+    const q = (v: string) => v.includes(sep) || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v;
+    const headers = [
+      'Date', 'Heure', 'Type', 'Activité', 'Durée (min)', 'Volume total (kg)',
+      'Distance (m)', 'Allure (s/km)', 'Calories (kcal)', 'Difficulté', 'Énergie',
+      'Exercice', 'Groupe musculaire', 'Série', 'Reps', 'Poids (kg)', 'RPE',
+      'Échauffement', 'Record', 'Notes',
+    ];
+    const rows: string[] = [];
+    for (const s of sessions) {
+      const base = [
+        fmtDate(s.startedAt), fmtTime(s.startedAt),
+        s.sessionType === 'cardio' ? 'Cardio' : 'Musculation',
+        s.cardioActivity || '', s.durationMinutes?.toString() || '',
+        s.totalVolume || '', s.distanceMeters || '',
+        s.avgPaceSecondsPerKm?.toString() || '', s.caloriesBurned?.toString() || '',
+        s.perceivedDifficulty?.toString() || '', s.energyLevel?.toString() || '',
+      ];
+      const notes = s.notes || '';
+      if (s.sets.length === 0) {
+        rows.push([...base, '', '', '', '', '', '', '', '', notes].map(q).join(sep));
+      } else {
+        for (const set of s.sets) {
+          rows.push([
+            ...base, set.exerciseName, set.muscleGroup, set.setNumber.toString(),
+            set.reps?.toString() || '', set.weight || '', set.rpe?.toString() || '',
+            set.isWarmup ? 'Oui' : 'Non', set.isPr ? 'Oui' : 'Non', notes,
+          ].map(q).join(sep));
+        }
+      }
+    }
+    const bom = '\uFEFF';
+    const csv = bom + headers.join(sep) + '\n' + rows.join('\n');
+    downloadFile(csv, `seances_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8');
+    onClose();
+  };
+
+  const exportJSON = () => {
+    const out = sessions.map(s => {
+      const exerciseMap = new Map<string, { nom: string; groupe: string; series: { serie: number; reps: number | null; poids: string | null; rpe: number | null; echauffement: boolean; record: boolean }[] }>();
+      for (const set of s.sets) {
+        if (!exerciseMap.has(set.exerciseId)) {
+          exerciseMap.set(set.exerciseId, { nom: set.exerciseName, groupe: set.muscleGroup, series: [] });
+        }
+        exerciseMap.get(set.exerciseId)!.series.push({
+          serie: set.setNumber,
+          reps: set.reps,
+          poids: set.weight,
+          rpe: set.rpe,
+          echauffement: !!set.isWarmup,
+          record: !!set.isPr,
+        });
+      }
+      return {
+        date: fmtDate(s.startedAt),
+        heure: fmtTime(s.startedAt),
+        type: s.sessionType || 'strength',
+        activite: s.cardioActivity || undefined,
+        duree: s.durationMinutes,
+        volume: s.totalVolume ? parseFloat(s.totalVolume) : 0,
+        distance: s.distanceMeters ? parseFloat(s.distanceMeters) : undefined,
+        allure: s.avgPaceSecondsPerKm || undefined,
+        calories: s.caloriesBurned,
+        difficulte: s.perceivedDifficulty,
+        energie: s.energyLevel,
+        notes: s.notes || undefined,
+        exercices: Array.from(exerciseMap.values()),
+      };
+    });
+    downloadFile(JSON.stringify(out, null, 2), `seances_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+    onClose();
+  };
+
+  const exportPDF = () => {
+    const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>Historique d'entraînement</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 32px; color: #1a1a1a; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #6750a4; color: white; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e0e0e0; white-space: nowrap; }
+  tr:nth-child(even) td { background: #f8f6ff; }
+  tr:hover td { background: #ece6ff; }
+  .footer { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
+  @media print { body { padding: 16px; } }
+</style>
+</head>
+<body>
+<h1>Historique d'entraînement</h1>
+<p class="subtitle">${sessions.length} séance${sessions.length > 1 ? 's' : ''} &middot; Export du ${fmtDate(new Date())}</p>
+<table>
+<thead><tr><th>Date</th><th>Type</th><th>Durée</th><th>Volume / Distance</th><th>Calories</th><th>Nb exercices</th></tr></thead>
+<tbody>
+${sessions.map(s => {
+  const type = s.sessionType === 'cardio' ? (s.cardioActivity || 'Cardio') : 'Musculation';
+  const dur = s.durationMinutes ? formatDuration(s.durationMinutes) : '-';
+  const volOrDist = s.sessionType === 'cardio'
+    ? (s.distanceMeters ? `${(parseFloat(s.distanceMeters) / 1000).toFixed(2)} km` : '-')
+    : (s.totalVolume ? `${parseFloat(s.totalVolume).toFixed(0)} kg` : '-');
+  const cal = s.caloriesBurned ?? '-';
+  const nbEx = new Set(s.sets.map(st => st.exerciseId)).size || '-';
+  return `<tr><td>${fmtDate(s.startedAt)}</td><td>${type}</td><td>${dur}</td><td>${volOrDist}</td><td>${cal}</td><td>${nbEx}</td></tr>`;
+}).join('\n')}
+</tbody>
+</table>
+<p class="footer">Généré depuis l'app Workout</p>
+<script>window.onload=function(){window.print()}<\/script>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+    }
+    onClose();
+  };
+
+  return (
+    <SwipeableDrawer
+      anchor="bottom"
+      open={open}
+      onClose={onClose}
+      onOpen={() => {}}
+      disableSwipeToOpen
+      PaperProps={{
+        sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+      }}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
+        <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: 'action.disabled' }} />
+      </Box>
+      <Box sx={{ px: 1, pb: 2 }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1 }}>
+          Exporter les séances
+        </Typography>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+            <CircularProgress size={28} />
+          </Box>
+        ) : (
+          <>
+            <Typography variant="caption" color="text.secondary" sx={{ px: 1.5, display: 'block', mb: 1 }}>
+              {sessions.length} séance{sessions.length > 1 ? 's' : ''}
+            </Typography>
+
+            <ListItemButton onClick={exportCSV} sx={{ borderRadius: 2 }}>
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <TableChart sx={{ color: '#4caf50' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Excel / CSV"
+                secondary="Fichier .csv compatible Excel, Google Sheets"
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                secondaryTypographyProps={{ fontSize: '0.75rem' }}
+              />
+            </ListItemButton>
+
+            <ListItemButton onClick={exportJSON} sx={{ borderRadius: 2 }}>
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <DataObject sx={{ color: '#ff9800' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="JSON"
+                secondary="Format brut pour traitement de données"
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                secondaryTypographyProps={{ fontSize: '0.75rem' }}
+              />
+            </ListItemButton>
+
+            <ListItemButton onClick={exportPDF} sx={{ borderRadius: 2 }}>
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <PictureAsPdf sx={{ color: '#f44336' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="PDF"
+                secondary="Tableau résumé imprimable via le navigateur"
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                secondaryTypographyProps={{ fontSize: '0.75rem' }}
+              />
+            </ListItemButton>
+          </>
+        )}
+      </Box>
+    </SwipeableDrawer>
   );
 }

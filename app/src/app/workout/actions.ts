@@ -827,6 +827,106 @@ export async function getSimilarExercises(exerciseId: string): Promise<Exercise[
   });
 }
 
+// Export types & data fetch
+export type ExportSet = {
+  exerciseId: string;
+  exerciseName: string;
+  muscleGroup: string;
+  setNumber: number;
+  reps: number | null;
+  weight: string | null;
+  rpe: number | null;
+  isWarmup: boolean | null;
+  isPr: boolean | null;
+};
+
+export type ExportSessionData = {
+  id: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  durationMinutes: number | null;
+  totalVolume: string | null;
+  caloriesBurned: number | null;
+  perceivedDifficulty: number | null;
+  energyLevel: number | null;
+  notes: string | null;
+  sessionType: 'strength' | 'cardio' | null;
+  cardioActivity: string | null;
+  distanceMeters: string | null;
+  avgPaceSecondsPerKm: number | null;
+  sets: ExportSet[];
+};
+
+export async function getAllSessionsForExport(): Promise<ExportSessionData[]> {
+  const userId = await requireUserId();
+
+  // 1) All completed sessions
+  const allSessions = await db
+    .select({
+      id: workoutSessions.id,
+      startedAt: workoutSessions.startedAt,
+      endedAt: workoutSessions.endedAt,
+      durationMinutes: workoutSessions.durationMinutes,
+      totalVolume: workoutSessions.totalVolume,
+      caloriesBurned: workoutSessions.caloriesBurned,
+      perceivedDifficulty: workoutSessions.perceivedDifficulty,
+      energyLevel: workoutSessions.energyLevel,
+      notes: workoutSessions.notes,
+      sessionType: workoutSessions.sessionType,
+      cardioActivity: workoutSessions.cardioActivity,
+      distanceMeters: workoutSessions.distanceMeters,
+      avgPaceSecondsPerKm: workoutSessions.avgPaceSecondsPerKm,
+    })
+    .from(workoutSessions)
+    .where(and(eq(workoutSessions.userId, userId), sql`${workoutSessions.endedAt} IS NOT NULL`))
+    .orderBy(desc(workoutSessions.startedAt));
+
+  if (allSessions.length === 0) return [];
+
+  // 2) All sets for those sessions via subquery (avoids large IN clause)
+  const allSets = await db
+    .select({
+      sessionId: workoutSets.sessionId,
+      exerciseId: workoutSets.exerciseId,
+      exerciseName: exercises.nameFr,
+      muscleGroup: exercises.muscleGroup,
+      setNumber: workoutSets.setNumber,
+      reps: workoutSets.reps,
+      weight: workoutSets.weight,
+      rpe: workoutSets.rpe,
+      isWarmup: workoutSets.isWarmup,
+      isPr: workoutSets.isPr,
+    })
+    .from(workoutSets)
+    .leftJoin(exercises, eq(workoutSets.exerciseId, exercises.id))
+    .where(sql`${workoutSets.sessionId} IN (SELECT ${workoutSessions.id} FROM ${workoutSessions} WHERE ${workoutSessions.userId} = ${userId} AND ${workoutSessions.endedAt} IS NOT NULL)`)
+    .orderBy(workoutSets.performedAt);
+
+  // Group sets by sessionId
+  const setsBySession = new Map<string, ExportSet[]>();
+  for (const s of allSets) {
+    const sid = s.sessionId!;
+    if (!setsBySession.has(sid)) setsBySession.set(sid, []);
+    setsBySession.get(sid)!.push({
+      exerciseId: s.exerciseId!,
+      exerciseName: s.exerciseName || 'Unknown',
+      muscleGroup: s.muscleGroup || '',
+      setNumber: s.setNumber,
+      reps: s.reps,
+      weight: s.weight,
+      rpe: s.rpe,
+      isWarmup: s.isWarmup,
+      isPr: s.isPr,
+    });
+  }
+
+  return allSessions.map(s => ({
+    ...s,
+    startedAt: s.startedAt!,
+    sets: setsBySession.get(s.id) || [],
+  }));
+}
+
 // Swap an exercise in a template (for a session)
 export async function swapTemplateExercise(
   sessionId: string,

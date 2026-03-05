@@ -13,6 +13,9 @@ import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Avatar from '@mui/material/Avatar'
 import FitnessCenter from '@mui/icons-material/FitnessCenter'
+import Timeline from '@mui/icons-material/Timeline'
+import Restaurant from '@mui/icons-material/Restaurant'
+import Straighten from '@mui/icons-material/Straighten'
 import Settings from '@mui/icons-material/Settings'
 import ChevronRight from '@mui/icons-material/ChevronRight'
 import Link from 'next/link'
@@ -24,6 +27,12 @@ type MorphoProfileData = {
 } | null
 
 const WEEKLY_GOAL = 4
+
+const QUICK_ACCESS_ITEMS = [
+  { label: 'Historique', href: '/workout', Icon: Timeline, color: '#6750a4' },
+  { label: 'Diète', href: '/diet', Icon: Restaurant, color: '#e57373' },
+  { label: 'Mesures', href: '/measurements', Icon: Straighten, color: '#64b5f6' },
+] as const
 
 type HomeContentProps = {
   profile: UserProfileData
@@ -232,15 +241,13 @@ export default function HomeContent({ profile, gamification, stats, morphoProfil
           Accès rapide
         </Typography>
         <Stack direction="row" spacing={1.5}>
-          {[
-            { label: 'Mesures', href: '/measurements', icon: '📏' },
-            { label: 'Diète', href: '/diet', icon: '🍎' },
-            { label: 'Programmes', href: '/workout/programs', icon: '📋' },
-          ].map((item) => (
+          {QUICK_ACCESS_ITEMS.map((item) => (
             <Card key={item.label} sx={{ flex: 1 }}>
               <CardActionArea component={Link} href={item.href}>
                 <CardContent sx={{ py: 2, px: 1, textAlign: 'center' }}>
-                  <Box sx={{ fontSize: '1.4rem', mb: 0.5 }}>{item.icon}</Box>
+                  <Box sx={{ mb: 0.5, color: item.color, display: 'flex', justifyContent: 'center' }}>
+                    <item.Icon />
+                  </Box>
                   <Typography variant="caption" fontWeight={600}>
                     {item.label}
                   </Typography>
