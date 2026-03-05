@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
-import type { GamificationData, UserProfileData, StatsData } from './profile/actions'
+import React, { useEffect } from 'react'
+import type { GamificationData, UserProfileData, StatsData, WeeklyComparisonData, WeekMetrics } from './profile/actions'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
@@ -18,6 +18,8 @@ import Restaurant from '@mui/icons-material/Restaurant'
 import Straighten from '@mui/icons-material/Straighten'
 import Settings from '@mui/icons-material/Settings'
 import ChevronRight from '@mui/icons-material/ChevronRight'
+import TrendingUp from '@mui/icons-material/TrendingUp'
+import TrendingDown from '@mui/icons-material/TrendingDown'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
 
@@ -39,16 +41,82 @@ type HomeContentProps = {
   gamification: GamificationData
   stats: StatsData
   morphoProfile: MorphoProfileData
+  weeklyComparison: WeeklyComparisonData
 }
 
-export default function HomeContent({ profile, gamification, stats, morphoProfile }: HomeContentProps) {
+function getChangeIndicator(cur: number, prev: number): { label: string; color: string; icon: React.ReactNode } {
+  if (prev === 0 && cur > 0) return { label: 'Nouveau', color: 'info.main', icon: <TrendingUp sx={{ fontSize: 14 }} /> }
+  if (prev === 0) return { label: '=', color: 'text.disabled', icon: null }
+  const change = Math.round(((cur - prev) / prev) * 100)
+  if (change > 0) return { label: `+${change}%`, color: 'success.main', icon: <TrendingUp sx={{ fontSize: 14 }} /> }
+  if (change < 0) return { label: `${change}%`, color: 'error.main', icon: <TrendingDown sx={{ fontSize: 14 }} /> }
+  return { label: '=', color: 'text.disabled', icon: null }
+}
+
+function ChangeIndicator({ cur, prev }: { cur: number; prev: number }) {
+  const ch = getChangeIndicator(cur, prev)
+  return (
+    <Stack direction="row" spacing={0.3} alignItems="center" justifyContent="center">
+      {ch.icon}
+      <Typography variant="caption" fontWeight={600} sx={{ color: ch.color }}>
+        {ch.label}
+      </Typography>
+    </Stack>
+  )
+}
+
+const WEEKLY_METRICS: { key: string; label: string; unit: string; thisKey: keyof WeekMetrics; prevKey: keyof WeekMetrics }[] = [
+  { key: 'sessions', label: 'Séances', unit: '', thisKey: 'sessions', prevKey: 'sessions' },
+  { key: 'volume', label: 'Volume', unit: 'kg', thisKey: 'volumeKg', prevKey: 'volumeKg' },
+  { key: 'duration', label: 'Durée', unit: 'min', thisKey: 'durationMin', prevKey: 'durationMin' },
+  { key: 'calories', label: 'Calories', unit: '', thisKey: 'calories', prevKey: 'calories' },
+]
+
+function WeeklyComparisonCard({ data }: { data: WeeklyComparisonData }) {
+  const { thisWeek, lastWeek } = data
+  return (
+    <Box sx={{ px: 2.5, pb: 2 }}>
+      <Card>
+        <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Progression hebdo
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+            {WEEKLY_METRICS.map((m) => (
+              <Box key={m.key} sx={{ textAlign: 'center', py: 0.5 }}>
+                <Typography variant="h6" fontWeight={700}>
+                  {thisWeek[m.thisKey]}{m.unit && <Typography component="span" variant="caption" color="text.secondary"> {m.unit}</Typography>}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {m.label}
+                </Typography>
+                <ChangeIndicator cur={thisWeek[m.thisKey]} prev={lastWeek[m.prevKey]} />
+              </Box>
+            ))}
+          </Box>
+          <Box sx={{ textAlign: 'center', pt: 1.5, borderTop: 1, borderColor: 'divider', mt: 1.5 }}>
+            <Typography variant="h6" fontWeight={700}>
+              {thisWeek.prCount}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block">
+              Records (PRs)
+            </Typography>
+            <ChangeIndicator cur={thisWeek.prCount} prev={lastWeek.prCount} />
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
+  )
+}
+
+export default function HomeContent({ profile, gamification, stats, morphoProfile, weeklyComparison }: HomeContentProps) {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
     }
   }, [])
 
-  const weeklyWorkouts = Math.min(stats?.totalWorkouts || 0, WEEKLY_GOAL)
+  const weeklyWorkouts = Math.min(weeklyComparison.thisWeek.sessions, WEEKLY_GOAL)
   const streakDays = gamification?.currentStreak || 0
   const streakMax = 7
 
@@ -214,6 +282,11 @@ export default function HomeContent({ profile, gamification, stats, morphoProfil
           </CardContent>
         </Card>
       </Box>
+
+      {/* Weekly comparison */}
+      {(weeklyComparison.thisWeek.sessions > 0 || weeklyComparison.lastWeek.sessions > 0) && (
+        <WeeklyComparisonCard data={weeklyComparison} />
+      )}
 
       {/* XP Progress bar */}
       <Box sx={{ px: 2.5, pb: 1 }}>

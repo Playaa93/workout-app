@@ -7,6 +7,7 @@ import {
   achievements,
   userAchievements,
   workoutSessions,
+  workoutSets,
   foodEntries,
   measurements,
   personalRecords,
@@ -15,7 +16,7 @@ import {
 } from '@/db';
 import { eq, desc, sql, and, count } from 'drizzle-orm';
 import { requireUserId, getAuthenticatedUser } from '@/lib/auth';
-import { getLocalDateStr } from '@/lib/date-utils';
+import { getLocalDateStr, getISOWeekStart } from '@/lib/date-utils';
 
 // =====================================================
 // TYPES
@@ -65,6 +66,19 @@ export type StatsData = {
   totalCardioSessions: number;
   totalCardioDistanceKm: number;
   totalCardioTimeMinutes: number;
+};
+
+export type WeekMetrics = {
+  sessions: number;
+  volumeKg: number;
+  durationMin: number;
+  calories: number;
+  prCount: number;
+};
+
+export type WeeklyComparisonData = {
+  thisWeek: WeekMetrics;
+  lastWeek: WeekMetrics;
 };
 
 // =====================================================
@@ -244,6 +258,75 @@ export async function getUserStats(): Promise<StatsData> {
     totalCardioDistanceKm: Math.round(parseFloat(cardioResult.totalDistance || '0') / 1000 * 10) / 10,
     totalCardioTimeMinutes: parseInt(cardioResult.totalMinutes || '0'),
   };
+}
+
+// Weekly comparison: this week vs last week
+export async function getWeeklyComparison(): Promise<WeeklyComparisonData> {
+  const userId = await requireUserId();
+
+  const now = new Date();
+  const thisWeekStart = getISOWeekStart(now);
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
+
+  const thisWeekISO = thisWeekStart.toISOString();
+  const lastWeekISO = lastWeekStart.toISOString();
+
+  const [sessionRows, prRows] = await Promise.all([
+    // Q1: aggregate sessions by week
+    db
+      .select({
+        week: sql<string>`CASE WHEN ${workoutSessions.startedAt} >= ${thisWeekISO}::timestamptz THEN 'this' ELSE 'last' END`,
+        cnt: count(),
+        volume: sql<string>`COALESCE(SUM(${workoutSessions.totalVolume}::numeric), 0)`,
+        duration: sql<string>`COALESCE(SUM(${workoutSessions.durationMinutes}), 0)`,
+        calories: sql<string>`COALESCE(SUM(${workoutSessions.caloriesBurned}), 0)`,
+      })
+      .from(workoutSessions)
+      .where(
+        and(
+          eq(workoutSessions.userId, userId),
+          sql`${workoutSessions.startedAt} >= ${lastWeekISO}::timestamptz`,
+          sql`${workoutSessions.endedAt} IS NOT NULL`
+        )
+      )
+      .groupBy(sql`1`),
+
+    // Q2: PR count per week
+    db
+      .select({
+        week: sql<string>`CASE WHEN ${workoutSessions.startedAt} >= ${thisWeekISO}::timestamptz THEN 'this' ELSE 'last' END`,
+        cnt: count(),
+      })
+      .from(workoutSets)
+      .innerJoin(workoutSessions, eq(workoutSets.sessionId, workoutSessions.id))
+      .where(
+        sql`${workoutSessions.userId} = ${userId}
+          AND ${workoutSessions.startedAt} >= ${lastWeekISO}::timestamptz
+          AND ${workoutSessions.endedAt} IS NOT NULL
+          AND ${workoutSets.isPr} IS TRUE`
+      )
+      .groupBy(sql`1`),
+  ]);
+
+  const empty: WeekMetrics = { sessions: 0, volumeKg: 0, durationMin: 0, calories: 0, prCount: 0 };
+  const thisWeek: WeekMetrics = { ...empty };
+  const lastWeek: WeekMetrics = { ...empty };
+
+  for (const row of sessionRows) {
+    const target = row.week === 'this' ? thisWeek : lastWeek;
+    target.sessions = row.cnt;
+    target.volumeKg = Math.round(parseFloat(row.volume || '0'));
+    target.durationMin = parseInt(row.duration || '0');
+    target.calories = parseInt(row.calories || '0');
+  }
+
+  for (const row of prRows) {
+    const target = row.week === 'this' ? thisWeek : lastWeek;
+    target.prCount = row.cnt;
+  }
+
+  return { thisWeek, lastWeek };
 }
 
 // =====================================================
