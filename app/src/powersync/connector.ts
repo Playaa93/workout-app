@@ -35,18 +35,18 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
     if (!transaction) return;
 
     try {
+      const operations = transaction.crud.map((entry: CrudEntry) => ({
+        op: entry.op,
+        table: entry.table,
+        id: entry.id,
+        data: entry.opData,
+      }));
+
       const response = await fetch(`${getBaseUrl()}/api/powersync-upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          operations: transaction.crud.map((entry: CrudEntry) => ({
-            op: entry.op,
-            table: entry.table,
-            id: entry.id,
-            data: entry.opData,
-          })),
-        }),
+        body: JSON.stringify({ operations }),
       });
 
       if (!response.ok) {

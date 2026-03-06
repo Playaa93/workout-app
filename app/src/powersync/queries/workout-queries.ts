@@ -2,6 +2,7 @@
 
 import { useQuery } from '@powersync/react';
 import { useUserId } from '../auth-context';
+import { todayStr, localDayBoundsUTC } from '../helpers';
 import type { Database } from '../schema';
 
 export type ExerciseRow = Database['exercises'];
@@ -134,18 +135,13 @@ export function usePersonalRecords() {
 
 export function useTodayWorkoutCalories() {
   const userId = useUserId();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayISO = today.toISOString();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowISO = tomorrow.toISOString();
+  const { start, end } = localDayBoundsUTC(todayStr());
 
   return useQuery<{ total: number }>(
     `SELECT COALESCE(SUM(calories_burned), 0) as total
      FROM workout_sessions
      WHERE user_id = ? AND started_at >= ? AND started_at < ?`,
-    [userId, todayISO, tomorrowISO]
+    [userId, start, end]
   );
 }
 

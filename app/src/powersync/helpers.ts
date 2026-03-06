@@ -55,13 +55,30 @@ export function uuid(): string {
   return crypto.randomUUID();
 }
 
-/** Get current ISO timestamp string */
+/** Convert a Date to SQLite/PostgreSQL-compatible timestamp (space separator) */
+export function toSqliteTimestamp(date: Date): string {
+  return date.toISOString().replace('T', ' ');
+}
+
+/** Get current timestamp string (space separator to match PostgreSQL format) */
 export function nowISO(): string {
-  return new Date().toISOString();
+  return toSqliteTimestamp(new Date());
 }
 
 /** Get today's date as YYYY-MM-DD */
 export function todayStr(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Convert local date (YYYY-MM-DD) to UTC timestamp bounds.
+ *  Parses as local time (no Z) so toISOString shifts by timezone offset. */
+export function localDayBoundsUTC(dateStr: string): { start: string; end: string } {
+  const start = new Date(dateStr + 'T00:00:00');
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return {
+    start: toSqliteTimestamp(start),
+    end: toSqliteTimestamp(end),
+  };
 }

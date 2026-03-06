@@ -144,7 +144,20 @@ export default function SearchView({
         const cached = await cacheOpenFoodFactsProduct(selectedFood);
         foodId = cached.id;
       }
-      onAdd({ foodId, mealType, quantity: parseFloat(quantity) });
+      const qty = parseFloat(quantity) || 0;
+      const mult = qty / 100;
+      const scaled = (val: string | null | undefined) =>
+        val ? parseFloat(val) * mult : undefined;
+      onAdd({
+        foodId,
+        customName: selectedFood.nameFr,
+        mealType,
+        quantity: qty,
+        calories: scaled(selectedFood.calories),
+        protein: scaled(selectedFood.protein),
+        carbohydrates: scaled(selectedFood.carbohydrates),
+        fat: scaled(selectedFood.fat),
+      });
       setAddedSnackbar(selectedFood.nameFr);
       setSelectedFood(null);
       setQuantity('100');

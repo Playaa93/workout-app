@@ -2,7 +2,7 @@
 
 import { useQuery } from '@powersync/react';
 import { useUserId } from '../auth-context';
-import { todayStr } from '../helpers';
+import { todayStr, localDayBoundsUTC, toSqliteTimestamp } from '../helpers';
 import type { Database } from '../schema';
 
 export type FoodRow = Database['foods'];
@@ -13,15 +13,12 @@ export type NutritionProfileRow = Database['nutrition_profiles'];
 
 export function useTodayEntries() {
   const userId = useUserId();
-  const today = todayStr();
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+  const { start, end } = localDayBoundsUTC(todayStr());
   return useQuery<FoodEntryRow>(
     `SELECT * FROM food_entries
      WHERE user_id = ? AND logged_at >= ? AND logged_at < ?
      ORDER BY logged_at DESC`,
-    [userId, today + 'T00:00:00', tomorrowStr + 'T00:00:00']
+    [userId, start, end]
   );
 }
 
@@ -81,7 +78,7 @@ export function useRecentFoods(limit = 10) {
      LEFT JOIN foods f ON fe.food_id = f.id
      WHERE fe.user_id = ? AND fe.logged_at >= ?
      ORDER BY fe.logged_at DESC LIMIT 50`,
-    [userId, sevenDaysAgo.toISOString()]
+    [userId, toSqliteTimestamp(sevenDaysAgo)]
   );
 }
 

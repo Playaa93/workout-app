@@ -2,7 +2,7 @@
 
 import { usePowerSync } from '@powersync/react';
 import { useUserId } from '../auth-context';
-import { uuid, nowISO, todayStr } from '../helpers';
+import { uuid, nowISO, todayStr, localDayBoundsUTC } from '../helpers';
 
 export function useDietMutations() {
   const db = usePowerSync();
@@ -68,8 +68,7 @@ export function useDietMutations() {
 
   async function recalcDailySummary(): Promise<void> {
     const today = todayStr();
-    const todayStart = today + 'T00:00:00';
-    const todayEnd = today + 'T23:59:59.999';
+    const { start: todayStart, end: todayEnd } = localDayBoundsUTC(today);
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
