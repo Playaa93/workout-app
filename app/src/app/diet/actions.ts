@@ -721,6 +721,110 @@ export async function saveNutritionProfile(data: {
 }
 
 // =====================================================
+// OPEN FOOD FACTS shared helpers
+// =====================================================
+
+function nutrientStr(value: unknown): string | null {
+  return value != null ? String(value) : null;
+}
+
+function mapOFFProduct(product: Record<string, unknown>): {
+  nameFr: string; nameEn: string | null; brand: string | null;
+  calories: string | null; protein: string | null; carbohydrates: string | null; fat: string | null;
+} | null {
+  const nameFr = (product.product_name_fr || product.product_name || product.generic_name_fr) as string | undefined;
+  if (!nameFr) return null;
+  const n = (product.nutriments || {}) as Record<string, unknown>;
+  if (n['energy-kcal_100g'] == null) return null;
+  const rawBrands = product.brands;
+  const brand = Array.isArray(rawBrands) ? rawBrands[0] || null : (rawBrands as string) || null;
+  return {
+    nameFr,
+    nameEn: (product.product_name_en as string) || null,
+    brand,
+    calories: nutrientStr(n['energy-kcal_100g']),
+    protein: nutrientStr(n.proteins_100g),
+    carbohydrates: nutrientStr(n.carbohydrates_100g),
+    fat: nutrientStr(n.fat_100g),
+  };
+}
+
+// =====================================================
+// OPEN FOOD FACTS SEARCH (text search fallback)
+// =====================================================
+
+export async function searchOpenFoodFacts(query: string, limit = 20): Promise<FoodData[]> {
+  if (!query || query.length < 2) return [];
+
+  try {
+    const params = new URLSearchParams({
+      q: query,
+      page_size: String(limit),
+      fields: 'code,product_name_fr,product_name,brands,nutriments',
+    });
+
+    const response = await fetch(
+      `https://search.openfoodfacts.org/search?${params}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+
+    if (!response.ok) return [];
+    const data = await response.json();
+    if (!data.hits?.length) return [];
+
+    const results: FoodData[] = [];
+    for (const p of data.hits) {
+      const mapped = mapOFFProduct(p);
+      if (!mapped) continue;
+      results.push({
+        id: `off:${p.code || mapped.nameFr}`,
+        ...mapped,
+        servingSize: null,
+      });
+    }
+
+    return results;
+  } catch {
+    return [];
+  }
+}
+
+// Save an Open Food Facts product to the local DB (cache on select)
+export async function cacheOpenFoodFactsProduct(product: FoodData): Promise<FoodData> {
+  // Check if already cached (by name + brand combo)
+  const existing = await db
+    .select({ id: foods.id })
+    .from(foods)
+    .where(
+      and(
+        eq(foods.nameFr, product.nameFr),
+        product.brand ? eq(foods.brand, product.brand) : sql`${foods.brand} IS NULL`
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    return { ...product, id: existing[0].id };
+  }
+
+  const [saved] = await db
+    .insert(foods)
+    .values({
+      nameFr: product.nameFr,
+      nameEn: product.nameEn,
+      brand: product.brand,
+      calories: product.calories,
+      protein: product.protein,
+      carbohydrates: product.carbohydrates,
+      fat: product.fat,
+      verified: true,
+    })
+    .returning();
+
+  return { ...product, id: saved.id };
+}
+
+// =====================================================
 // BARCODE LOOKUP (Open Food Facts)
 // =====================================================
 
@@ -755,27 +859,20 @@ export async function lookupBarcode(barcode: string): Promise<FoodData | null> {
 
     if (data.status !== 1 || !data.product) return null;
 
-    const product = data.product;
-    const nutriments = product.nutriments || {};
+    const mapped = mapOFFProduct(data.product);
+    const nameFr = mapped?.nameFr || 'Produit scanné';
 
-    const nameFr =
-      product.product_name_fr ||
-      product.product_name ||
-      product.generic_name_fr ||
-      'Produit scanné';
-
-    // Save to local DB for future lookups
     const [saved] = await db
       .insert(foods)
       .values({
         nameFr,
-        nameEn: product.product_name_en || null,
-        brand: product.brands || null,
+        nameEn: mapped?.nameEn ?? null,
+        brand: mapped?.brand ?? null,
         barcode,
-        calories: nutriments['energy-kcal_100g']?.toString() || null,
-        protein: nutriments.proteins_100g?.toString() || null,
-        carbohydrates: nutriments.carbohydrates_100g?.toString() || null,
-        fat: nutriments.fat_100g?.toString() || null,
+        calories: mapped?.calories ?? null,
+        protein: mapped?.protein ?? null,
+        carbohydrates: mapped?.carbohydrates ?? null,
+        fat: mapped?.fat ?? null,
       })
       .returning();
 

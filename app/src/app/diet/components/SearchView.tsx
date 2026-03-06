@@ -16,8 +16,12 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import Search from '@mui/icons-material/Search';
-import { searchFoods, addFoodEntry } from '../actions';
+import { searchFoods, searchOpenFoodFacts, cacheOpenFoodFactsProduct, addFoodEntry } from '../actions';
 import type { FoodData, MealType } from './shared';
+
+function foodDedupeKey(f: FoodData): string {
+  return (f.nameFr + '\0' + (f.brand || '')).toLowerCase();
+}
 
 // Portions courantes par mot-clé dans le nom
 const PORTION_PRESETS: { keywords: string[]; portions: { label: string; grams: number }[] }[] = [
@@ -77,40 +81,78 @@ export default function SearchView({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<FoodData[]>([]);
+  const [localResults, setLocalResults] = useState<FoodData[]>([]);
+  const [offResults, setOffResults] = useState<FoodData[]>([]);
   const [selectedFood, setSelectedFood] = useState<FoodData | null>(null);
   const [quantity, setQuantity] = useState('100');
   const [mealType, setMealType] = useState<string>(initialMealType);
   const [isSearching, setIsSearching] = useState(false);
+  const [isSearchingOff, setIsSearchingOff] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [addedSnackbar, setAddedSnackbar] = useState<string | null>(null);
 
   useEffect(() => {
     if (query.length < 2) {
-      setResults([]);
+      setLocalResults([]);
+      setOffResults([]);
       return;
     }
 
+    let cancelled = false;
+
     const timer = setTimeout(async () => {
       setIsSearching(true);
-      const data = await searchFoods(query);
-      setResults(data);
-      setIsSearching(false);
+      setIsSearchingOff(true);
+      setOffResults([]);
+      try {
+        const local = await searchFoods(query);
+        if (cancelled) return;
+        setLocalResults(local);
+        setIsSearching(false);
+
+        if (local.length < 5) {
+          const off = await searchOpenFoodFacts(query);
+          if (cancelled) return;
+          const localKeys = new Set(local.map(foodDedupeKey));
+          const filtered = off.filter(f => !localKeys.has(foodDedupeKey(f)));
+          setOffResults(filtered);
+        }
+      } catch {
+        // degrade gracefully — show whatever we have
+      } finally {
+        if (!cancelled) {
+          setIsSearching(false);
+          setIsSearchingOff(false);
+        }
+      }
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [query]);
 
-  const handleAdd = () => {
-    if (!selectedFood) return;
-    const name = selectedFood.nameFr;
-    onAdd({
-      foodId: selectedFood.id,
-      mealType,
-      quantity: parseFloat(quantity),
-    });
-    setAddedSnackbar(name);
-    setSelectedFood(null);
-    setQuantity('100');
+  const results = [...localResults, ...offResults];
+
+  const handleAdd = async () => {
+    if (!selectedFood || isAdding) return;
+    setIsAdding(true);
+    try {
+      let foodId = selectedFood.id;
+      if (foodId.startsWith('off:')) {
+        const cached = await cacheOpenFoodFactsProduct(selectedFood);
+        foodId = cached.id;
+      }
+      onAdd({ foodId, mealType, quantity: parseFloat(quantity) });
+      setAddedSnackbar(selectedFood.nameFr);
+      setSelectedFood(null);
+      setQuantity('100');
+    } catch {
+      setAddedSnackbar(null);
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   if (selectedFood) {
@@ -244,11 +286,13 @@ export default function SearchView({
             color: 'background.default',
             borderRadius: 2,
             fontWeight: 600,
-            cursor: 'pointer',
+            cursor: isAdding ? 'default' : 'pointer',
+            opacity: isAdding ? 0.5 : 1,
+            pointerEvents: isAdding ? 'none' : 'auto',
             '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
           }}
         >
-          Ajouter
+          {isAdding ? 'Ajout...' : 'Ajouter'}
         </Box>
       </Box>
     );
@@ -303,7 +347,7 @@ export default function SearchView({
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress size={24} />
           </Box>
-        ) : results.length === 0 ? (
+        ) : results.length === 0 && !isSearchingOff ? (
           <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
             {query.length >= 2 ? 'Aucun résultat' : 'Tape au moins 2 caractères'}
           </Typography>
@@ -316,16 +360,31 @@ export default function SearchView({
                   const serving = food.servingSize ? Math.round(parseFloat(food.servingSize)) : 100;
                   setQuantity(String(serving !== 100 ? serving : 100));
                 }} sx={{ p: 2 }}>
-                  <Typography variant="body2" fontWeight={500}>
-                    {food.nameFr}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {food.calories ? `${food.calories} kcal/100g` : ''}{' '}
-                    {food.brand ? `• ${food.brand}` : ''}
-                  </Typography>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" fontWeight={500}>
+                        {food.nameFr}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {food.calories ? `${Math.round(parseFloat(food.calories))} kcal/100g` : ''}{' '}
+                        {food.brand ? `• ${food.brand}` : ''}
+                      </Typography>
+                    </Box>
+                    {food.id.startsWith('off:') && (
+                      <Chip label="OFF" size="small" variant="outlined" color="info" sx={{ fontSize: '0.6rem', height: 20 }} />
+                    )}
+                  </Stack>
                 </CardActionArea>
               </Card>
             ))}
+            {isSearchingOff && (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 2 }}>
+                <CircularProgress size={16} />
+                <Typography variant="caption" color="text.secondary">
+                  Recherche Open Food Facts...
+                </Typography>
+              </Box>
+            )}
           </Stack>
         )}
       </Box>
