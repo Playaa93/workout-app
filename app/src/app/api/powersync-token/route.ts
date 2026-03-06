@@ -15,8 +15,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'PowerSync not configured' }, { status: 500 });
   }
 
-  // Import RSA private key
-  const privateKey = await importPKCS8(privateKeyPem.replace(/\\n/g, '\n'), 'RS256');
+  // Import RSA private key — handle both literal \n and escaped \\n from env vars
+  const normalizedKey = privateKeyPem.replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+  const privateKey = await importPKCS8(normalizedKey, 'RS256');
 
   const now = Math.floor(Date.now() / 1000);
   const token = await new SignJWT({
@@ -65,7 +66,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'PowerSync not configured' }, { status: 500 });
     }
 
-    const privateKey = await importPKCS8(privateKeyPem.replace(/\\n/g, '\n'), 'RS256');
+    const normalizedKey = privateKeyPem.replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+    const privateKey = await importPKCS8(normalizedKey, 'RS256');
     const now = Math.floor(Date.now() / 1000);
     const token = await new SignJWT({
       sub: userId,
