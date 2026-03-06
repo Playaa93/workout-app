@@ -149,6 +149,7 @@ export default function HomeContent() {
 }
 
 function HomeContentInner() {
+  const { displayName: authDisplayName } = useAuth()
   const { data: profileRows } = useUserProfile()
   const { data: gamificationRows } = useGamification()
   const { data: statsRows } = useUserStats()
@@ -169,6 +170,7 @@ function HomeContentInner() {
       navigator.serviceWorker.register('/sw.js')
     }
   }, [])
+
 
   // Map profile
   const profile = useMemo(() => {
@@ -249,14 +251,14 @@ function HomeContentInner() {
                 fontSize: '1rem', fontWeight: 600, textDecoration: 'none',
               }}
             >
-              {(profile?.displayName || 'U')[0].toUpperCase()}
+              {(authDisplayName || profile?.displayName || 'U')[0].toUpperCase()}
             </Avatar>
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.2 }}>
                 Bonjour
               </Typography>
               <Typography fontWeight={700} sx={{ lineHeight: 1.2 }}>
-                {profile?.displayName || 'Guerrier'}
+                {authDisplayName || profile?.displayName || 'Guerrier'}
               </Typography>
             </Box>
           </Stack>

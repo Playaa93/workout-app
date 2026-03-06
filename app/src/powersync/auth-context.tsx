@@ -5,12 +5,14 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 type AuthState = {
   userId: string | null;
   email: string | null;
+  displayName: string | null;
   loading: boolean;
 };
 
 const AuthContext = createContext<AuthState>({
   userId: null,
   email: null,
+  displayName: null,
   loading: true,
 });
 
@@ -25,7 +27,7 @@ export function useUserId(): string {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [auth, setAuth] = useState<AuthState>({ userId: null, email: null, loading: true });
+  const [auth, setAuth] = useState<AuthState>({ userId: null, email: null, displayName: null, loading: true });
 
   useEffect(() => {
     // Fetch current session from server
@@ -35,11 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuth({
           userId: data.userId || null,
           email: data.email || null,
+          displayName: data.displayName || null,
           loading: false,
         });
       })
       .catch(() => {
-        setAuth({ userId: null, email: null, loading: false });
+        setAuth({ userId: null, email: null, displayName: null, loading: false });
       });
   }, []);
 

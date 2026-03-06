@@ -44,7 +44,7 @@ export async function signup(formData: FormData): Promise<AuthResult> {
     })
     .returning();
 
-  await createSession(newUser.id, newUser.email);
+  await createSession(newUser.id, newUser.email, newUser.displayName ?? undefined);
   redirect('/');
 }
 
@@ -73,7 +73,7 @@ export async function login(formData: FormData): Promise<AuthResult> {
     .set({ lastLoginAt: new Date() })
     .where(eq(users.id, user.id));
 
-  await createSession(user.id, user.email);
+  await createSession(user.id, user.email, user.displayName ?? undefined);
   redirect('/');
 }
 
