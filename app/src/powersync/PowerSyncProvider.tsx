@@ -2,32 +2,48 @@
 
 import { PowerSyncContext } from '@powersync/react';
 import { PowerSyncDatabase } from '@powersync/web';
-import { useEffect, useState, type ReactNode } from 'react';
-import { getPowerSyncDb, initPowerSync } from './system';
+import { useEffect, useState, useRef, type ReactNode } from 'react';
+import { useAuth } from './auth-context';
+import { getPowerSyncDb } from './system';
+import { PowerSyncConnector } from './connector';
 
 export function PowerSyncProvider({ children }: { children: ReactNode }) {
+  const { userId, loading } = useAuth();
   const [db, setDb] = useState<PowerSyncDatabase | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
+    if (loading || !userId) return;
 
-    initPowerSync()
-      .then((instance) => {
-        if (mounted) setDb(instance);
-      })
-      .catch((err) => {
-        console.error('PowerSync init failed:', err);
-        if (mounted) setError(err.message);
-      });
+    let mounted = true;
+    const instance = getPowerSyncDb();
+
+    async function connect() {
+      // If user changed, disconnect and clear local data
+      if (lastUserIdRef.current && lastUserIdRef.current !== userId) {
+        await instance.disconnectAndClear();
+      }
+
+      lastUserIdRef.current = userId;
+      const connector = new PowerSyncConnector();
+      await instance.connect(connector);
+
+      if (typeof window !== 'undefined') {
+        (window as any).__powersync = instance;
+      }
+
+      if (mounted) setDb(instance);
+    }
+
+    connect().catch((err) => {
+      console.error('PowerSync init failed:', err);
+    });
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [userId, loading]);
 
-  // During SSR or before init, render children without PowerSync context
-  // This allows server components and static parts to render normally
   if (!db) {
     return <>{children}</>;
   }
