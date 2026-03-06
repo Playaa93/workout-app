@@ -53,13 +53,14 @@ import ChevronRight from '@mui/icons-material/ChevronRight';
 import Close from '@mui/icons-material/Close';
 import Delete from '@mui/icons-material/Delete';
 import FileDownload from '@mui/icons-material/FileDownload';
-import TableChart from '@mui/icons-material/TableChart';
+import Description from '@mui/icons-material/Description';
 import DataObject from '@mui/icons-material/DataObject';
 import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import Watch from '@mui/icons-material/Watch';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import BottomNav from '@/components/BottomNav';
+import { downloadFile, fmtDateFR, fmtTimeFR, formatDuration, escapeHtml, writeExcelFile, openPrintableHtml } from '@/lib/export-utils';
 
 export default function WorkoutPage() {
   const router = useRouter();
@@ -738,11 +739,6 @@ export default function WorkoutPage() {
   );
 }
 
-function formatDuration(mins: number): string {
-  return mins >= 60
-    ? `${Math.floor(mins / 60)}h${(mins % 60).toString().padStart(2, '0')}`
-    : `${mins}min`;
-}
 
 function SessionCard({ session }: { session: WorkoutSession }) {
   const router = useRouter();
@@ -863,26 +859,6 @@ function SessionCard({ session }: { session: WorkoutSession }) {
 // =========================================================
 // Export Drawer
 // =========================================================
-function downloadFile(content: string, filename: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-function fmtDate(d: Date) {
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function fmtTime(d: Date) {
-  return new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-}
-
 function WorkoutExportDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [data, setData] = useState<ExportSessionData[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -901,41 +877,37 @@ function WorkoutExportDrawer({ open, onClose }: { open: boolean; onClose: () => 
 
   const sessions = data || [];
 
-  const exportCSV = () => {
-    const sep = ';';
-    const q = (v: string) => v.includes(sep) || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v;
+  const exportExcel = () => {
     const headers = [
       'Date', 'Heure', 'Type', 'Activité', 'Durée (min)', 'Volume total (kg)',
       'Distance (m)', 'Allure (s/km)', 'Calories (kcal)', 'Difficulté', 'Énergie',
       'Exercice', 'Groupe musculaire', 'Série', 'Reps', 'Poids (kg)', 'RPE',
       'Échauffement', 'Record', 'Notes',
     ];
-    const rows: string[] = [];
+    const rows: (string | number | null)[][] = [];
     for (const s of sessions) {
-      const base = [
-        fmtDate(s.startedAt), fmtTime(s.startedAt),
+      const base: (string | number | null)[] = [
+        fmtDateFR(s.startedAt), fmtTimeFR(s.startedAt),
         s.sessionType === 'cardio' ? 'Cardio' : 'Musculation',
-        s.cardioActivity || '', s.durationMinutes?.toString() || '',
-        s.totalVolume || '', s.distanceMeters || '',
-        s.avgPaceSecondsPerKm?.toString() || '', s.caloriesBurned?.toString() || '',
-        s.perceivedDifficulty?.toString() || '', s.energyLevel?.toString() || '',
+        s.cardioActivity || '', s.durationMinutes ?? null,
+        s.totalVolume ? parseFloat(s.totalVolume) : null, s.distanceMeters ? parseFloat(s.distanceMeters) : null,
+        s.avgPaceSecondsPerKm ?? null, s.caloriesBurned ?? null,
+        s.perceivedDifficulty ?? null, s.energyLevel ?? null,
       ];
       const notes = s.notes || '';
       if (s.sets.length === 0) {
-        rows.push([...base, '', '', '', '', '', '', '', '', notes].map(q).join(sep));
+        rows.push([...base, '', '', null, null, null, null, '', '', notes]);
       } else {
         for (const set of s.sets) {
           rows.push([
-            ...base, set.exerciseName, set.muscleGroup, set.setNumber.toString(),
-            set.reps?.toString() || '', set.weight || '', set.rpe?.toString() || '',
+            ...base, set.exerciseName, set.muscleGroup, set.setNumber,
+            set.reps ?? null, set.weight ? parseFloat(set.weight) : null, set.rpe ?? null,
             set.isWarmup ? 'Oui' : 'Non', set.isPr ? 'Oui' : 'Non', notes,
-          ].map(q).join(sep));
+          ]);
         }
       }
     }
-    const bom = '\uFEFF';
-    const csv = bom + headers.join(sep) + '\n' + rows.join('\n');
-    downloadFile(csv, `seances_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8');
+    writeExcelFile(headers, rows, 'Séances', `seances_${new Date().toISOString().split('T')[0]}.xlsx`);
     onClose();
   };
 
@@ -956,8 +928,8 @@ function WorkoutExportDrawer({ open, onClose }: { open: boolean; onClose: () => 
         });
       }
       return {
-        date: fmtDate(s.startedAt),
-        heure: fmtTime(s.startedAt),
+        date: fmtDateFR(s.startedAt),
+        heure: fmtTimeFR(s.startedAt),
         type: s.sessionType || 'strength',
         activite: s.cardioActivity || undefined,
         duree: s.durationMinutes,
@@ -997,7 +969,7 @@ function WorkoutExportDrawer({ open, onClose }: { open: boolean; onClose: () => 
 </head>
 <body>
 <h1>Historique d'entraînement</h1>
-<p class="subtitle">${sessions.length} séance${sessions.length > 1 ? 's' : ''} &middot; Export du ${fmtDate(new Date())}</p>
+<p class="subtitle">${sessions.length} séance${sessions.length > 1 ? 's' : ''} &middot; Export du ${fmtDateFR(new Date())}</p>
 <table>
 <thead><tr><th>Date</th><th>Type</th><th>Durée</th><th>Volume / Distance</th><th>Calories</th><th>Nb exercices</th></tr></thead>
 <tbody>
@@ -1009,7 +981,7 @@ ${sessions.map(s => {
     : (s.totalVolume ? `${parseFloat(s.totalVolume).toFixed(0)} kg` : '-');
   const cal = s.caloriesBurned ?? '-';
   const nbEx = new Set(s.sets.map(st => st.exerciseId)).size || '-';
-  return `<tr><td>${fmtDate(s.startedAt)}</td><td>${type}</td><td>${dur}</td><td>${volOrDist}</td><td>${cal}</td><td>${nbEx}</td></tr>`;
+  return `<tr><td>${fmtDateFR(s.startedAt)}</td><td>${escapeHtml(type)}</td><td>${dur}</td><td>${volOrDist}</td><td>${cal}</td><td>${nbEx}</td></tr>`;
 }).join('\n')}
 </tbody>
 </table>
@@ -1018,11 +990,7 @@ ${sessions.map(s => {
 </body>
 </html>`;
 
-    const w = window.open('', '_blank');
-    if (w) {
-      w.document.write(html);
-      w.document.close();
-    }
+    openPrintableHtml(html);
     onClose();
   };
 
@@ -1054,13 +1022,13 @@ ${sessions.map(s => {
               {sessions.length} séance{sessions.length > 1 ? 's' : ''}
             </Typography>
 
-            <ListItemButton onClick={exportCSV} sx={{ borderRadius: 2 }}>
+            <ListItemButton onClick={exportExcel} sx={{ borderRadius: 2 }}>
               <ListItemIcon sx={{ minWidth: 40 }}>
-                <TableChart sx={{ color: '#4caf50' }} />
+                <Description sx={{ color: '#4caf50' }} />
               </ListItemIcon>
               <ListItemText
-                primary="Excel / CSV"
-                secondary="Fichier .csv compatible Excel, Google Sheets"
+                primary="Excel (.xlsx)"
+                secondary="Fichier Excel avec colonnes formatées"
                 primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
                 secondaryTypographyProps={{ fontSize: '0.75rem' }}
               />
