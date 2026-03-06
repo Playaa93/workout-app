@@ -84,6 +84,19 @@ export function useTemplateExercises(templateId: string | null) {
   );
 }
 
+export function useAllTemplateExercises() {
+  const userId = useUserId();
+  return useQuery<TemplateExerciseRow & { exercise_name: string }>(
+    `SELECT wte.*, e.name_fr as exercise_name
+     FROM workout_template_exercises wte
+     LEFT JOIN exercises e ON wte.exercise_id = e.id
+     INNER JOIN workout_templates wt ON wte.template_id = wt.id
+     WHERE wt.user_id = ?
+     ORDER BY wte.template_id, wte.order_index`,
+    [userId]
+  );
+}
+
 export function useLastSetsForExercise(exerciseId: string, limit = 5) {
   const userId = useUserId();
   return useQuery<WorkoutSetRow & { exercise_name: string }>(

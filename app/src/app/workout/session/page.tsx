@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useMemo, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getSessionDetail, type ActiveSession, type WorkoutSet } from '../actions';
+import type { ActiveSession, WorkoutSet, Exercise } from '../actions';
+import { useAuth } from '@/powersync/auth-context';
+import { useSessionDetail, useSessionSets, useExercises } from '@/powersync/queries/workout-queries';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
 import type { CardioActivity } from '@/db/schema';
 import Box from '@mui/material/Box';
@@ -185,18 +187,65 @@ ${session.notes ? `<p style="margin-top:12px;font-size:13px;"><strong>Notes :</s
 function SessionDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const sessionId = searchParams.get('id');
-  const [data, setData] = useState<ActiveSession | null>(null);
-  const [loading, setLoading] = useState(true);
+  const sessionId = searchParams.get('id') ?? '';
   const [exportOpen, setExportOpen] = useState(false);
 
-  useEffect(() => {
-    if (!sessionId) return;
-    getSessionDetail(sessionId).then((result) => {
-      setData(result);
-      setLoading(false);
-    });
-  }, [sessionId]);
+  const { data: sessionRows, isLoading: sessionLoading } = useSessionDetail(sessionId);
+  const { data: setRows, isLoading: setsLoading } = useSessionSets(sessionId);
+  const { data: exerciseRows, isLoading: exLoading } = useExercises();
+
+  const data = useMemo<ActiveSession | null>(() => {
+    if (!sessionRows?.length) return null;
+    const s = sessionRows[0];
+
+    const exercises = new Map<string, Exercise>();
+    for (const e of exerciseRows ?? []) {
+      exercises.set(e.id, {
+        id: e.id,
+        nameFr: e.name_fr ?? '',
+        nameEn: e.name_en ?? null,
+        muscleGroup: e.muscle_group ?? '',
+        primaryMuscles: e.primary_muscles ? JSON.parse(e.primary_muscles) : null,
+        secondaryMuscles: e.secondary_muscles ? JSON.parse(e.secondary_muscles) : null,
+        equipment: e.equipment ? JSON.parse(e.equipment) : null,
+        difficulty: (e as Record<string, unknown>).difficulty as string | null ?? null,
+      });
+    }
+
+    const sets: WorkoutSet[] = (setRows ?? []).map((r) => ({
+      id: r.id,
+      exerciseId: r.exercise_id ?? '',
+      exerciseName: (r as Record<string, unknown>).exercise_name as string ?? '',
+      setNumber: r.set_number ?? 0,
+      reps: r.reps ?? null,
+      weight: r.weight ?? null,
+      rpe: r.rpe ?? null,
+      isWarmup: !!r.is_warmup,
+      isPr: !!r.is_pr,
+      restTaken: r.rest_taken ?? null,
+    }));
+
+    return {
+      session: {
+        id: s.id,
+        startedAt: new Date(s.started_at!),
+        endedAt: s.ended_at ? new Date(s.ended_at) : null,
+        durationMinutes: s.duration_minutes ?? null,
+        totalVolume: s.total_volume ?? null,
+        caloriesBurned: s.calories_burned ?? null,
+        notes: s.notes ?? null,
+        sessionType: (s.session_type as 'strength' | 'cardio' | null) ?? null,
+        cardioActivity: s.cardio_activity ?? null,
+        distanceMeters: s.distance_meters ?? null,
+        avgPaceSecondsPerKm: s.avg_pace_seconds_per_km ?? null,
+        avgSpeedKmh: s.avg_speed_kmh ?? null,
+      },
+      sets,
+      exercises,
+    };
+  }, [sessionRows, setRows, exerciseRows]);
+
+  const loading = sessionLoading || setsLoading || exLoading;
 
   if (loading) {
     return (
@@ -384,6 +433,16 @@ function StatBox({ label, value }: { label: string; value: string }) {
 }
 
 export default function SessionDetailPage() {
+  const { userId, loading: authLoading } = useAuth();
+
+  if (authLoading || !userId) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Suspense
       fallback={

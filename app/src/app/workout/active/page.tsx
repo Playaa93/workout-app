@@ -1,24 +1,24 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  getActiveSession,
-  getExercises,
-  addSet,
-  updateSet,
-  deleteSet,
-  endWorkoutSession,
-  getLastSetsForExercise,
-  getUserMorphotype,
-  getSessionTemplateExercises,
-  getSimilarExercises,
-  swapTemplateExercise,
-  type Exercise,
-  type WorkoutSet,
-  type ActiveSession,
-  type TemplateExercise,
+import type {
+  Exercise,
+  WorkoutSet,
+  ActiveSession,
+  TemplateExercise,
 } from '../actions';
+import { useAuth } from '@/powersync/auth-context';
+import {
+  useActiveSession,
+  useSessionSets,
+  useExercises,
+  useTemplateExercises,
+  useLastSetsForExercise,
+} from '@/powersync/queries/workout-queries';
+import { useMorphoProfile } from '@/powersync/queries/morphology-queries';
+import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
+import { parseJson, parseJsonArray } from '@/powersync/helpers';
 import type { MorphotypeResult } from '@/app/morphology/types';
 import { MorphoTipsPanel, MorphoScoreBadge } from '@/components/workout/MorphoTipsPanel';
 import ExerciseDetailModal from '@/components/workout/ExerciseDetailModal';
@@ -73,12 +73,140 @@ function ActiveWorkoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('id');
+  const mutations = useWorkoutMutations();
 
-  const [session, setSession] = useState<ActiveSession | null>(null);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [templateExercises, setTemplateExercises] = useState<TemplateExercise[]>([]);
-  const [morphotype, setMorphotype] = useState<MorphotypeResult | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // PowerSync reactive hooks
+  const { data: sessionRows, isLoading: sessionLoading } = useActiveSession(sessionId);
+  const { data: setRows, isLoading: setsLoading } = useSessionSets(sessionId);
+  const { data: exerciseRows, isLoading: exercisesLoading } = useExercises();
+  const { data: morphoRows } = useMorphoProfile();
+
+  // Get template_id from session for template exercises
+  const templateId = sessionRows?.[0]?.template_id as string | null;
+  const { data: templateExRows } = useTemplateExercises(templateId);
+
+  // Map exercises
+  const exercises = useMemo<Exercise[]>(() => {
+    return exerciseRows.map((e: any) => ({
+      id: e.id,
+      nameFr: e.name_fr || '',
+      nameEn: e.name_en,
+      muscleGroup: e.muscle_group || '',
+      primaryMuscles: parseJsonArray(e.primary_muscles as string | null),
+      secondaryMuscles: parseJsonArray(e.secondary_muscles as string | null),
+      equipment: parseJsonArray(e.equipment as string | null),
+      difficulty: e.difficulty,
+      morphotypeRecommendations: parseJson(e.morphotype_recommendations as string | null),
+    }));
+  }, [exerciseRows]);
+
+  // Build exercise map
+  const exerciseMap = useMemo(() => {
+    const map = new Map<string, Exercise>();
+    for (const e of exercises) map.set(e.id, e);
+    return map;
+  }, [exercises]);
+
+  // Map sets
+  const sets = useMemo<WorkoutSet[]>(() => {
+    return setRows.map((s: any) => ({
+      id: s.id,
+      exerciseId: s.exercise_id,
+      exerciseName: s.exercise_name || '',
+      setNumber: s.set_number || 0,
+      reps: s.reps,
+      weight: s.weight,
+      rpe: s.rpe,
+      isWarmup: !!s.is_warmup,
+      isPr: !!s.is_pr,
+      restTaken: s.rest_taken,
+    }));
+  }, [setRows]);
+
+  // Map session (ActiveSession)
+  const session = useMemo<ActiveSession | null>(() => {
+    const s = sessionRows?.[0];
+    if (!s) return null;
+    return {
+      session: {
+        id: s.id,
+        startedAt: new Date(s.started_at as string),
+        endedAt: s.ended_at ? new Date(s.ended_at as string) : null,
+        durationMinutes: s.duration_minutes,
+        totalVolume: s.total_volume,
+        caloriesBurned: s.calories_burned,
+        notes: s.notes,
+        sessionType: s.session_type as 'strength' | 'cardio' | null,
+        cardioActivity: s.cardio_activity,
+        distanceMeters: s.distance_meters,
+        avgPaceSecondsPerKm: s.avg_pace_seconds_per_km,
+        avgSpeedKmh: s.avg_speed_kmh,
+      },
+      sets,
+      exercises: exerciseMap,
+    };
+  }, [sessionRows, sets, exerciseMap]);
+
+  // Map template exercises
+  const templateExercises = useMemo<TemplateExercise[]>(() => {
+    return templateExRows.map((e: any) => ({
+      exerciseId: e.exercise_id || '',
+      exerciseName: e.exercise_name || '',
+      orderIndex: e.order_index || 0,
+      targetSets: e.target_sets || 0,
+      targetReps: (e.target_reps as string) || '',
+      restSeconds: e.rest_seconds || 0,
+      notes: e.notes,
+    }));
+  }, [templateExRows]);
+
+  // Map morphotype
+  const morphotype = useMemo<MorphotypeResult | null>(() => {
+    if (morphoRows.length === 0) return null;
+    const p = morphoRows[0] as any;
+    const scores = parseJson<Record<string, unknown>>(p.morphotype_score);
+    if (!scores) return null;
+    return {
+      globalType: (scores.globalType as 'longiligne' | 'breviligne' | 'balanced') || 'balanced',
+      structure: (scores.structure as MorphotypeResult['structure']) || {
+        frameSize: 'medium', shoulderToHip: 'medium', ribcageDepth: 'medium',
+      },
+      proportions: (scores.proportions as MorphotypeResult['proportions']) || {
+        torsoLength: p.torso_proportion || 'medium',
+        armLength: p.arm_proportion || 'medium',
+        femurLength: p.leg_proportion || 'medium',
+        kneeValgus: 'none',
+      },
+      mobility: (scores.mobility as MorphotypeResult['mobility']) || {
+        ankleDorsiflexion: 'average', posteriorChain: 'average', wristMobility: 'none',
+      },
+      insertions: (scores.insertions as MorphotypeResult['insertions']) || {
+        biceps: 'medium', calves: 'medium', chest: 'medium',
+      },
+      metabolism: (scores.metabolism as MorphotypeResult['metabolism']) || {
+        weightTendency: 'balanced', naturalStrength: 'average', bestResponders: 'none',
+      },
+      squat: { exercise: 'Squat', advantages: [], disadvantages: [], variants: [], tips: [] },
+      deadlift: { exercise: 'Deadlift', advantages: [], disadvantages: [], variants: [], tips: [] },
+      bench: { exercise: 'Bench', advantages: [], disadvantages: [], variants: [], tips: [] },
+      curls: { exercise: 'Curls', advantages: [], disadvantages: [], variants: [], tips: [] },
+      mobilityWork: [],
+      primary: p.primary_morphotype,
+      secondary: p.secondary_morphotype,
+      scores: {
+        ecto: (scores.ecto as number) || 0,
+        meso: (scores.meso as number) || 0,
+        endo: (scores.endo as number) || 0,
+      },
+      strengths: parseJsonArray(p.strengths),
+      weaknesses: parseJsonArray(p.weaknesses),
+      recommendedExercises: parseJsonArray(p.recommended_exercises),
+      exercisesToAvoid: parseJsonArray(p.exercises_to_avoid),
+    } as MorphotypeResult;
+  }, [morphoRows]);
+
+  const isLoading = sessionLoading || setsLoading || exercisesLoading;
+
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -99,30 +227,6 @@ function ActiveWorkoutContent() {
   // Swap exercise state
   const [swapExerciseId, setSwapExerciseId] = useState<string | null>(null);
   const [similarExercises, setSimilarExercises] = useState<Exercise[]>([]);
-  const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
-
-  const loadSession = useCallback(async () => {
-    if (!sessionId) return;
-    const data = await getActiveSession(sessionId);
-    setSession(data);
-    setIsLoading(false);
-  }, [sessionId]);
-
-  useEffect(() => {
-    async function init() {
-      if (!sessionId) return;
-      const [exerciseData, , morphoData, templateData] = await Promise.all([
-        getExercises(),
-        loadSession(),
-        getUserMorphotype(),
-        getSessionTemplateExercises(sessionId),
-      ]);
-      setExercises(exerciseData);
-      setMorphotype(morphoData);
-      setTemplateExercises(templateData);
-    }
-    init();
-  }, [loadSession, sessionId]);
 
   // Elapsed time counter
   useEffect(() => {
@@ -145,32 +249,27 @@ function ActiveWorkoutContent() {
   const handleEndWorkout = async () => {
     if (!sessionId) return;
     try {
-      const result = await endWorkoutSession(sessionId);
+      const result = await mutations.endWorkoutSession(sessionId);
       router.push(`/workout/summary?xp=${result.xpEarned}&volume=${result.totalVolume}&duration=${result.duration}&prs=${result.prCount}`);
     } catch (error) {
       console.error('Error ending workout:', error);
     }
   };
 
-  const handleOpenSwap = async (exerciseId: string) => {
+  const handleOpenSwap = (exerciseId: string) => {
     setSwapExerciseId(exerciseId);
-    setIsLoadingSimilar(true);
-    try {
-      const similar = await getSimilarExercises(exerciseId);
+    const ex = exerciseMap.get(exerciseId);
+    if (ex) {
+      const similar = exercises.filter(e => e.muscleGroup === ex.muscleGroup && e.id !== exerciseId);
       setSimilarExercises(similar);
-    } catch (error) {
-      console.error('Error loading similar exercises:', error);
     }
-    setIsLoadingSimilar(false);
   };
 
   const handleSwapExercise = async (newExerciseId: string) => {
-    if (!sessionId || !swapExerciseId) return;
+    if (!templateId || !swapExerciseId) return;
     try {
-      await swapTemplateExercise(sessionId, swapExerciseId, newExerciseId);
-      // Reload template exercises
-      const templateData = await getSessionTemplateExercises(sessionId);
-      setTemplateExercises(templateData);
+      await mutations.swapTemplateExercise(templateId, swapExerciseId, newExerciseId);
+      // No need to reload - hooks are reactive
       setSwapExerciseId(null);
       setSimilarExercises([]);
     } catch (error) {
@@ -467,7 +566,7 @@ function ActiveWorkoutContent() {
                               color={set.isPr ? 'warning' : 'default'}
                               variant="outlined"
                               onDelete={() => {
-                                deleteSet(set.id).then(loadSession);
+                                mutations.deleteSet(set.id);
                               }}
                               sx={{ fontSize: '0.7rem' }}
                             />
@@ -496,8 +595,8 @@ function ActiveWorkoutContent() {
                     sessionId={sessionId}
                     defaultRestTime={lastRestTime}
                     isLastExercise={isLast}
-                    onSetAdded={loadSession}
-                    onSetDeleted={loadSession}
+                    onSetAdded={() => {}}
+                    onSetDeleted={() => {}}
                     onStartTimer={timer.start}
                   />
                 </div>
@@ -542,7 +641,6 @@ function ActiveWorkoutContent() {
             defaultRestTime={lastRestTime}
             onClose={() => setSelectedExercise(null)}
             onSetAdded={(restDuration) => {
-              loadSession();
               timer.start(restDuration);
             }}
           />
@@ -620,11 +718,7 @@ function ActiveWorkoutContent() {
             Exercices ciblant le même groupe musculaire :
           </Typography>
 
-          {isLoadingSimilar ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : similarExercises.length === 0 ? (
+          {similarExercises.length === 0 ? (
             <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
               Aucun exercice similaire trouvé
             </Typography>
@@ -716,6 +810,14 @@ function ActiveWorkoutContent() {
 }
 
 export default function ActiveWorkoutPage() {
+  const { userId, loading: authLoading } = useAuth();
+  if (authLoading || !userId) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
   return (
     <Suspense
       fallback={
@@ -749,22 +851,32 @@ function ExerciseCard({
   onSetDeleted: () => void;
   onStartTimer: (duration?: number) => void;
 }) {
+  const mutations = useWorkoutMutations();
   const [showAddSet, setShowAddSet] = useState(false);
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
-  const [previousSets, setPreviousSets] = useState<WorkoutSet[]>([]);
   const [collapsed, setCollapsed] = useState(!isLastExercise && sets.length > 0);
+
+  const { data: prevSetRows } = useLastSetsForExercise(exercise?.id || '', 5);
+  const previousSets = useMemo<WorkoutSet[]>(() => {
+    return prevSetRows.map((s: any) => ({
+      id: s.id,
+      exerciseId: s.exercise_id,
+      exerciseName: s.exercise_name || '',
+      setNumber: s.set_number || 0,
+      reps: s.reps,
+      weight: s.weight,
+      rpe: s.rpe,
+      isWarmup: !!s.is_warmup,
+      isPr: !!s.is_pr,
+      restTaken: s.rest_taken,
+    }));
+  }, [prevSetRows]);
 
   // Auto-collapse when this exercise is no longer the last one
   useEffect(() => {
     if (!isLastExercise) setCollapsed(true);
     if (isLastExercise) setCollapsed(false);
   }, [isLastExercise]);
-
-  useEffect(() => {
-    if (exercise) {
-      getLastSetsForExercise(exercise.id).then(setPreviousSets);
-    }
-  }, [exercise]);
 
   if (!exercise) return null;
 
@@ -827,7 +939,7 @@ function ExerciseCard({
                 }}
                 onDelete={async () => {
                   setEditingSetId(null);
-                  await deleteSet(set.id);
+                  await mutations.deleteSet(set.id);
                   onSetDeleted();
                 }}
                 onCancel={() => setEditingSetId(null)}
@@ -997,6 +1109,7 @@ function EditSetInline({
   onDelete: () => void;
   onCancel: () => void;
 }) {
+  const mutations = useWorkoutMutations();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
@@ -1043,7 +1156,7 @@ function EditSetInline({
         initialReps={set.reps || 0}
         submitLabel="Enregistrer"
         onSubmit={async (reps, weight) => {
-          await updateSet(set.id, reps, weight);
+          await mutations.updateSet(set.id, reps, weight);
           onSave();
         }}
         onCancel={onCancel}
@@ -1072,6 +1185,7 @@ function QuickSetInput({
   onCancel: () => void;
   onAdd: (restDuration: number) => void;
 }) {
+  const mutations = useWorkoutMutations();
   const [restTime, setRestTime] = useState(defaultRestTime);
 
   return (
@@ -1081,7 +1195,7 @@ function QuickSetInput({
         initialReps={lastReps || 0}
         submitLabel="Valider"
         onSubmit={async (reps, weight) => {
-          await addSet(sessionId, exerciseId, setNumber, reps, weight, undefined, false, restTime);
+          await mutations.addSet(sessionId, exerciseId, setNumber, reps, weight, undefined, false, restTime);
           onAdd(restTime);
         }}
         onCancel={onCancel}
@@ -1781,31 +1895,47 @@ function SetInputSheet({
   onClose: () => void;
   onSetAdded: (restDuration: number) => void;
 }) {
+  const mutations = useWorkoutMutations();
+  const { data: prevSetRows } = useLastSetsForExercise(exercise.id, 5);
+
+  const previousSets = useMemo<WorkoutSet[]>(() => {
+    return prevSetRows.map((s: any) => ({
+      id: s.id,
+      exerciseId: s.exercise_id,
+      exerciseName: s.exercise_name || '',
+      setNumber: s.set_number || 0,
+      reps: s.reps,
+      weight: s.weight,
+      rpe: s.rpe,
+      isWarmup: !!s.is_warmup,
+      isPr: !!s.is_pr,
+      restTaken: s.rest_taken,
+    }));
+  }, [prevSetRows]);
+
   const [weight, setWeight] = useState(0);
   const [reps, setReps] = useState(0);
   const [rpe, setRpe] = useState(0);
   const [restTime, setRestTime] = useState(defaultRestTime);
   const [isWarmup, setIsWarmup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previousSets, setPreviousSets] = useState<WorkoutSet[]>([]);
   const [showMorphoTips, setShowMorphoTips] = useState(false);
 
+  // Set initial values from previous sets
   useEffect(() => {
-    getLastSetsForExercise(exercise.id).then((sets) => {
-      setPreviousSets(sets);
-      if (sets.length > 0) {
-        setWeight(parseFloat(sets[0].weight || '0'));
-        setReps(sets[0].reps || 0);
-      }
-    });
-  }, [exercise.id]);
+    if (previousSets.length > 0) {
+      setWeight(parseFloat(previousSets[0].weight || '0'));
+      setReps(previousSets[0].reps || 0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previousSets.length]);
 
   const handleSubmit = async () => {
     if (!weight || !reps) return;
     setIsSubmitting(true);
     triggerHaptic('heavy');
     try {
-      await addSet(
+      await mutations.addSet(
         sessionId,
         exercise.id,
         isWarmup ? 0 : setNumber,

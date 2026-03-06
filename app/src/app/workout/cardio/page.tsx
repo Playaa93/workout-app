@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  getCardioSession,
-  addCardioInterval,
-  endCardioSession,
-  type CardioSessionData,
-} from '../cardio-actions';
+import { useAuth } from '@/powersync/auth-context';
+import { useCardioSession, useCardioIntervals } from '@/powersync/queries/workout-queries';
+import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
+import type { CardioActivity } from '@/db/schema';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance, calculatePace } from '@/lib/cardio-utils';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -30,9 +28,39 @@ function CardioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('id');
+  const mutations = useWorkoutMutations();
 
-  const [session, setSession] = useState<CardioSessionData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // PowerSync reactive queries
+  const { data: sessionRows, isLoading: sessionLoading } = useCardioSession(sessionId);
+  const { data: intervalRows, isLoading: intervalsLoading } = useCardioIntervals(sessionId);
+
+  // Map session row
+  const session = useMemo(() => {
+    const s = sessionRows?.[0];
+    if (!s || !s.started_at) return null;
+    return {
+      id: s.id,
+      cardioActivity: (s.cardio_activity || 'other') as CardioActivity,
+      startedAt: s.started_at,
+      endedAt: s.ended_at,
+    };
+  }, [sessionRows]);
+
+  // Map interval rows
+  const intervals = useMemo(() => {
+    if (!intervalRows) return [];
+    return intervalRows.map((i) => ({
+      id: i.id,
+      intervalNumber: i.interval_number || 0,
+      durationSeconds: i.duration_seconds || 0,
+      distanceMeters: i.distance_meters || '0',
+      paceSecondsPerKm: i.pace_seconds_per_km || 0,
+      heartRate: i.heart_rate || 0,
+    }));
+  }, [intervalRows]);
+
+  const isLoading = sessionLoading || intervalsLoading;
+
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [distance, setDistance] = useState(0); // in km (display unit)
   const [avgHr, setAvgHr] = useState(0);
@@ -43,28 +71,19 @@ function CardioContent() {
   const [splitStartTime, setSplitStartTime] = useState(0); // seconds at split start
   const [splitStartDistance, setSplitStartDistance] = useState(0); // km at split start
 
-  const loadSession = useCallback(async () => {
-    if (!sessionId) return;
-    const data = await getCardioSession(sessionId);
-    setSession(data);
-    if (data?.intervals && data.intervals.length > 0) {
-      // Restore split tracking state
-      const lastInterval = data.intervals[data.intervals.length - 1];
-      const totalSplitDuration = data.intervals.reduce((sum, i) => sum + (i.durationSeconds || 0), 0);
-      const totalSplitDistance = data.intervals.reduce((sum, i) => sum + parseFloat(i.distanceMeters || '0'), 0);
+  // Restore split tracking state from intervals
+  useEffect(() => {
+    if (intervals.length > 0) {
+      const totalSplitDuration = intervals.reduce((sum, i) => sum + (i.durationSeconds || 0), 0);
+      const totalSplitDistance = intervals.reduce((sum, i) => sum + parseFloat(i.distanceMeters || '0'), 0);
       setSplitStartTime(totalSplitDuration);
       setSplitStartDistance(totalSplitDistance / 1000);
     }
-    setIsLoading(false);
-  }, [sessionId]);
-
-  useEffect(() => {
-    loadSession();
-  }, [loadSession]);
+  }, [intervals]);
 
   // Elapsed time counter
   useEffect(() => {
-    if (!session) return;
+    if (!session?.startedAt) return;
     const startTime = new Date(session.startedAt).getTime();
 
     const interval = setInterval(() => {
@@ -102,9 +121,9 @@ function CardioContent() {
       ? calculatePace(splitDuration, splitDistanceMeters)
       : 0;
 
-    const intervalNumber = (session.intervals?.length || 0) + 1;
+    const intervalNumber = intervals.length + 1;
 
-    await addCardioInterval(sessionId, {
+    await mutations.addCardioInterval(sessionId, {
       intervalNumber,
       durationSeconds: splitDuration,
       distanceMeters: splitDistanceMeters,
@@ -114,14 +133,13 @@ function CardioContent() {
 
     setSplitStartTime(elapsedSeconds);
     setSplitStartDistance(distance);
-    await loadSession();
   };
 
   const handleEndSession = async () => {
     if (!sessionId) return;
     setIsEnding(true);
     try {
-      const result = await endCardioSession(sessionId, {
+      const result = await mutations.endCardioSession(sessionId, {
         distanceMeters: distanceMeters,
         avgHeartRate: avgHr || undefined,
         perceivedDifficulty: undefined,
@@ -320,14 +338,14 @@ function CardioContent() {
           </Button>
         </Stack>
 
-        {session.intervals.length === 0 ? (
+        {intervals.length === 0 ? (
           <Typography variant="body2" color="text.disabled" sx={{ textAlign: 'center', py: 2 }}>
             Appuie sur "Split" pour enregistrer un intervalle
           </Typography>
         ) : (
           <Card>
             <Stack divider={<Divider />}>
-              {session.intervals.map((interval) => (
+              {intervals.map((interval) => (
                 <Box key={interval.id} sx={{ px: 2, py: 1.5 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="body2" fontWeight={600}>
@@ -405,6 +423,14 @@ function CardioContent() {
 }
 
 export default function CardioPage() {
+  const { userId, loading: authLoading } = useAuth();
+  if (authLoading || !userId) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
   return (
     <Suspense
       fallback={
