@@ -1,24 +1,23 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import {
-  getCravings,
-  getTodayEntries,
-  getDailySummary,
-  addCravingEntry,
-  addFoodEntry,
-  addQuickEntry,
-  deleteEntry,
-  getWeekHistory,
-  getNutritionProfile,
-  saveNutritionProfile,
-  getRecentFoods,
-  type CravingData,
-  type FoodEntryData,
-  type DailySummaryData,
-  type NutritionProfileData,
+import { useState, useMemo } from 'react';
+import type {
+  CravingData,
+  FoodEntryData,
+  DailySummaryData,
+  NutritionProfileData,
 } from './actions';
-import { getTodayWorkoutCalories } from '../workout/actions';
+import { useAuth } from '@/powersync/auth-context';
+import {
+  useTodayEntries,
+  useCravings,
+  useDailySummary,
+  useWeekHistory,
+  useNutritionProfile,
+  useRecentFoods,
+} from '@/powersync/queries/diet-queries';
+import { useTodayWorkoutCalories } from '@/powersync/queries/workout-queries';
+import { useDietMutations } from '@/powersync/mutations/diet-mutations';
 import Link from 'next/link';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -44,45 +43,160 @@ import BottomNav from '@/components/BottomNav';
 type View = 'main' | 'cravings' | 'search' | 'quick' | 'settings' | 'scanner' | 'photo';
 
 export default function DietPage() {
+  const { userId, loading: authLoading } = useAuth();
+
+  if (authLoading || !userId) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return <DietContent />;
+}
+
+function DietContent() {
   const [view, setView] = useState<View>('main');
   const [segment, setSegment] = useState<Segment>('today');
-  const [cravings, setCravings] = useState<CravingData[]>([]);
-  const [entries, setEntries] = useState<FoodEntryData[]>([]);
-  const [summary, setSummary] = useState<{ today: DailySummaryData; avg7d: DailySummaryData } | null>(null);
-  const [weekHistory, setWeekHistory] = useState<DailySummaryData[]>([]);
-  const [profile, setProfile] = useState<NutritionProfileData | null>(null);
-  const [workoutCalories, setWorkoutCalories] = useState<number>(0);
-  const [recentFoods, setRecentFoods] = useState<FoodEntryData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Bottom sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeMealType, setActiveMealType] = useState<MealType>('snack');
 
-  const loadData = useCallback(async () => {
-    const [cravingsData, entriesData, summaryData, historyData, profileData, workoutCal, recent] =
-      await Promise.all([
-        getCravings(),
-        getTodayEntries(),
-        getDailySummary(),
-        getWeekHistory(),
-        getNutritionProfile(),
-        getTodayWorkoutCalories(),
-        getRecentFoods(10),
-      ]);
-    setCravings(cravingsData);
-    setEntries(entriesData);
-    setSummary(summaryData);
-    setWeekHistory(historyData);
-    setProfile(profileData);
-    setWorkoutCalories(workoutCal);
-    setRecentFoods(recent);
-    setIsLoading(false);
-  }, []);
+  // PowerSync reactive hooks
+  const { data: cravingRows } = useCravings();
+  const { data: entryRows, isLoading: entriesLoading } = useTodayEntries();
+  const { data: summaryRows } = useDailySummary();
+  const { data: weekRows } = useWeekHistory();
+  const { data: profileRows } = useNutritionProfile();
+  const { data: workoutCalRows } = useTodayWorkoutCalories();
+  const { data: recentRows } = useRecentFoods(10);
+  const mutations = useDietMutations();
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Map cravings
+  const cravings = useMemo<CravingData[]>(() => {
+    return cravingRows.map((c: any) => ({
+      id: c.id,
+      nameFr: c.name_fr,
+      icon: c.icon,
+      estimatedCalories: c.estimated_calories,
+      category: c.category,
+    }));
+  }, [cravingRows]);
+
+  // Map entries
+  const entries = useMemo<FoodEntryData[]>(() => {
+    return entryRows.map((e: any) => ({
+      id: e.id,
+      foodId: e.food_id,
+      cravingId: e.craving_id,
+      customName: e.custom_name,
+      loggedAt: new Date(e.logged_at),
+      mealType: e.meal_type,
+      quantity: e.quantity ?? '1',
+      calories: e.calories,
+      protein: e.protein,
+      carbohydrates: e.carbohydrates,
+      fat: e.fat,
+      isCheat: !!e.is_cheat,
+      notes: e.notes,
+    }));
+  }, [entryRows]);
+
+  // Map summary
+  const summary = useMemo<{ today: DailySummaryData; avg7d: DailySummaryData } | null>(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (summaryRows.length === 0) {
+      return {
+        today: { date: today, totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0, entriesCount: 0 },
+        avg7d: { date: today, totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0, entriesCount: 0 },
+      };
+    }
+    const s = summaryRows[0] as any;
+    return {
+      today: {
+        date: s.date,
+        totalCalories: parseFloat(s.total_calories || '0'),
+        totalProtein: parseFloat(s.total_protein || '0'),
+        totalCarbs: parseFloat(s.total_carbs || '0'),
+        totalFat: parseFloat(s.total_fat || '0'),
+        entriesCount: s.entries_count || 0,
+      },
+      avg7d: {
+        date: s.date,
+        totalCalories: Math.round(parseFloat(s.avg_7d_calories || '0')),
+        totalProtein: Math.round(parseFloat(s.avg_7d_protein || '0')),
+        totalCarbs: Math.round(parseFloat(s.avg_7d_carbs || '0')),
+        totalFat: Math.round(parseFloat(s.avg_7d_fat || '0')),
+        entriesCount: 0,
+      },
+    };
+  }, [summaryRows]);
+
+  // Map week history
+  const weekHistory = useMemo<DailySummaryData[]>(() => {
+    return weekRows.map((s: any) => ({
+      date: s.date,
+      totalCalories: parseFloat(s.total_calories || '0'),
+      totalProtein: parseFloat(s.total_protein || '0'),
+      totalCarbs: parseFloat(s.total_carbs || '0'),
+      totalFat: parseFloat(s.total_fat || '0'),
+      entriesCount: s.entries_count || 0,
+    }));
+  }, [weekRows]);
+
+  // Map profile
+  const profile = useMemo<NutritionProfileData | null>(() => {
+    if (profileRows.length === 0) return null;
+    const p = profileRows[0] as any;
+    return {
+      goal: p.goal,
+      activityLevel: p.activity_level,
+      height: p.height ? parseFloat(p.height) : null,
+      weight: p.weight ? parseFloat(p.weight) : null,
+      age: p.age,
+      isMale: !!p.is_male,
+      tdee: p.tdee,
+      targetCalories: p.target_calories,
+      targetProtein: p.target_protein,
+      targetCarbs: p.target_carbs,
+      targetFat: p.target_fat,
+    };
+  }, [profileRows]);
+
+  // Workout calories
+  const workoutCalories = useMemo(() => {
+    return (workoutCalRows[0] as any)?.total || 0;
+  }, [workoutCalRows]);
+
+  // Map recent foods (deduplicated)
+  const recentFoods = useMemo<FoodEntryData[]>(() => {
+    const seen = new Set<string>();
+    const unique: FoodEntryData[] = [];
+    for (const e of recentRows as any[]) {
+      const key = e.food_id || e.custom_name || e.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push({
+        id: e.id,
+        foodId: e.food_id,
+        cravingId: e.craving_id,
+        customName: e.custom_name,
+        loggedAt: new Date(e.logged_at),
+        mealType: e.meal_type,
+        quantity: e.quantity ?? '1',
+        calories: e.calories,
+        protein: e.protein,
+        carbohydrates: e.carbohydrates,
+        fat: e.fat,
+        isCheat: !!e.is_cheat,
+        notes: e.notes,
+      });
+      if (unique.length >= 10) break;
+    }
+    return unique;
+  }, [recentRows]);
 
   // Handlers
   const handleOpenAddSheet = (mealType: MealType) => {
@@ -114,7 +228,7 @@ export default function DietPage() {
 
   const handleQuickReAdd = async (entry: FoodEntryData) => {
     setSheetOpen(false);
-    await addFoodEntry({
+    await mutations.addFoodEntry({
       foodId: entry.foodId ?? undefined,
       customName: entry.customName ?? undefined,
       mealType: activeMealType,
@@ -125,43 +239,82 @@ export default function DietPage() {
       fat: entry.fat ? parseFloat(entry.fat) : undefined,
     });
     triggerHaptic('medium');
-    await loadData();
   };
 
   const handleAddCraving = async (cravingId: string, mealType: MealType) => {
-    await addCravingEntry(cravingId, undefined, mealType);
+    const craving = cravings.find((c) => c.id === cravingId);
+    if (!craving) return;
+    await mutations.addFoodEntry({
+      cravingId,
+      customName: craving.nameFr,
+      mealType,
+      quantity: 1,
+      calories: craving.estimatedCalories ?? undefined,
+      isCheat: true,
+    });
     triggerHaptic('medium');
-    await loadData();
     setView('main');
   };
 
-  const handleAddFood = async (data: Parameters<typeof addFoodEntry>[0]) => {
-    await addFoodEntry({ ...data, mealType: data.mealType || activeMealType });
+  const handleAddFood = async (data: {
+    foodId?: string;
+    customName?: string;
+    mealType?: string;
+    quantity: number;
+    calories?: number;
+    protein?: number;
+    carbohydrates?: number;
+    fat?: number;
+    notes?: string;
+  }) => {
+    await mutations.addFoodEntry({ ...data, mealType: data.mealType || activeMealType });
     triggerHaptic('medium');
-    await loadData();
   };
 
   const handleAddQuick = async (name: string, calories: number, mealType: string) => {
-    await addQuickEntry(name, calories, mealType);
+    await mutations.addFoodEntry({
+      customName: name,
+      mealType,
+      quantity: 1,
+      calories,
+    });
     triggerHaptic('medium');
-    await loadData();
     setView('main');
   };
 
-  const handleSaveProfile = async (data: Parameters<typeof saveNutritionProfile>[0]) => {
-    const newProfile = await saveNutritionProfile(data);
-    setProfile(newProfile);
+  const handleSaveProfile = async (data: {
+    goal: string;
+    activityLevel: string;
+    height: number;
+    weight: number;
+    age: number;
+    isMale: boolean;
+  }) => {
+    // Calculate TDEE and macros (Mifflin-St Jeor)
+    const MULTIPLIERS: Record<string, number> = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9 };
+    const ADJUSTMENTS: Record<string, number> = { bulk: 300, maintain: 0, cut: -400 };
+    const bmr = data.isMale
+      ? 10 * data.weight + 6.25 * data.height - 5 * data.age + 5
+      : 10 * data.weight + 6.25 * data.height - 5 * data.age - 161;
+    const tdee = Math.round(bmr * (MULTIPLIERS[data.activityLevel] || 1.55));
+    const targetCalories = Math.round(tdee + (ADJUSTMENTS[data.goal] || 0));
+    const proteinRatio = data.goal === 'bulk' ? 2.0 : data.goal === 'cut' ? 2.2 : 1.8;
+    const fatRatio = data.goal === 'maintain' ? 0.28 : 0.25;
+    const targetProtein = Math.round(data.weight * proteinRatio);
+    const targetFat = Math.round((targetCalories * fatRatio) / 9);
+    const targetCarbs = Math.max(0, Math.round((targetCalories - targetProtein * 4 - targetFat * 9) / 4));
+
+    await mutations.saveNutritionProfile({ ...data, tdee, targetCalories, targetProtein, targetCarbs, targetFat });
     setView('main');
   };
 
   const handleDelete = async (id: string) => {
-    await deleteEntry(id);
-    await loadData();
+    await mutations.deleteEntry(id);
   };
 
   const handleBackToMain = () => setView('main');
 
-  if (isLoading) {
+  if (entriesLoading) {
     return (
       <Box
         sx={{
@@ -268,10 +421,7 @@ export default function DietPage() {
       {view === 'photo' && (
         <PhotoAIView
           mealType={activeMealType}
-          onDone={async () => {
-            await loadData();
-            setView('main');
-          }}
+          onDone={async () => setView('main')}
           onClose={handleBackToMain}
         />
       )}

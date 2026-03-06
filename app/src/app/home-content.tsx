@@ -1,7 +1,16 @@
 'use client'
 
-import React, { useEffect } from 'react'
-import type { GamificationData, UserProfileData, StatsData, WeeklyComparisonData, WeekMetrics } from './profile/actions'
+import React, { useEffect, useMemo } from 'react'
+import { useAuth } from '@/powersync/auth-context'
+import {
+  useUserProfile,
+  useGamification,
+  useUserStats,
+  useWeeklyComparison,
+} from '@/powersync/queries/profile-queries'
+import { useMorphoProfile } from '@/powersync/queries/morphology-queries'
+import { calculateLevel } from '@/lib/xp-utils'
+import { getISOWeekStart } from '@/lib/date-utils'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
@@ -12,6 +21,7 @@ import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Avatar from '@mui/material/Avatar'
+import CircularProgress from '@mui/material/CircularProgress'
 import FitnessCenter from '@mui/icons-material/FitnessCenter'
 import Timeline from '@mui/icons-material/Timeline'
 import Restaurant from '@mui/icons-material/Restaurant'
@@ -23,9 +33,31 @@ import TrendingDown from '@mui/icons-material/TrendingDown'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
 
+type WeekMetrics = {
+  sessions: number
+  volumeKg: number
+  durationMin: number
+  calories: number
+  prCount: number
+}
+
+type WeeklyComparisonData = {
+  thisWeek: WeekMetrics
+  lastWeek: WeekMetrics
+}
+
+type GamificationData = {
+  totalXp: number
+  currentLevel: number
+  xpToNextLevel: number
+  xpProgress: number
+  currentStreak: number
+  longestStreak: number
+  avatarStage: number
+}
+
 type MorphoProfileData = {
   primaryMorphotype: string
-  secondaryMorphotype: string | null
 } | null
 
 const WEEKLY_GOAL = 4
@@ -36,13 +68,6 @@ const QUICK_ACCESS_ITEMS = [
   { label: 'Mesures', href: '/measurements', Icon: Straighten, color: '#64b5f6' },
 ] as const
 
-type HomeContentProps = {
-  profile: UserProfileData
-  gamification: GamificationData
-  stats: StatsData
-  morphoProfile: MorphoProfileData
-  weeklyComparison: WeeklyComparisonData
-}
 
 function getChangeIndicator(cur: number, prev: number): { label: string; color: string; icon: React.ReactNode } {
   if (prev === 0 && cur > 0) return { label: 'Nouveau', color: 'info.main', icon: <TrendingUp sx={{ fontSize: 14 }} /> }
@@ -109,12 +134,101 @@ function WeeklyComparisonCard({ data }: { data: WeeklyComparisonData }) {
   )
 }
 
-export default function HomeContent({ profile, gamification, stats, morphoProfile, weeklyComparison }: HomeContentProps) {
+export default function HomeContent() {
+  const { userId, loading: authLoading } = useAuth()
+
+  if (authLoading || !userId) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  return <HomeContentInner />
+}
+
+function HomeContentInner() {
+  const { data: profileRows } = useUserProfile()
+  const { data: gamificationRows } = useGamification()
+  const { data: statsRows } = useUserStats()
+  const { data: morphoRows } = useMorphoProfile()
+
+  const [thisWeekStart, lastWeekStart] = useMemo(() => {
+    const now = new Date()
+    const tw = getISOWeekStart(now).toISOString()
+    const prev = new Date(now)
+    prev.setDate(prev.getDate() - 7)
+    const lw = getISOWeekStart(prev).toISOString()
+    return [tw, lw]
+  }, [])
+  const { data: weeklyRows } = useWeeklyComparison(thisWeekStart, lastWeekStart)
+
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
     }
   }, [])
+
+  // Map profile
+  const profile = useMemo(() => {
+    if (profileRows.length === 0) return null
+    const r = profileRows[0] as any
+    return { displayName: r.display_name as string | null, email: r.email as string }
+  }, [profileRows])
+
+  // Map gamification
+  const gamification = useMemo<GamificationData | null>(() => {
+    if (gamificationRows.length === 0) return null
+    const r = gamificationRows[0] as any
+    const totalXp = (r.total_xp as number) || 0
+    const levelInfo = calculateLevel(totalXp)
+    return {
+      totalXp,
+      currentLevel: levelInfo.level,
+      xpToNextLevel: levelInfo.xpToNext,
+      xpProgress: Math.round((levelInfo.xpInCurrentLevel / levelInfo.xpToNext) * 100),
+      currentStreak: (r.current_streak as number) || 0,
+      longestStreak: (r.longest_streak as number) || 0,
+      avatarStage: (r.avatar_stage as number) || 1,
+    }
+  }, [gamificationRows])
+
+  // Map stats
+  const stats = useMemo(() => {
+    if (statsRows.length === 0) return null
+    const r = statsRows[0] as any
+    return {
+      totalWorkouts: r.total_workouts || 0,
+      totalFoodEntries: r.total_food_entries || 0,
+      totalMeasurements: r.total_measurements || 0,
+      totalPRs: r.total_prs || 0,
+      bossFightsWon: r.boss_fights_won || 0,
+    }
+  }, [statsRows])
+
+  // Map morpho profile
+  const morphoProfile = useMemo<MorphoProfileData>(() => {
+    if (morphoRows.length === 0) return null
+    const r = morphoRows[0] as any
+    return { primaryMorphotype: r.primary_morphotype }
+  }, [morphoRows])
+
+  // Map weekly comparison
+  const weeklyComparison = useMemo<WeeklyComparisonData>(() => {
+    const empty: WeekMetrics = { sessions: 0, volumeKg: 0, durationMin: 0, calories: 0, prCount: 0 }
+    const thisWeek: WeekMetrics = { ...empty }
+    const lastWeek: WeekMetrics = { ...empty }
+    for (const row of weeklyRows as any[]) {
+      const target = row.week === 'this' ? thisWeek : lastWeek
+      target.sessions = row.sessions || 0
+      target.volumeKg = Math.round(parseFloat(row.volume_kg || '0'))
+      target.durationMin = parseInt(row.duration_min || '0')
+      target.calories = parseInt(row.calories || '0')
+      target.prCount = row.pr_count || 0
+    }
+    return { thisWeek, lastWeek }
+  }, [weeklyRows])
 
   const weeklyWorkouts = Math.min(weeklyComparison.thisWeek.sessions, WEEKLY_GOAL)
   const streakDays = gamification?.currentStreak || 0

@@ -1,20 +1,105 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { useAuth } from '@/powersync/auth-context';
 import {
-  getMeasurements,
-  getLatestMeasurement,
-  getProgressSummary,
-  getProgressPhotos,
-  addMeasurement,
-  updateMeasurement,
-  deleteMeasurement,
-  deletePhoto,
-  updatePhotoType,
-  type MeasurementData,
+  useMeasurements,
+  useLatestMeasurement,
+  useMeasurementHistory,
+  useProgressPhotos,
+  useFirstAndLastMeasurement,
+} from '@/powersync/queries/measurement-queries';
+import {
+  useMeasurementMutations,
   type MeasurementInput,
-  type ProgressPhotoData,
-} from './actions';
+} from '@/powersync/mutations/measurement-mutations';
+
+// Types matching the camelCase convention used throughout the page
+type MeasurementData = {
+  id: string;
+  measuredAt: string;
+  height: string | null;
+  weight: string | null;
+  bodyFatPercentage: string | null;
+  neck: string | null;
+  shoulders: string | null;
+  chest: string | null;
+  leftArm: string | null;
+  rightArm: string | null;
+  leftForearm: string | null;
+  rightForearm: string | null;
+  waist: string | null;
+  abdomen: string | null;
+  hips: string | null;
+  glutes: string | null;
+  leftThigh: string | null;
+  rightThigh: string | null;
+  leftCalf: string | null;
+  rightCalf: string | null;
+  wrist: string | null;
+  ankle: string | null;
+  notes: string | null;
+};
+
+type ProgressPhotoData = {
+  id: string;
+  photoUrl: string;
+  thumbnailUrl: string | null;
+  photoType: string;
+  takenAt: string;
+  measurementId: string | null;
+  notes: string | null;
+};
+
+// Map SQLite snake_case rows to camelCase
+function toMeasurementData(row: Record<string, any>): MeasurementData {
+  return {
+    id: row.id,
+    measuredAt: row.measured_at,
+    height: row.height,
+    weight: row.weight,
+    bodyFatPercentage: row.body_fat_percentage,
+    neck: row.neck,
+    shoulders: row.shoulders,
+    chest: row.chest,
+    leftArm: row.left_arm,
+    rightArm: row.right_arm,
+    leftForearm: row.left_forearm,
+    rightForearm: row.right_forearm,
+    waist: row.waist,
+    abdomen: row.abdomen,
+    hips: row.hips,
+    glutes: row.glutes,
+    leftThigh: row.left_thigh,
+    rightThigh: row.right_thigh,
+    leftCalf: row.left_calf,
+    rightCalf: row.right_calf,
+    wrist: row.wrist,
+    ankle: row.ankle,
+    notes: row.notes,
+  };
+}
+
+function toPhotoData(row: Record<string, any>): ProgressPhotoData {
+  return {
+    id: row.id,
+    photoUrl: row.photo_url,
+    thumbnailUrl: row.thumbnail_url,
+    photoType: row.photo_type,
+    takenAt: row.taken_at,
+    measurementId: row.measurement_id,
+    notes: row.notes,
+  };
+}
+
+type ProgressSummary = {
+  firstDate: Date | null;
+  latestDate: Date | null;
+  weightChange: number | null;
+  bodyFatChange: number | null;
+  waistChange: number | null;
+  chestChange: number | null;
+};
 import Link from 'next/link';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -81,52 +166,70 @@ const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
 type TabValue = 'overview' | 'history' | 'photos';
 
 export default function MeasurementsPage() {
+  const { userId, loading: authLoading } = useAuth();
+
+  if (authLoading || !userId) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return <MeasurementsContent />;
+}
+
+function MeasurementsContent() {
   const [activeTab, setActiveTab] = useState<TabValue>('overview');
-  const [measurements, setMeasurements] = useState<MeasurementData[]>([]);
-  const [latest, setLatest] = useState<MeasurementData | null>(null);
-  const [previous, setPrevious] = useState<MeasurementData | null>(null);
-  const [photos, setPhotos] = useState<ProgressPhotoData[]>([]);
-  const [summary, setSummary] = useState<Awaited<ReturnType<typeof getProgressSummary>> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMeasurement, setEditingMeasurement] = useState<MeasurementData | null>(null);
   const [showExport, setShowExport] = useState(false);
 
-  const loadData = async () => {
-    const [measurementsData, latestData, summaryData, photosData] = await Promise.all([
-      getMeasurements(),
-      getLatestMeasurement(),
-      getProgressSummary(),
-      getProgressPhotos(),
-    ]);
-    setMeasurements(measurementsData);
-    setLatest(latestData);
-    setPrevious(measurementsData.length >= 2 ? measurementsData[1] : null);
-    setSummary(summaryData);
-    setPhotos(photosData);
-    setIsLoading(false);
-  };
+  // PowerSync reactive queries (auto-update on local DB changes)
+  const { data: rawMeasurements, isLoading: loadingMeasurements } = useMeasurements(50);
+  const { data: rawLatest } = useLatestMeasurement();
+  const { data: rawPhotos } = useProgressPhotos(20);
+  const { first: rawFirst, latest: rawLastForSummary } = useFirstAndLastMeasurement();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const mutations = useMeasurementMutations();
+
+  // Map snake_case rows to camelCase
+  const measurements = useMemo(() => rawMeasurements.map(toMeasurementData), [rawMeasurements]);
+  const latest = useMemo(() => rawLatest.length > 0 ? toMeasurementData(rawLatest[0]) : null, [rawLatest]);
+  const previous = useMemo(() => measurements.length >= 2 ? measurements[1] : null, [measurements]);
+  const photos = useMemo(() => rawPhotos.map(toPhotoData), [rawPhotos]);
+  const isLoading = loadingMeasurements;
+
+  // Compute progress summary from first and last measurements
+  const summary = useMemo<ProgressSummary | null>(() => {
+    const first = rawFirst.data.length > 0 ? rawFirst.data[0] : null;
+    const last = rawLastForSummary.data.length > 0 ? rawLastForSummary.data[0] : null;
+    if (!first || !last) return null;
+    const calc = (a: string | null, b: string | null) =>
+      a && b ? parseFloat(b) - parseFloat(a) : null;
+    return {
+      firstDate: first.measured_at ? new Date(first.measured_at) : null,
+      latestDate: last.measured_at ? new Date(last.measured_at) : null,
+      weightChange: calc(first.weight, last.weight),
+      bodyFatChange: calc(first.body_fat_percentage, last.body_fat_percentage),
+      waistChange: calc(first.waist, last.waist),
+      chestChange: calc(first.chest, last.chest),
+    };
+  }, [rawFirst.data, rawLastForSummary.data]);
 
   const handleAddMeasurement = async (data: MeasurementInput) => {
-    await addMeasurement(data);
-    await loadData();
+    await mutations.addMeasurement(data);
     setShowAddForm(false);
   };
 
   const handleUpdateMeasurement = async (data: MeasurementInput) => {
     if (!editingMeasurement) return;
-    await updateMeasurement(editingMeasurement.id, data);
-    await loadData();
+    await mutations.updateMeasurement(editingMeasurement.id, data);
     setEditingMeasurement(null);
   };
 
   const handleDeleteMeasurement = async (id: string) => {
-    await deleteMeasurement(id);
-    await loadData();
+    await mutations.deleteMeasurement(id);
   };
 
   return (
@@ -208,6 +311,7 @@ export default function MeasurementsPage() {
                 latest={latest}
                 previous={previous}
                 summary={summary}
+                measurementCount={measurements.length}
                 onGoToPhotos={() => setActiveTab('photos')}
                 onGoToHistory={() => setActiveTab('history')}
                 onAddMeasurement={() => { triggerHaptic('light'); setShowAddForm(true); }}
@@ -218,7 +322,7 @@ export default function MeasurementsPage() {
               <HistoryTab measurements={measurements} onDelete={handleDeleteMeasurement} />
             )}
             {activeTab === 'photos' && (
-              <PhotosTab photos={photos} onRefresh={loadData} />
+              <PhotosTab photos={photos} mutations={mutations} />
             )}
           </>
         )}
@@ -295,6 +399,7 @@ function OverviewTab({
   latest,
   previous,
   summary,
+  measurementCount,
   onGoToPhotos,
   onGoToHistory,
   onAddMeasurement,
@@ -302,7 +407,8 @@ function OverviewTab({
 }: {
   latest: MeasurementData | null;
   previous: MeasurementData | null;
-  summary: Awaited<ReturnType<typeof getProgressSummary>> | null;
+  summary: ProgressSummary | null;
+  measurementCount: number;
   onGoToPhotos: () => void;
   onGoToHistory: () => void;
   onAddMeasurement: () => void;
@@ -396,7 +502,7 @@ function OverviewTab({
         </Card>
 
         {/* Sparkline / Weight Chart */}
-        {summary && summary.totalMeasurements >= 2 && <WeightChart />}
+        {measurementCount >= 2 && <WeightChart />}
 
         {/* Body composition - 2 cards */}
         <Stack direction="row" spacing={1.5}>
@@ -504,13 +610,15 @@ function ListRow({ label, value, unit, change, inverse = false }: {
 // Weight Chart
 // =========================================================
 function WeightChart() {
-  const [data, setData] = useState<{ date: string; value: number }[]>([]);
+  const { data: rawData } = useMeasurementHistory('weight', 10);
 
-  useEffect(() => {
-    import('./actions').then(({ getMeasurementHistory }) => {
-      getMeasurementHistory('weight', 10).then(setData);
-    });
-  }, []);
+  const data = useMemo(() =>
+    rawData
+      .filter((r: any) => r.weight != null)
+      .map((r: any) => ({ date: r.measured_at, value: parseFloat(r.weight) }))
+      .reverse(),
+    [rawData]
+  );
 
   if (data.length < 2) return null;
 
@@ -705,10 +813,10 @@ function HistoryTab({
 // =========================================================
 function PhotosTab({
   photos,
-  onRefresh,
+  mutations,
 }: {
   photos: ProgressPhotoData[];
-  onRefresh: () => void;
+  mutations: ReturnType<typeof useMeasurementMutations>;
 }) {
   const [showUpload, setShowUpload] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhotoData | null>(null);
@@ -717,18 +825,16 @@ function PhotosTab({
 
   const handleDeletePhoto = async () => {
     if (!selectedPhoto) return;
-    await deletePhoto(selectedPhoto.id);
+    await mutations.deletePhoto(selectedPhoto.id);
     setDeleteDialogOpen(false);
     setSelectedPhoto(null);
-    onRefresh();
   };
 
   const handleChangeType = async (newType: 'front' | 'back' | 'side_left' | 'side_right') => {
     if (!selectedPhoto) return;
-    await updatePhotoType(selectedPhoto.id, newType);
+    await mutations.updatePhotoType(selectedPhoto.id, newType);
     setEditingType(false);
     setSelectedPhoto(null);
-    onRefresh();
   };
 
   if (photos.length === 0 && !showUpload) {
@@ -823,7 +929,8 @@ function PhotosTab({
       {showUpload && (
         <PhotoUploadModal
           onClose={() => setShowUpload(false)}
-          onUpload={onRefresh}
+          onUpload={() => setShowUpload(false)}
+          mutations={mutations}
         />
       )}
 
@@ -967,9 +1074,11 @@ function PhotosTab({
 function PhotoUploadModal({
   onClose,
   onUpload,
+  mutations,
 }: {
   onClose: () => void;
   onUpload: () => void;
+  mutations: ReturnType<typeof useMeasurementMutations>;
 }) {
   const [photoType, setPhotoType] = useState<'front' | 'back' | 'side_left' | 'side_right'>('front');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -994,8 +1103,7 @@ function PhotoUploadModal({
     setIsUploading(true);
     setUploadProgress(true);
     try {
-      const { addProgressPhoto } = await import('./actions');
-      await addProgressPhoto(previewUrl, photoType);
+      await mutations.addProgressPhoto(previewUrl, photoType);
       triggerHaptic('heavy');
       onUpload();
       onClose();
@@ -1544,7 +1652,7 @@ function downloadFile(content: string, filename: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-function formatDate(d: Date) {
+function formatDate(d: Date | string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 

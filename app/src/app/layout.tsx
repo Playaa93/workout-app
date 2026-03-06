@@ -4,6 +4,8 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MuiProvider } from "@/components/mui-theme-provider";
+import { PowerSyncProvider } from "@/powersync/PowerSyncProvider";
+import { AuthProvider } from "@/powersync/auth-context";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +53,11 @@ export default function RootLayout({
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <ThemeProvider>
             <MuiProvider>
-              {children}
+              <AuthProvider>
+                <PowerSyncProvider>
+                  {children}
+                </PowerSyncProvider>
+              </AuthProvider>
             </MuiProvider>
           </ThemeProvider>
         </AppRouterCacheProvider>

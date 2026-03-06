@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import type { MorphoQuestion, MorphotypeResult } from './types';
-import { calculateMorphotype, saveMorphoProfile } from './actions';
+import { calculateMorphotype } from './morpho-logic';
+import { useMorphologyMutations } from '@/powersync/mutations/morphology-mutations';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -30,6 +31,7 @@ export function Questionnaire({ questions, onComplete }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isCalculating, setIsCalculating] = useState(false);
+  const mutations = useMorphologyMutations();
 
   const currentQuestion = questions[currentIndex];
   const progress = ((currentIndex + 1) / questions.length) * 100;
@@ -44,8 +46,30 @@ export function Questionnaire({ questions, onComplete }: Props) {
     } else {
       setIsCalculating(true);
       try {
-        const result = await calculateMorphotype(newAnswers);
-        await saveMorphoProfile(newAnswers, result);
+        const result = calculateMorphotype(newAnswers);
+        await mutations.saveMorphoProfile({
+          primaryMorphotype: result.primary,
+          secondaryMorphotype: result.secondary,
+          morphotypeScore: {
+            ecto: result.scores.ecto,
+            meso: result.scores.meso,
+            endo: result.scores.endo,
+            globalType: result.globalType,
+            structure: result.structure,
+            proportions: result.proportions,
+            mobility: result.mobility,
+            insertions: result.insertions,
+            metabolism: result.metabolism,
+          },
+          torsoProportion: result.proportions.torsoLength,
+          armProportion: result.proportions.armLength,
+          legProportion: result.proportions.femurLength,
+          strengths: result.strengths,
+          weaknesses: result.weaknesses,
+          recommendedExercises: result.recommendedExercises,
+          exercisesToAvoid: result.exercisesToAvoid,
+          questionnaireResponses: newAnswers,
+        });
         onComplete(result);
       } catch (error) {
         console.error('Error calculating morphotype:', error);

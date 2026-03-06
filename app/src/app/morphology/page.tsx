@@ -1,107 +1,106 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Questionnaire } from './questionnaire';
 import { Results } from './results';
-import type { MorphoQuestion, MorphotypeResult } from './types';
-import { getMorphoQuestions, getMorphoProfile } from './actions';
+import type { MorphotypeResult } from './types';
+import { MORPHO_QUESTIONS, calculateMorphotype } from './morpho-logic';
+import { useAuth } from '@/powersync/auth-context';
+import { useMorphoProfile } from '@/powersync/queries/morphology-queries';
+import { parseJson, parseJsonArray } from '@/powersync/helpers';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import { triggerHaptic } from '@/lib/haptic';
 import BottomNav from '@/components/BottomNav';
 
-type ViewState = 'loading' | 'intro' | 'questionnaire' | 'results';
+type ViewState = 'intro' | 'questionnaire' | 'results';
 
 export default function MorphologyPage() {
-  const [view, setView] = useState<ViewState>('loading');
-  const [questions, setQuestions] = useState<MorphoQuestion[]>([]);
+  const { userId, loading: authLoading } = useAuth();
+
+  if (authLoading || !userId) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return <MorphologyContent />;
+}
+
+function MorphologyContent() {
+  const { data: profileRows, isLoading: profileLoading } = useMorphoProfile();
+  const [view, setView] = useState<ViewState | null>(null);
   const [result, setResult] = useState<MorphotypeResult | null>(null);
 
-  useEffect(() => {
-    async function init() {
-      const existingProfile = await getMorphoProfile();
+  // Compute existing result from profile data
+  const existingResult = useMemo<MorphotypeResult | null>(() => {
+    if (profileLoading || profileRows.length === 0) return null;
+    const profile = profileRows[0];
 
-      if (existingProfile) {
-        const scoreData = existingProfile.morphotypeScore as {
-          ecto: number;
-          meso: number;
-          endo: number;
-          globalType?: MorphotypeResult['globalType'];
-          structure?: MorphotypeResult['structure'];
-          proportions?: MorphotypeResult['proportions'];
-          mobility?: MorphotypeResult['mobility'];
-          insertions?: MorphotypeResult['insertions'];
-          metabolism?: MorphotypeResult['metabolism'];
-        };
+    const scoreData = parseJson<{
+      ecto: number; meso: number; endo: number;
+      globalType?: MorphotypeResult['globalType'];
+      structure?: MorphotypeResult['structure'];
+      proportions?: MorphotypeResult['proportions'];
+      mobility?: MorphotypeResult['mobility'];
+      insertions?: MorphotypeResult['insertions'];
+      metabolism?: MorphotypeResult['metabolism'];
+    }>(profile.morphotype_score as string);
 
-        // If we have the new format with all segments, use it directly
-        if (scoreData.structure && scoreData.mobility && scoreData.metabolism) {
-          // Recalculate from stored answers to get full recommendations
-          const answers = existingProfile.questionnaireResponses as Record<string, string>;
-          if (answers && Object.keys(answers).length > 0) {
-            const { calculateMorphotype } = await import('./actions');
-            const recalculatedResult = await calculateMorphotype(answers);
-            setResult(recalculatedResult);
-          } else {
-            // Build result from stored data
-            setResult({
-              globalType: scoreData.globalType || 'balanced',
-              structure: scoreData.structure,
-              proportions: scoreData.proportions || {
-                torsoLength: (existingProfile.torsoProportion as 'short' | 'medium' | 'long') || 'medium',
-                armLength: (existingProfile.armProportion as 'short' | 'medium' | 'long') || 'medium',
-                femurLength: (existingProfile.legProportion as 'short' | 'medium' | 'long') || 'medium',
-                kneeValgus: 'none',
-              },
-              mobility: scoreData.mobility,
-              insertions: scoreData.insertions || { biceps: 'medium', calves: 'medium', chest: 'medium' },
-              metabolism: scoreData.metabolism,
-              squat: { exercise: 'Squat', advantages: [], disadvantages: [], variants: [], tips: [] },
-              deadlift: { exercise: 'Soulevé de terre', advantages: [], disadvantages: [], variants: [], tips: [] },
-              bench: { exercise: 'Développé couché', advantages: [], disadvantages: [], variants: [], tips: [] },
-              curls: { exercise: 'Curls biceps', advantages: [], disadvantages: [], variants: [], tips: [] },
-              mobilityWork: [],
-              primary: existingProfile.primaryMorphotype as MorphotypeResult['primary'],
-              secondary: null,
-              scores: { ecto: scoreData.ecto || 0, meso: scoreData.meso || 0, endo: scoreData.endo || 0 },
-              strengths: existingProfile.strengths || [],
-              weaknesses: existingProfile.weaknesses || [],
-              recommendedExercises: existingProfile.recommendedExercises || [],
-              exercisesToAvoid: existingProfile.exercisesToAvoid || [],
-            });
-          }
-        } else {
-          // Old format - prompt to retake the questionnaire
-          const qs = await getMorphoQuestions();
-          setQuestions(qs);
-          setView('intro');
-          return;
-        }
-        setView('results');
-      } else {
-        const qs = await getMorphoQuestions();
-        setQuestions(qs);
-        setView('intro');
-      }
+    if (!scoreData?.structure || !scoreData?.mobility || !scoreData?.metabolism) return null;
+
+    // Recalculate from stored answers for full recommendations
+    const answers = parseJson<Record<string, string>>(profile.questionnaire_responses as string);
+    if (answers && Object.keys(answers).length > 0) {
+      return calculateMorphotype(answers);
     }
 
-    init();
-  }, []);
+    // Fallback: build from stored data
+    const strengths = parseJsonArray<string>(profile.strengths as string);
+    const weaknesses = parseJsonArray<string>(profile.weaknesses as string);
+    const recommendedExercises = parseJsonArray<string>(profile.recommended_exercises as string);
+    const exercisesToAvoid = parseJsonArray<string>(profile.exercises_to_avoid as string);
 
-  const handleStartQuestionnaire = async () => {
-    if (questions.length === 0) {
-      const qs = await getMorphoQuestions();
-      setQuestions(qs);
-    }
+    return {
+      globalType: scoreData.globalType || 'balanced',
+      structure: scoreData.structure,
+      proportions: scoreData.proportions || {
+        torsoLength: (profile.torso_proportion as 'short' | 'medium' | 'long') || 'medium',
+        armLength: (profile.arm_proportion as 'short' | 'medium' | 'long') || 'medium',
+        femurLength: (profile.leg_proportion as 'short' | 'medium' | 'long') || 'medium',
+        kneeValgus: 'none' as const,
+      },
+      mobility: scoreData.mobility,
+      insertions: scoreData.insertions || { biceps: 'medium' as const, calves: 'medium' as const, chest: 'medium' as const },
+      metabolism: scoreData.metabolism,
+      squat: { exercise: 'Squat', advantages: [], disadvantages: [], variants: [], tips: [] },
+      deadlift: { exercise: 'Soulevé de terre', advantages: [], disadvantages: [], variants: [], tips: [] },
+      bench: { exercise: 'Développé couché', advantages: [], disadvantages: [], variants: [], tips: [] },
+      curls: { exercise: 'Curls biceps', advantages: [], disadvantages: [], variants: [], tips: [] },
+      mobilityWork: [],
+      primary: profile.primary_morphotype as MorphotypeResult['primary'],
+      secondary: null,
+      scores: { ecto: scoreData.ecto || 0, meso: scoreData.meso || 0, endo: scoreData.endo || 0 },
+      strengths,
+      weaknesses,
+      recommendedExercises,
+      exercisesToAvoid,
+    };
+  }, [profileRows, profileLoading]);
+
+  // Determine active view
+  const activeView = view ?? (profileLoading ? null : (existingResult ? 'results' : 'intro'));
+  const activeResult = result ?? existingResult;
+
+  const handleStartQuestionnaire = () => {
     setView('questionnaire');
   };
 
@@ -110,9 +109,7 @@ export default function MorphologyPage() {
     setView('results');
   };
 
-  const handleRetake = async () => {
-    const qs = await getMorphoQuestions();
-    setQuestions(qs);
+  const handleRetake = () => {
     setResult(null);
     setView('intro');
   };
@@ -147,20 +144,20 @@ export default function MorphologyPage() {
       {/* Content */}
       <Box sx={{ flex: 1, p: 2, pb: 10 }}>
         <Box sx={{ width: '100%', maxWidth: 480, mx: 'auto' }}>
-        {view === 'loading' && (
+        {activeView === null && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
             <CircularProgress />
           </Box>
         )}
 
-        {view === 'intro' && <IntroView onStart={handleStartQuestionnaire} />}
+        {activeView === 'intro' && <IntroView onStart={handleStartQuestionnaire} />}
 
-        {view === 'questionnaire' && questions.length > 0 && (
-          <Questionnaire questions={questions} onComplete={handleComplete} />
+        {activeView === 'questionnaire' && (
+          <Questionnaire questions={MORPHO_QUESTIONS} onComplete={handleComplete} />
         )}
 
-        {view === 'results' && result && (
-          <Results result={result} onRetake={handleRetake} />
+        {activeView === 'results' && activeResult && (
+          <Results result={activeResult} onRetake={handleRetake} />
         )}
         </Box>
       </Box>

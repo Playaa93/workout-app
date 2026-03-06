@@ -1,27 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import {
-  getUserProfile,
-  getGamificationData,
-  getAchievements,
-  getRecentXp,
-  getUserStats,
   getGeminiApiKey,
   saveGeminiApiKey,
   getHuaweiCredentials,
   saveHuaweiCredentials,
   disconnectHuawei,
-  type UserProfileData,
-  type GamificationData,
-  type AchievementData,
-  type XpTransactionData,
-  type StatsData,
   type HuaweiCredentials,
 } from './actions';
-import { getMorphoProfile } from '../morphology/actions';
+import { useAuth } from '@/powersync/auth-context';
+import {
+  useUserProfile,
+  useGamification,
+  useAchievementsWithStatus,
+  useRecentXp,
+  useUserStats,
+} from '@/powersync/queries/profile-queries';
+import { useMorphoProfile } from '@/powersync/queries/morphology-queries';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -59,47 +57,154 @@ import LinkOff from '@mui/icons-material/LinkOff';
 import Link2 from '@mui/icons-material/Link';
 import { logout } from '@/lib/auth-actions';
 import { triggerHaptic } from '@/lib/haptic';
+import { calculateLevel } from '@/lib/xp-utils';
+import { parseJson, parseJsonArray } from '@/powersync/helpers';
 import BottomNav from '@/components/BottomNav';
 
 type MorphoProfileData = {
   primaryMorphotype: string;
-  secondaryMorphotype: string | null;
   morphotypeScore: { globalType?: string } | null;
-  strengths: string[] | null;
-  weaknesses: string[] | null;
-  recommendedExercises: string[] | null;
+  strengths: string[];
+  weaknesses: string[];
 } | null;
 
-export default function ProfilePage() {
-  const [tab, setTab] = useState(0);
-  const [profile, setProfile] = useState<UserProfileData | null>(null);
-  const [gamification, setGamification] = useState<GamificationData | null>(null);
-  const [achievements, setAchievements] = useState<AchievementData[]>([]);
-  const [recentXp, setRecentXp] = useState<XpTransactionData[]>([]);
-  const [stats, setStats] = useState<StatsData | null>(null);
-  const [morphoProfile, setMorphoProfile] = useState<MorphoProfileData>(null);
-  const [isLoading, setIsLoading] = useState(true);
+type GamificationData = {
+  totalXp: number;
+  currentLevel: number;
+  xpToNextLevel: number;
+  xpProgress: number;
+  currentStreak: number;
+  longestStreak: number;
+  avatarStage: number;
+};
 
-  useEffect(() => {
-    async function loadData() {
-      const [profileData, gamificationData, achievementsData, xpData, statsData, morphoData] = await Promise.all([
-        getUserProfile(),
-        getGamificationData(),
-        getAchievements(),
-        getRecentXp(),
-        getUserStats(),
-        getMorphoProfile(),
-      ]);
-      setProfile(profileData);
-      setGamification(gamificationData);
-      setAchievements(achievementsData);
-      setRecentXp(xpData);
-      setStats(statsData);
-      setMorphoProfile(morphoData as MorphoProfileData);
-      setIsLoading(false);
-    }
-    loadData();
-  }, []);
+type AchievementData = {
+  id: string;
+  key: string;
+  nameFr: string;
+  descriptionFr: string | null;
+  icon: string | null;
+  xpReward: number;
+  category: string | null;
+  isSecret: boolean;
+  unlockedAt: string | null;
+};
+
+type XpTransactionData = {
+  id: string;
+  amount: number;
+  reason: string;
+  createdAt: string;
+};
+
+type StatsData = {
+  totalWorkouts: number;
+  totalFoodEntries: number;
+  totalMeasurements: number;
+  totalPRs: number;
+  bossFightsWon: number;
+};
+
+export default function ProfilePage() {
+  const { userId, loading: authLoading } = useAuth();
+
+  if (authLoading || !userId) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return <ProfileContent />;
+}
+
+function ProfileContent() {
+  const [tab, setTab] = useState(0);
+
+  // PowerSync reactive hooks
+  const { data: profileRows, isLoading: profileLoading } = useUserProfile();
+  const { data: gamificationRows, isLoading: gamLoading } = useGamification();
+  const { data: achievementRows, isLoading: achLoading } = useAchievementsWithStatus();
+  const { data: xpRows, isLoading: xpLoading } = useRecentXp();
+  const { data: statsRows, isLoading: statsLoading } = useUserStats();
+  const { data: morphoRows } = useMorphoProfile();
+
+  const isLoading = profileLoading || gamLoading || achLoading || xpLoading || statsLoading;
+
+  // Map profile
+  const profile = useMemo(() => {
+    if (profileRows.length === 0) return null;
+    const r = profileRows[0];
+    return { id: r.id as string, displayName: r.display_name as string | null, email: r.email as string };
+  }, [profileRows]);
+
+  // Map gamification
+  const gamification = useMemo<GamificationData | null>(() => {
+    if (gamificationRows.length === 0) return null;
+    const r = gamificationRows[0];
+    const totalXp = (r.total_xp as number) || 0;
+    const levelInfo = calculateLevel(totalXp);
+    return {
+      totalXp,
+      currentLevel: levelInfo.level,
+      xpToNextLevel: levelInfo.xpToNext,
+      xpProgress: Math.round((levelInfo.xpInCurrentLevel / levelInfo.xpToNext) * 100),
+      currentStreak: (r.current_streak as number) || 0,
+      longestStreak: (r.longest_streak as number) || 0,
+      avatarStage: (r.avatar_stage as number) || 1,
+    };
+  }, [gamificationRows]);
+
+  // Map achievements
+  const achievements = useMemo<AchievementData[]>(() => {
+    return achievementRows.map((a: any) => ({
+      id: a.id,
+      key: a.key,
+      nameFr: a.name_fr,
+      descriptionFr: a.description_fr,
+      icon: a.icon,
+      xpReward: a.xp_reward || 0,
+      category: a.category,
+      isSecret: !!a.is_secret,
+      unlockedAt: a.unlocked_at || null,
+    }));
+  }, [achievementRows]);
+
+  // Map XP transactions
+  const recentXp = useMemo<XpTransactionData[]>(() => {
+    return xpRows.map((t: any) => ({
+      id: t.id,
+      amount: t.amount,
+      reason: t.reason,
+      createdAt: t.created_at,
+    }));
+  }, [xpRows]);
+
+  // Map stats
+  const stats = useMemo<StatsData | null>(() => {
+    if (statsRows.length === 0) return null;
+    const r = statsRows[0] as any;
+    return {
+      totalWorkouts: r.total_workouts || 0,
+      totalFoodEntries: r.total_food_entries || 0,
+      totalMeasurements: r.total_measurements || 0,
+      totalPRs: r.total_prs || 0,
+      bossFightsWon: r.boss_fights_won || 0,
+    };
+  }, [statsRows]);
+
+  // Map morpho profile
+  const morphoProfile = useMemo<MorphoProfileData>(() => {
+    if (morphoRows.length === 0) return null;
+    const r = morphoRows[0] as any;
+    return {
+      primaryMorphotype: r.primary_morphotype,
+      morphotypeScore: parseJson<{ globalType?: string }>(r.morphotype_score as string),
+      strengths: parseJsonArray<string>(r.strengths as string),
+      weaknesses: parseJsonArray<string>(r.weaknesses as string),
+    };
+  }, [morphoRows]);
 
   if (isLoading) {
     return (
@@ -271,7 +376,7 @@ export default function ProfilePage() {
 
       {/* Content */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pb: 10 }}>
-        {tab === 0 && stats && <StatsTab stats={stats} achievements={achievements} morphoProfile={morphoProfile} />}
+        {tab === 0 && <StatsTab stats={stats} achievements={achievements} morphoProfile={morphoProfile} />}
         {tab === 1 && <AchievementsTab achievements={achievements} />}
         {tab === 2 && <HistoryTab transactions={recentXp} />}
         {tab === 3 && <SettingsTab />}
@@ -300,8 +405,9 @@ const morphotypeInfo: Record<string, { emoji: string; title: string; gradient: s
   ecto_endo: { emoji: '🦎', title: 'Ecto-Endo', gradient: 'linear-gradient(135deg, #3b82f6 0%, #10b981 100%)' },
 };
 
-function StatsTab({ stats, achievements, morphoProfile }: { stats: StatsData; achievements: AchievementData[]; morphoProfile: MorphoProfileData }) {
+function StatsTab({ stats, achievements, morphoProfile }: { stats: StatsData | null; achievements: AchievementData[]; morphoProfile: MorphoProfileData }) {
   const unlockedCount = achievements.filter((a) => a.unlockedAt).length;
+  if (!stats) return null;
   const totalCount = achievements.length;
 
   return (
@@ -531,7 +637,7 @@ function HistoryTab({ transactions }: { transactions: XpTransactionData[] }) {
                   <Box>
                     <Typography variant="body2" fontWeight={500}>{tx.reason}</Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {new Date(tx.createdAt).toLocaleDateString('fr-FR', {
+                      {new Date(tx.createdAt as string).toLocaleDateString('fr-FR', {
                         day: 'numeric',
                         month: 'short',
                         hour: '2-digit',

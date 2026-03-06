@@ -1,20 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  getRecentSessions,
-  getTemplates,
-  startWorkoutSession,
-  startWorkoutFromTemplate,
-  deleteSession,
-  getAllSessionsForExport,
-  type WorkoutSession,
-  type WorkoutTemplate,
-  type ExportSessionData,
+import type {
+  WorkoutSession,
+  WorkoutTemplate,
+  ExportSessionData,
 } from './actions';
-import { startCardioSession, importCardioSession } from './cardio-actions';
+import { importCardioSession } from './cardio-actions';
+import { useAuth } from '@/powersync/auth-context';
+import {
+  useRecentSessions,
+  useTemplates,
+  useAllSessionsForExport,
+  useAllSetsForExport,
+} from '@/powersync/queries/workout-queries';
+import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
 import { compressImage } from '@/lib/image-utils';
 import type { CardioActivity } from '@/db/schema';
@@ -59,14 +61,64 @@ import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import Watch from '@mui/icons-material/Watch';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
+import { parseJsonArray } from '@/powersync/helpers';
 import BottomNav from '@/components/BottomNav';
 import { downloadFile, fmtDateFR, fmtTimeFR, formatDuration, escapeHtml, writeExcelFile, openPrintableHtml } from '@/lib/export-utils';
 
 export default function WorkoutPage() {
+  const { userId, loading: authLoading } = useAuth();
+
+  if (authLoading || !userId) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return <WorkoutContent />;
+}
+
+function WorkoutContent() {
   const router = useRouter();
-  const [sessions, setSessions] = useState<WorkoutSession[]>([]);
-  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const mutations = useWorkoutMutations();
+
+  // PowerSync reactive hooks
+  const { data: sessionRows, isLoading: sessionsLoading } = useRecentSessions();
+  const { data: templateRows, isLoading: templatesLoading } = useTemplates();
+  const isLoading = sessionsLoading || templatesLoading;
+
+  // Map sessions
+  const sessions = useMemo<WorkoutSession[]>(() => {
+    return sessionRows.map((s: any) => ({
+      id: s.id,
+      startedAt: new Date(s.started_at),
+      endedAt: s.ended_at ? new Date(s.ended_at) : null,
+      durationMinutes: s.duration_minutes,
+      totalVolume: s.total_volume,
+      caloriesBurned: s.calories_burned,
+      notes: s.notes,
+      sessionType: s.session_type,
+      cardioActivity: s.cardio_activity,
+      distanceMeters: s.distance_meters,
+      avgPaceSecondsPerKm: s.avg_pace_seconds_per_km,
+      avgSpeedKmh: s.avg_speed_kmh,
+    }));
+  }, [sessionRows]);
+
+  // Map templates
+  const templates = useMemo<WorkoutTemplate[]>(() => {
+    return templateRows.map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      targetMuscles: parseJsonArray<string>(t.target_muscles),
+      estimatedDuration: t.estimated_duration,
+      exercises: [],
+      createdAt: new Date(t.created_at),
+    }));
+  }, [templateRows]);
+
   const [isStarting, setIsStarting] = useState(false);
   const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -93,23 +145,10 @@ export default function WorkoutPage() {
     open: false, message: '', severity: 'success',
   });
 
-  useEffect(() => {
-    async function load() {
-      const [sessionsData, templatesData] = await Promise.all([
-        getRecentSessions(),
-        getTemplates(),
-      ]);
-      setSessions(sessionsData);
-      setTemplates(templatesData);
-      setIsLoading(false);
-    }
-    load();
-  }, []);
-
   const handleStartWorkout = async () => {
     setIsStarting(true);
     try {
-      const sessionId = await startWorkoutSession();
+      const sessionId = await mutations.startWorkoutSession();
       router.push(`/workout/active?id=${sessionId}`);
     } catch (error) {
       console.error('Error starting workout:', error);
@@ -120,7 +159,7 @@ export default function WorkoutPage() {
   const handleStartFromTemplate = async (templateId: string) => {
     setStartingTemplateId(templateId);
     try {
-      const { sessionId } = await startWorkoutFromTemplate(templateId);
+      const sessionId = await mutations.startWorkoutSession(templateId);
       router.push(`/workout/active?id=${sessionId}`);
     } catch (error) {
       console.error('Error starting from template:', error);
@@ -136,8 +175,7 @@ export default function WorkoutPage() {
   const handleDeleteConfirm = async () => {
     if (!sessionToDelete) return;
     try {
-      await deleteSession(sessionToDelete);
-      setSessions(sessions.filter(s => s.id !== sessionToDelete));
+      await mutations.deleteSession(sessionToDelete);
     } catch (error) {
       console.error('Error deleting session:', error);
     }
@@ -153,7 +191,7 @@ export default function WorkoutPage() {
   const handleStartCardio = async (activity: CardioActivity) => {
     setStartingCardio(true);
     try {
-      const sessionId = await startCardioSession(activity);
+      const sessionId = await mutations.startCardioSession(activity);
       router.push(`/workout/cardio?id=${sessionId}`);
     } catch (error) {
       console.error('Error starting cardio:', error);
@@ -207,9 +245,6 @@ export default function WorkoutPage() {
       setImportDialogOpen(false);
       setImportData(null);
       setSnackbar({ open: true, message: `Séance importée ! +${result.xpEarned} XP`, severity: 'success' });
-      // Refresh sessions list
-      const sessionsData = await getRecentSessions();
-      setSessions(sessionsData);
     } catch {
       setSnackbar({ open: true, message: 'Erreur lors de la sauvegarde', severity: 'error' });
     } finally {
@@ -605,10 +640,7 @@ export default function WorkoutPage() {
                         : 'Aucune nouvelle séance Huawei',
                       severity: 'success',
                     });
-                    if (data.imported > 0) {
-                      const sessionsData = await getRecentSessions();
-                      setSessions(sessionsData);
-                    }
+                    // Data will auto-update via PowerSync sync
                   } catch {
                     setSnackbar({ open: true, message: 'Erreur sync Huawei', severity: 'error' });
                   } finally {
@@ -718,7 +750,7 @@ export default function WorkoutPage() {
       </Dialog>
 
       {/* Export Drawer */}
-      <WorkoutExportDrawer open={showExport} onClose={() => setShowExport(false)} />
+      {showExport && <WorkoutExportDrawer open={showExport} onClose={() => setShowExport(false)} />}
 
       {/* Snackbar */}
       <Snackbar
@@ -860,22 +892,45 @@ function SessionCard({ session }: { session: WorkoutSession }) {
 // Export Drawer
 // =========================================================
 function WorkoutExportDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [data, setData] = useState<ExportSessionData[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { data: sessionExportRows } = useAllSessionsForExport();
+  const { data: setExportRows } = useAllSetsForExport();
 
-  useEffect(() => {
-    if (!open) {
-      setData(null);
-      return;
+  const sessions = useMemo<ExportSessionData[]>(() => {
+    // Group sets by session
+    const setsBySession = new Map<string, any[]>();
+    for (const s of setExportRows as any[]) {
+      const list = setsBySession.get(s.session_id) || [];
+      list.push(s);
+      setsBySession.set(s.session_id, list);
     }
-    setLoading(true);
-    getAllSessionsForExport()
-      .then(d => setData(d))
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
-  }, [open]);
 
-  const sessions = data || [];
+    return sessionExportRows.map((s: any) => ({
+      id: s.id,
+      startedAt: new Date(s.started_at),
+      endedAt: s.ended_at ? new Date(s.ended_at) : null,
+      durationMinutes: s.duration_minutes,
+      totalVolume: s.total_volume,
+      caloriesBurned: s.calories_burned,
+      perceivedDifficulty: s.perceived_difficulty,
+      energyLevel: s.energy_level,
+      notes: s.notes,
+      sessionType: s.session_type,
+      cardioActivity: s.cardio_activity,
+      distanceMeters: s.distance_meters,
+      avgPaceSecondsPerKm: s.avg_pace_seconds_per_km,
+      sets: (setsBySession.get(s.id) || []).map((set: any) => ({
+        exerciseId: set.exercise_id,
+        exerciseName: set.exercise_name || '',
+        muscleGroup: set.muscle_group || '',
+        setNumber: set.set_number,
+        reps: set.reps,
+        weight: set.weight,
+        rpe: set.rpe,
+        isWarmup: !!set.is_warmup,
+        isPr: !!set.is_pr,
+      })),
+    }));
+  }, [sessionExportRows, setExportRows]);
 
   const exportExcel = () => {
     const headers = [
@@ -1012,12 +1067,6 @@ ${sessions.map(s => {
         <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1 }}>
           Exporter les séances
         </Typography>
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-            <CircularProgress size={28} />
-          </Box>
-        ) : (
-          <>
             <Typography variant="caption" color="text.secondary" sx={{ px: 1.5, display: 'block', mb: 1 }}>
               {sessions.length} séance{sessions.length > 1 ? 's' : ''}
             </Typography>
@@ -1057,8 +1106,6 @@ ${sessions.map(s => {
                 secondaryTypographyProps={{ fontSize: '0.75rem' }}
               />
             </ListItemButton>
-          </>
-        )}
       </Box>
     </SwipeableDrawer>
   );
