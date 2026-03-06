@@ -11,6 +11,7 @@ import {
 import { useMorphoProfile } from '@/powersync/queries/morphology-queries'
 import { calculateLevel } from '@/lib/xp-utils'
 import { getISOWeekStart } from '@/lib/date-utils'
+import { toSqliteTimestamp } from '@/powersync/helpers'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Card from '@mui/material/Card'
@@ -157,10 +158,10 @@ function HomeContentInner() {
 
   const [thisWeekStart, lastWeekStart] = useMemo(() => {
     const now = new Date()
-    const tw = getISOWeekStart(now).toISOString()
+    const tw = toSqliteTimestamp(getISOWeekStart(now))
     const prev = new Date(now)
     prev.setDate(prev.getDate() - 7)
-    const lw = getISOWeekStart(prev).toISOString()
+    const lw = toSqliteTimestamp(getISOWeekStart(prev))
     return [tw, lw]
   }, [])
   const { data: weeklyRows } = useWeeklyComparison(thisWeekStart, lastWeekStart)
