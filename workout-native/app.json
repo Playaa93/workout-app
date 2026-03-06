@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Workout",
+    "slug": "workout-native",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#6750a4"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.workout.native"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#6750a4",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.workout.native",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-secure-store"
+    ]
+  }
+}

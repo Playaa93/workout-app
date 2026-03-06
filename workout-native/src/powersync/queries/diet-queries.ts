@@ -1,5 +1,3 @@
-'use client';
-
 import { useQuery } from '@powersync/react';
 import { useUserId } from '../auth-context';
 import { todayStr } from '../helpers';
@@ -36,7 +34,7 @@ export function useSearchFoods(query: string) {
   return useQuery<FoodRow>(
     query.length >= 2
       ? `SELECT * FROM foods WHERE LOWER(name_fr) LIKE ? OR LOWER(COALESCE(brand, '')) LIKE ? ORDER BY LENGTH(name_fr) LIMIT 20`
-      : `SELECT * FROM foods WHERE 0`, // empty result when query too short
+      : `SELECT * FROM foods WHERE 0`,
     [safeQuery, safeQuery]
   );
 }

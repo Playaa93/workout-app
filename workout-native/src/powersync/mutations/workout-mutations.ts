@@ -1,5 +1,3 @@
-'use client';
-
 import { usePowerSync } from '@powersync/react';
 import { useUserId } from '../auth-context';
 import { uuid, nowISO, todayStr } from '../helpers';
@@ -87,7 +85,6 @@ export function useWorkoutMutations() {
   }
 
   async function deleteSet(setId: string): Promise<void> {
-    // Clean up PR reference
     await db.execute(`DELETE FROM personal_records WHERE workout_set_id = ?`, [setId]);
     await db.execute(`DELETE FROM workout_sets WHERE id = ?`, [setId]);
   }
@@ -130,7 +127,6 @@ export function useWorkoutMutations() {
     const prCount = stats?.pr_count || 0;
     const userWeightKg = weightRow ? parseFloat(weightRow.weight) : 75;
 
-    // Estimate calories
     let met = 4.5;
     if (perceivedDifficulty) {
       met = 3.5 + (perceivedDifficulty / 10) * 2.5;
@@ -143,7 +139,6 @@ export function useWorkoutMutations() {
 
     const now = nowISO();
 
-    // Update session
     await db.execute(
       `UPDATE workout_sessions SET
         ended_at = ?, duration_minutes = ?, total_volume = ?,
@@ -152,7 +147,6 @@ export function useWorkoutMutations() {
       [now, durationMinutes, totalVolume.toFixed(2), caloriesBurned, perceivedDifficulty ?? null, notes ?? null, sessionId]
     );
 
-    // XP calculation
     const baseXp = (durationMinutes > 0 || totalVolume > 0) ? 50 : 0;
     const volumeXp = Math.floor(totalVolume / 1000) * 10;
     const prXp = prCount * 25;
@@ -161,14 +155,12 @@ export function useWorkoutMutations() {
     if (totalXp > 0) {
       const today = todayStr();
 
-      // XP transaction
       await db.execute(
         `INSERT INTO xp_transactions (id, user_id, amount, reason, reference_type, reference_id, created_at)
          VALUES (?, ?, ?, 'workout_completed', 'workout_session', ?, ?)`,
         [uuid(), userId, totalXp, sessionId, now]
       );
 
-      // Update gamification
       const existing = await db.getOptional<{ id: string; total_xp: number }>(
         `SELECT id, total_xp FROM user_gamification WHERE user_id = ?`,
         [userId]
@@ -187,7 +179,6 @@ export function useWorkoutMutations() {
         );
       }
 
-      // Update streak
       await updateStreakLocal();
     }
 
@@ -247,7 +238,6 @@ export function useWorkoutMutations() {
     );
   }
 
-  // Cardio
   async function startCardioSession(activity: string): Promise<string> {
     const id = uuid();
     const now = nowISO();
@@ -335,7 +325,6 @@ export function useWorkoutMutations() {
       ]
     );
 
-    // XP: 50 base + 5 per 10min + 10 per km
     const totalXp = 50 + Math.floor(durationMinutes / 10) * 5 + Math.floor(distanceM / 1000) * 10;
     const today = todayStr();
 

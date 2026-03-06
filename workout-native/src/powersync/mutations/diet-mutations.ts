@@ -1,5 +1,3 @@
-'use client';
-
 import { usePowerSync } from '@powersync/react';
 import { useUserId } from '../auth-context';
 import { uuid, nowISO, todayStr } from '../helpers';
@@ -56,7 +54,6 @@ export function useDietMutations() {
       ]
     );
 
-    // Update daily summary locally
     await recalcDailySummary();
     return id;
   }
