@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     .where(eq(users.id, user.id));
 
   // Generate JWT (same format as session cookie)
-  const token = await new SignJWT({ userId: user.id, email: user.email })
+  const token = await new SignJWT({ userId: user.id, email: user.email, displayName: user.displayName ?? null })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d')

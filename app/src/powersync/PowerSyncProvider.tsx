@@ -25,22 +25,23 @@ export function PowerSyncProvider({ children }: { children: ReactNode }) {
       }
 
       lastUserIdRef.current = userId;
-      const connector = new PowerSyncConnector();
-      await instance.connect(connector);
+      await instance.connect(new PowerSyncConnector());
 
-      if (typeof window !== 'undefined') {
+      if (mounted) {
         (window as any).__powersync = instance;
+        setDb(instance);
       }
-
-      if (mounted) setDb(instance);
     }
 
     connect().catch((err) => {
       console.error('PowerSync init failed:', err);
+      // Still provide the db instance so hooks can read from local cache
+      if (mounted) setDb(instance);
     });
 
     return () => {
       mounted = false;
+      instance.disconnect();
     };
   }, [userId, loading]);
 

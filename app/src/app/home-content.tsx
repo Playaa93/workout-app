@@ -171,7 +171,6 @@ function HomeContentInner() {
     }
   }, [])
 
-
   // Map profile
   const profile = useMemo(() => {
     if (profileRows.length === 0) return null
