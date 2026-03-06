@@ -2,7 +2,7 @@
 
 import { useMemo, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import type { ActiveSession, WorkoutSet, Exercise } from '../actions';
+import type { ActiveSession, WorkoutSet, Exercise } from '../types';
 import { useAuth } from '@/powersync/auth-context';
 import { useSessionDetail, useSessionSets, useExercises } from '@/powersync/queries/workout-queries';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';

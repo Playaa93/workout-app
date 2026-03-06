@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { WorkoutTemplate } from '../actions';
+import type { WorkoutTemplate } from '../types';
 import { useAuth } from '@/powersync/auth-context';
 import { useTemplates, useAllTemplateExercises } from '@/powersync/queries/workout-queries';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';

@@ -7,7 +7,7 @@ import type {
   WorkoutSet,
   ActiveSession,
   TemplateExercise,
-} from '../actions';
+} from '../types';
 import { useAuth } from '@/powersync/auth-context';
 import {
   useActiveSession,

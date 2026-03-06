@@ -7,7 +7,7 @@ import type {
   WorkoutSession,
   WorkoutTemplate,
   ExportSessionData,
-} from './actions';
+} from './types';
 import { importCardioSession } from './cardio-actions';
 import { useAuth } from '@/powersync/auth-context';
 import {
