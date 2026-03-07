@@ -59,6 +59,9 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Divider from '@mui/material/Divider';
 import Collapse from '@mui/material/Collapse';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import MoreVert from '@mui/icons-material/MoreVert';
 import Add from '@mui/icons-material/Add';
 import Close from '@mui/icons-material/Close';
 import Delete from '@mui/icons-material/Delete';
@@ -866,15 +869,20 @@ function MachineSetupInline({
   equipment,
   selectedSetupId,
   onSelectSetup,
+  sheetOpen,
+  onSheetOpen,
+  onSheetClose,
 }: {
   exerciseId: string;
   equipment: string[] | null;
   selectedSetupId: string | null;
   onSelectSetup: (setup: MachineSetup | null) => void;
+  sheetOpen: boolean;
+  onSheetOpen: () => void;
+  onSheetClose: () => void;
 }) {
   const mutations = useWorkoutMutations();
   const { data: setupRows } = useMachineSetups(exerciseId);
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [editingSetup, setEditingSetup] = useState<MachineSetup | null>(null);
 
   const setups = useMemo<MachineSetup[]>(() => {
@@ -896,31 +904,17 @@ function MachineSetupInline({
 
   if (setups.length === 0) {
     return (
-      <>
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={0.5}
-          onClick={(e) => { e.stopPropagation(); setEditingSetup(null); setSheetOpen(true); }}
-          sx={{ cursor: 'pointer', my: 0.75, opacity: 0.5, '&:hover': { opacity: 0.8 } }}
-        >
-          <Settings sx={{ fontSize: 14 }} />
-          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
-            Configurer machine
-          </Typography>
-        </Stack>
-        <MachineSetupSheet
-          open={sheetOpen}
-          onClose={() => setSheetOpen(false)}
-          exerciseId={exerciseId}
-          equipment={equipment}
-          existingLabels={existingLabels}
-          onSave={async (data) => {
-            const id = await mutations.saveMachineSetup(data);
-            onSelectSetup({ ...data, id, photoBase64: data.photoBase64 ?? null, settings: data.settings, notes: data.notes ?? null });
-          }}
-        />
-      </>
+      <MachineSetupSheet
+        open={sheetOpen}
+        onClose={onSheetClose}
+        exerciseId={exerciseId}
+        equipment={equipment}
+        existingLabels={existingLabels}
+        onSave={async (data) => {
+          const id = await mutations.saveMachineSetup(data);
+          onSelectSetup({ ...data, id, photoBase64: data.photoBase64 ?? null, settings: data.settings, notes: data.notes ?? null });
+        }}
+      />
     );
   }
 
@@ -945,7 +939,7 @@ function MachineSetupInline({
             label="Nouvelle"
             size="small"
             variant="outlined"
-            onClick={(e) => { e.stopPropagation(); setEditingSetup(null); setSheetOpen(true); }}
+            onClick={(e) => { e.stopPropagation(); setEditingSetup(null); onSheetOpen(); }}
             sx={{ fontSize: '0.65rem', height: 24, borderStyle: 'dashed', cursor: 'pointer', flexShrink: 0 }}
           />
         </Stack>
@@ -957,7 +951,7 @@ function MachineSetupInline({
           direction="row"
           alignItems="center"
           spacing={1}
-          onClick={(e) => { e.stopPropagation(); setEditingSetup(selectedSetup); setSheetOpen(true); }}
+          onClick={(e) => { e.stopPropagation(); setEditingSetup(selectedSetup); onSheetOpen(); }}
           sx={{
             my: 0.75, py: 0.5, px: 1, cursor: 'pointer',
             borderLeft: 2, borderColor: 'info.main',
@@ -990,21 +984,9 @@ function MachineSetupInline({
         </Stack>
       )}
 
-      {/* Add button when single setup */}
-      {setups.length === 1 && (
-        <Chip
-          icon={<Add sx={{ fontSize: 12 }} />}
-          label="Autre machine"
-          size="small"
-          variant="outlined"
-          onClick={(e) => { e.stopPropagation(); setEditingSetup(null); setSheetOpen(true); }}
-          sx={{ mb: 0.5, fontSize: '0.65rem', height: 22, borderStyle: 'dashed', cursor: 'pointer' }}
-        />
-      )}
-
       <MachineSetupSheet
         open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        onClose={() => onSheetClose()}
         exerciseId={exerciseId}
         equipment={equipment}
         existingSetup={editingSetup}
@@ -1045,6 +1027,8 @@ function ExerciseCard({
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(!isLastExercise && sets.length > 0);
   const [selectedMachineSetupId, setSelectedMachineSetupId] = useState<string | null>(null);
+  const [machineSheetOpen, setMachineSheetOpen] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
   const { data: prevSetRows } = useLastSetsForExerciseOrMachine(exercise?.id || '', selectedMachineSetupId, 5);
   const previousSets = useMemo<WorkoutSet[]>(() => {
@@ -1104,16 +1088,42 @@ function ExerciseCard({
               </Typography>
             )}
           </Box>
-          {!collapsed && previousSets.length > 0 && (
-            <Box sx={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
-              <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
-              <Typography variant="body2" color="text.primary">
-                {previousSets[0].reps} × {previousSets[0].weight}kg
-              </Typography>
-            </Box>
+          {!collapsed && (
+            <Stack direction="row" alignItems="center" spacing={0.5} onClick={(e) => e.stopPropagation()}>
+              {previousSets.length > 0 && (
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
+                  <Typography variant="body2" color="text.primary">
+                    {previousSets[0].reps} × {previousSets[0].weight}kg
+                  </Typography>
+                </Box>
+              )}
+              <IconButton
+                size="small"
+                onClick={(e) => setMenuAnchor(e.currentTarget)}
+                sx={{ ml: 0.5 }}
+              >
+                <MoreVert sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Stack>
           )}
         </Stack>
       </CardContent>
+      <Menu
+        anchorEl={menuAnchor}
+        open={!!menuAnchor}
+        onClose={() => setMenuAnchor(null)}
+        slotProps={{ paper: { sx: { minWidth: 180 } } }}
+      >
+        <MenuItem onClick={() => { setMenuAnchor(null); setMachineSheetOpen(true); }}>
+          <Settings sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
+          Configurer machine
+        </MenuItem>
+        <MenuItem onClick={() => { setMenuAnchor(null); onShowInfo(exercise); }}>
+          <InfoOutlined sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
+          Info exercice
+        </MenuItem>
+      </Menu>
 
       <Collapse in={!collapsed}>
         <Box sx={{ px: 2 }}>
@@ -1122,6 +1132,9 @@ function ExerciseCard({
             equipment={exercise.equipment}
             selectedSetupId={selectedMachineSetupId}
             onSelectSetup={handleSelectSetup}
+            sheetOpen={machineSheetOpen}
+            onSheetOpen={() => setMachineSheetOpen(true)}
+            onSheetClose={() => setMachineSheetOpen(false)}
           />
           <ExerciseNoteInline exerciseId={exercise.id} />
         </Box>
@@ -1924,38 +1937,23 @@ function ExerciseNoteInline({ exerciseId }: { exerciseId: string }) {
     );
   }
 
-  if (currentNote) {
-    return (
-      <Stack
-        direction="row"
-        alignItems="flex-start"
-        spacing={0.75}
-        onClick={(e) => { e.stopPropagation(); setEditing(true); }}
-        sx={{
-          my: 1, cursor: 'pointer', py: 0.5, px: 1,
-          borderLeft: 2, borderColor: 'primary.main',
-          borderRadius: '0 4px 4px 0', bgcolor: 'action.hover',
-        }}
-      >
-        <EditNote sx={{ fontSize: 14, color: 'primary.main', mt: 0.125, flexShrink: 0 }} />
-        <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.4 }}>
-          {currentNote}
-        </Typography>
-      </Stack>
-    );
-  }
+  if (!currentNote) return null;
 
   return (
     <Stack
       direction="row"
-      alignItems="center"
-      spacing={0.5}
+      alignItems="flex-start"
+      spacing={0.75}
       onClick={(e) => { e.stopPropagation(); setEditing(true); }}
-      sx={{ cursor: 'pointer', my: 0.75, opacity: 0.5, '&:hover': { opacity: 0.8 } }}
+      sx={{
+        my: 1, cursor: 'pointer', py: 0.5, px: 1,
+        borderLeft: 2, borderColor: 'primary.main',
+        borderRadius: '0 4px 4px 0', bgcolor: 'action.hover',
+      }}
     >
-      <EditNote sx={{ fontSize: 14 }} />
-      <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
-        Note exercice
+      <EditNote sx={{ fontSize: 14, color: 'primary.main', mt: 0.125, flexShrink: 0 }} />
+      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.4 }}>
+        {currentNote}
       </Typography>
     </Stack>
   );
