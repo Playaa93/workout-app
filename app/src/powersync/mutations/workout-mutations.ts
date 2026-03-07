@@ -90,6 +90,34 @@ export function useWorkoutMutations() {
     await db.execute(`UPDATE workout_sets SET rest_taken = ? WHERE id = ?`, [restTaken, setId]);
   }
 
+  async function updateSetNotes(setId: string, notes: string | null): Promise<void> {
+    await db.execute(`UPDATE workout_sets SET notes = ? WHERE id = ?`, [notes, setId]);
+  }
+
+  async function upsertExerciseNote(exerciseId: string, notes: string | null): Promise<void> {
+    if (!notes) {
+      await db.execute(`DELETE FROM user_exercise_notes WHERE user_id = ? AND exercise_id = ?`, [userId, exerciseId]);
+      return;
+    }
+    const existing = await db.getOptional<{ id: string }>(
+      `SELECT id FROM user_exercise_notes WHERE user_id = ? AND exercise_id = ?`,
+      [userId, exerciseId]
+    );
+    const now = nowISO();
+    if (existing) {
+      await db.execute(`UPDATE user_exercise_notes SET notes = ?, updated_at = ? WHERE id = ?`, [notes, now, existing.id]);
+    } else {
+      await db.execute(
+        `INSERT INTO user_exercise_notes (id, user_id, exercise_id, notes, updated_at) VALUES (?, ?, ?, ?, ?)`,
+        [uuid(), userId, exerciseId, notes, now]
+      );
+    }
+  }
+
+  async function updateSessionNotes(sessionId: string, notes: string | null): Promise<void> {
+    await db.execute(`UPDATE workout_sessions SET notes = ? WHERE id = ?`, [notes, sessionId]);
+  }
+
   async function deleteSet(setId: string): Promise<void> {
     // Clean up PR reference
     await db.execute(`DELETE FROM personal_records WHERE workout_set_id = ?`, [setId]);
@@ -385,6 +413,9 @@ export function useWorkoutMutations() {
     addSet,
     updateSet,
     updateSetRestTaken,
+    updateSetNotes,
+    upsertExerciseNote,
+    updateSessionNotes,
     deleteSet,
     endWorkoutSession,
     deleteSession,

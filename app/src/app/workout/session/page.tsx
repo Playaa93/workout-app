@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState, Suspense } from 'react';
+import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { ActiveSession, WorkoutSet, Exercise } from '../types';
 import { useAuth } from '@/powersync/auth-context';
-import { useSessionDetail, useSessionSets, useExercises } from '@/powersync/queries/workout-queries';
+import { useSessionDetail, useSessionSets, useExercises, useExerciseNote } from '@/powersync/queries/workout-queries';
+import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
 import type { CardioActivity } from '@/db/schema';
 import Box from '@mui/material/Box';
@@ -16,18 +17,34 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
+import TextField from '@mui/material/TextField';
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 import ArrowBack from '@mui/icons-material/ArrowBack';
+import Delete from '@mui/icons-material/Delete';
+import MoreVert from '@mui/icons-material/MoreVert';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import FitnessCenter from '@mui/icons-material/FitnessCenter';
+import EditNote from '@mui/icons-material/EditNote';
 import FileDownload from '@mui/icons-material/FileDownload';
 import Description from '@mui/icons-material/Description';
 import DataObject from '@mui/icons-material/DataObject';
 import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import { downloadFile, fmtDateFR, fmtTimeFR, formatDuration, escapeHtml, writeExcelFile, openPrintableHtml } from '@/lib/export-utils';
+
+function formatRestTime(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
+}
 
 function SessionExportDrawer({ open, onClose, data }: { open: boolean; onClose: () => void; data: ActiveSession }) {
   const { session, sets } = data;
@@ -47,17 +64,18 @@ function SessionExportDrawer({ open, onClose, data }: { open: boolean; onClose: 
       session.totalVolume ? parseFloat(session.totalVolume) : null,
       session.caloriesBurned ?? null,
     ];
-    const notes = session.notes || '';
+    const sessionNotes = session.notes || '';
     const rows: (string | number | null)[][] = [];
     if (sets.length === 0) {
-      rows.push([...base, '', null, null, null, null, '', '', notes]);
+      rows.push([...base, '', null, null, null, null, '', '', sessionNotes]);
     } else {
       for (const set of sets) {
         const ex = data.exercises.get(set.exerciseId);
+        const note = [sessionNotes, set.notes].filter(Boolean).join(' | ');
         rows.push([
           ...base, ex?.nameFr || set.exerciseName || '', set.setNumber,
           set.reps ?? null, set.weight ? parseFloat(set.weight) : null, set.rpe ?? null,
-          set.isWarmup ? 'Oui' : 'Non', set.isPr ? 'Oui' : 'Non', notes,
+          set.isWarmup ? 'Oui' : 'Non', set.isPr ? 'Oui' : 'Non', note || null,
         ]);
       }
     }
@@ -79,6 +97,7 @@ function SessionExportDrawer({ open, onClose, data }: { open: boolean; onClose: 
         rpe: set.rpe,
         echauffement: !!set.isWarmup,
         record: !!set.isPr,
+        ...(set.notes ? { notes: set.notes } : {}),
       });
     }
     const out = {
@@ -138,7 +157,7 @@ ${Array.from(setsByEx.entries()).map(([exId, exSets]) => {
 <table>
 <thead><tr><th>#</th><th>Reps</th><th>Poids</th><th>RPE</th><th></th></tr></thead>
 <tbody>
-${exSets.map(s => `<tr><td>${s.isWarmup ? 'W' : s.setNumber}</td><td>${s.reps || '-'}</td><td>${s.weight ? s.weight + ' kg' : '-'}</td><td>${s.rpe || '-'}</td><td>${s.isPr ? '<span class="pr">PR</span>' : ''}</td></tr>`).join('\n')}
+${exSets.map(s => `<tr><td>${s.isWarmup ? 'W' : s.setNumber}</td><td>${s.reps || '-'}</td><td>${s.weight ? s.weight + ' kg' : '-'}</td><td>${s.rpe || '-'}</td><td>${s.isPr ? '<span class="pr">PR</span>' : ''}</td></tr>${s.notes ? `<tr><td colspan="5" style="border-bottom:none;padding:0 8px 4px;font-size:11px;font-style:italic;color:#888">${escapeHtml(s.notes)}</td></tr>` : ''}`).join('\n')}
 </tbody>
 </table>`;
 }).join('\n')}
@@ -188,7 +207,16 @@ function SessionDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const sessionId = searchParams.get('id') ?? '';
+  const mutations = useWorkoutMutations();
   const [exportOpen, setExportOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+
+  const handleDelete = async () => {
+    await mutations.deleteSession(sessionId);
+    setDeleteOpen(false);
+    router.replace('/workout');
+  };
 
   const { data: sessionRows, isLoading: sessionLoading } = useSessionDetail(sessionId);
   const { data: setRows, isLoading: setsLoading } = useSessionSets(sessionId);
@@ -223,6 +251,7 @@ function SessionDetailContent() {
       isWarmup: !!r.is_warmup,
       isPr: !!r.is_pr,
       restTaken: r.rest_taken ?? null,
+      notes: r.notes || null,
     }));
 
     return {
@@ -276,8 +305,9 @@ function SessionDetailContent() {
   // Group sets by exercise
   const setsByExercise = new Map<string, WorkoutSet[]>();
   sets.forEach((set) => {
-    const existing = setsByExercise.get(set.exerciseId) || [];
-    setsByExercise.set(set.exerciseId, [...existing, set]);
+    const group = setsByExercise.get(set.exerciseId);
+    if (group) group.push(set);
+    else setsByExercise.set(set.exerciseId, [set]);
   });
 
   return (
@@ -298,13 +328,30 @@ function SessionDetailContent() {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                {mins > 0 && ` · ${mins >= 60 ? `${Math.floor(mins / 60)}h${(mins % 60).toString().padStart(2, '0')}` : `${mins}min`}`}
+                {mins > 0 && ` · ${formatDuration(mins)}`}
               </Typography>
             </Box>
           </Stack>
-          <IconButton onClick={() => setExportOpen(true)} size="small">
-            <FileDownload />
+          <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} size="small">
+            <MoreVert />
           </IconButton>
+          <Menu
+            anchorEl={menuAnchor}
+            open={!!menuAnchor}
+            onClose={() => setMenuAnchor(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 180 } } }}
+          >
+            <MenuItem onClick={() => { setMenuAnchor(null); setExportOpen(true); }}>
+              <FileDownload sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
+              Exporter
+            </MenuItem>
+            <MenuItem onClick={() => { setMenuAnchor(null); setDeleteOpen(true); }} sx={{ color: 'error.main' }}>
+              <Delete sx={{ fontSize: 18, mr: 1.5 }} />
+              Supprimer
+            </MenuItem>
+          </Menu>
         </Stack>
 
         {/* Stats bar */}
@@ -340,7 +387,7 @@ function SessionDetailContent() {
             return (
               <Card key={exerciseId}>
                 <CardContent sx={{ pb: '12px !important' }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <FitnessCenter sx={{ fontSize: 18, color: 'text.disabled' }} />
                       <Typography variant="subtitle2" fontWeight={600}>
@@ -351,52 +398,61 @@ function SessionDetailContent() {
                       {exVolume > 0 && `${exVolume.toLocaleString()}kg`}
                     </Typography>
                   </Stack>
+                  <ExerciseNoteReadonly exerciseId={exerciseId} />
 
                   {exSets.map((set) => (
-                    <Stack
-                      key={set.id}
-                      direction="row"
-                      alignItems="center"
-                      justifyContent="space-between"
-                      sx={{ py: 0.75, borderBottom: 1, borderColor: 'divider', '&:last-child': { borderBottom: 0 } }}
-                    >
-                      <Stack direction="row" alignItems="center" spacing={1.5}>
-                        <Box
-                          sx={{
-                            width: 26, height: 26, borderRadius: '50%',
-                            bgcolor: 'action.hover',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '0.75rem', fontWeight: 500,
-                          }}
-                        >
-                          {set.isWarmup ? 'W' : set.setNumber}
-                        </Box>
-                        <Typography variant="body2">
-                          <Typography component="span" fontWeight={500}>{set.reps}</Typography>
-                          <Typography component="span" color="text.secondary" sx={{ mx: 0.5 }}>×</Typography>
-                          <Typography component="span" fontWeight={500}>{set.weight}kg</Typography>
-                        </Typography>
-                        {set.rpe && (
-                          <Typography variant="caption" color="text.secondary">RPE {set.rpe}</Typography>
-                        )}
-                      </Stack>
-                      <Stack direction="row" alignItems="center" spacing={0.5}>
-                        {set.restTaken && (
-                          <Typography variant="caption" color="text.disabled">
-                            {Math.floor(set.restTaken / 60)}:{(set.restTaken % 60).toString().padStart(2, '0')}
+                    <Box key={set.id} sx={{ py: 0.75, borderBottom: 1, borderColor: 'divider', '&:last-child': { borderBottom: 0 } }}>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                      >
+                        <Stack direction="row" alignItems="center" spacing={1.5}>
+                          <Box
+                            sx={{
+                              width: 26, height: 26, borderRadius: '50%',
+                              bgcolor: 'action.hover',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '0.75rem', fontWeight: 500,
+                            }}
+                          >
+                            {set.isWarmup ? 'W' : set.setNumber}
+                          </Box>
+                          <Typography variant="body2">
+                            <Typography component="span" fontWeight={500}>{set.reps}</Typography>
+                            <Typography component="span" color="text.secondary" sx={{ mx: 0.5 }}>×</Typography>
+                            <Typography component="span" fontWeight={500}>{set.weight}kg</Typography>
                           </Typography>
-                        )}
-                        {set.isPr && (
-                          <Chip
-                            icon={<EmojiEvents sx={{ fontSize: 14 }} />}
-                            label="PR"
-                            size="small"
-                            color="warning"
-                            sx={{ height: 22, fontWeight: 600, fontSize: '0.65rem' }}
-                          />
-                        )}
+                          {set.rpe && (
+                            <Typography variant="caption" color="text.secondary">RPE {set.rpe}</Typography>
+                          )}
+                        </Stack>
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          {set.restTaken && (
+                            <Typography variant="caption" color="text.disabled">
+                              {formatRestTime(set.restTaken)}
+                            </Typography>
+                          )}
+                          {set.isPr && (
+                            <Chip
+                              icon={<EmojiEvents sx={{ fontSize: 14 }} />}
+                              label="PR"
+                              size="small"
+                              color="warning"
+                              sx={{ height: 22, fontWeight: 600, fontSize: '0.65rem' }}
+                            />
+                          )}
+                        </Stack>
                       </Stack>
-                    </Stack>
+                      {set.notes && (
+                        <Stack direction="row" alignItems="center" spacing={0.5} sx={{ pl: 5, mt: 0.25 }}>
+                          <EditNote sx={{ fontSize: 12, color: 'text.disabled' }} />
+                          <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic', lineHeight: 1.3 }}>
+                            {set.notes}
+                          </Typography>
+                        </Stack>
+                      )}
+                    </Box>
                   ))}
                 </CardContent>
               </Card>
@@ -404,17 +460,23 @@ function SessionDetailContent() {
           })}
         </Stack>
 
-        {session.notes && (
-          <Card sx={{ mt: 2 }}>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">Notes</Typography>
-              <Typography variant="body2">{session.notes}</Typography>
-            </CardContent>
-          </Card>
-        )}
+        <SessionNotesEditor sessionId={session.id} initialNotes={session.notes || ''} />
       </Box>
 
       <SessionExportDrawer open={exportOpen} onClose={() => setExportOpen(false)} data={data} />
+
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle>Supprimer la séance ?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Cette action est irréversible. Toutes les données de cette séance seront perdues.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteOpen(false)} color="inherit">Annuler</Button>
+          <Button onClick={handleDelete} color="error" variant="contained">Supprimer</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
@@ -429,6 +491,106 @@ function StatBox({ label, value }: { label: string; value: string }) {
         {label}
       </Typography>
     </Box>
+  );
+}
+
+function ExerciseNoteReadonly({ exerciseId }: { exerciseId: string }) {
+  const { data: noteRows } = useExerciseNote(exerciseId);
+  const note = noteRows?.[0]?.notes;
+  if (!note) return null;
+  return (
+    <Stack
+      direction="row"
+      alignItems="flex-start"
+      spacing={0.75}
+      sx={{
+        mb: 1, py: 0.5, px: 1,
+        borderLeft: 2, borderColor: 'primary.main',
+        borderRadius: '0 4px 4px 0', bgcolor: 'action.hover',
+      }}
+    >
+      <EditNote sx={{ fontSize: 14, color: 'primary.main', mt: 0.125, flexShrink: 0 }} />
+      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.4 }}>
+        {note}
+      </Typography>
+    </Stack>
+  );
+}
+
+function SessionNotesEditor({ sessionId, initialNotes }: { sessionId: string; initialNotes: string }) {
+  const mutations = useWorkoutMutations();
+  const [notes, setNotes] = useState(initialNotes);
+  const [editing, setEditing] = useState(false);
+
+  // Sync from external changes (e.g. PowerSync remote sync)
+  useEffect(() => { if (!editing) setNotes(initialNotes); }, [initialNotes, editing]);
+
+  const handleSave = () => {
+    const trimmed = notes.trim();
+    if (trimmed !== initialNotes) {
+      mutations.updateSessionNotes(sessionId, trimmed || null);
+    }
+    setEditing(false);
+  };
+
+  if (!editing && !notes.trim()) {
+    return (
+      <Card
+        variant="outlined"
+        onClick={() => setEditing(true)}
+        sx={{
+          mt: 2, cursor: 'pointer', py: 1.5,
+          borderStyle: 'dashed', borderColor: 'divider',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75,
+          '&:active': { bgcolor: 'action.hover' },
+        }}
+      >
+        <EditNote sx={{ fontSize: 18, color: 'text.disabled' }} />
+        <Typography variant="caption" color="text.disabled">
+          Ajouter une note de séance
+        </Typography>
+      </Card>
+    );
+  }
+
+  if (!editing) {
+    return (
+      <Card sx={{ mt: 2, cursor: 'pointer' }} onClick={() => setEditing(true)}>
+        <CardContent>
+          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
+            <EditNote sx={{ fontSize: 16, color: 'text.disabled' }} />
+            <Typography variant="caption" color="text.secondary" fontWeight={500}>Note de séance</Typography>
+          </Stack>
+          <Typography variant="body2" sx={{ pl: 3 }}>{notes}</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card sx={{ mt: 2 }}>
+      <CardContent>
+        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
+          <EditNote sx={{ fontSize: 16, color: 'text.disabled' }} />
+          <Typography variant="caption" color="text.secondary" fontWeight={500}>Note de séance</Typography>
+        </Stack>
+        <TextField
+          fullWidth
+          multiline
+          minRows={2}
+          maxRows={6}
+          size="small"
+          autoFocus
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          onBlur={handleSave}
+          sx={{
+            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
+            '& .MuiInputBase-input': { fontSize: '0.85rem' },
+          }}
+        />
+      </CardContent>
+    </Card>
   );
 }
 

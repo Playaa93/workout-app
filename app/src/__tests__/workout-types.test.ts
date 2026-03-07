@@ -38,6 +38,7 @@ describe('Workout types', () => {
       isWarmup: false,
       isPr: null,
       restTaken: null,
+      notes: null,
     };
     expect(set.rpe).toBeNull();
     expect(set.weight).toBe('100');

@@ -201,6 +201,13 @@ const workout_sets = new Table({
   performed_at: column.text,
 });
 
+const user_exercise_notes = new Table({
+  user_id: column.text,
+  exercise_id: column.text,
+  notes: column.text,
+  updated_at: column.text,
+});
+
 const cardio_intervals = new Table({
   session_id: column.text,
   interval_number: column.integer,
@@ -378,6 +385,7 @@ export const AppSchema = new Schema({
   workout_template_exercises,
   workout_sessions,
   workout_sets,
+  user_exercise_notes,
   cardio_intervals,
   personal_records,
   foods,

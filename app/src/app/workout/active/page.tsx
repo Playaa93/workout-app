@@ -15,6 +15,7 @@ import {
   useExercises,
   useTemplateExercises,
   useLastSetsForExercise,
+  useExerciseNote,
 } from '@/powersync/queries/workout-queries';
 import { useMorphoProfile } from '@/powersync/queries/morphology-queries';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
@@ -68,6 +69,7 @@ import Vibration from '@mui/icons-material/Vibration';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import EditNote from '@mui/icons-material/EditNote';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toWorkoutSet(s: any): WorkoutSet {
@@ -82,6 +84,7 @@ function toWorkoutSet(s: any): WorkoutSet {
     isWarmup: !!s.is_warmup,
     isPr: !!s.is_pr,
     restTaken: s.rest_taken,
+    notes: s.notes || null,
   };
 }
 
@@ -318,8 +321,9 @@ function ActiveWorkoutContent() {
   // Group sets by exercise
   const setsByExercise = new Map<string, WorkoutSet[]>();
   session?.sets.forEach((set) => {
-    const existing = setsByExercise.get(set.exerciseId) || [];
-    setsByExercise.set(set.exerciseId, [...existing, set]);
+    const group = setsByExercise.get(set.exerciseId);
+    if (group) group.push(set);
+    else setsByExercise.set(set.exerciseId, [set]);
   });
 
   // Get last rest time used (from most recent set)
@@ -601,6 +605,7 @@ function ActiveWorkoutContent() {
                     defaultRestTime={lastRestTime}
                     isLastExercise={isLast}
                     onStartTimer={timer.startForSet}
+                    onShowInfo={setInfoExercise}
                   />
                 </div>
               );
@@ -623,6 +628,9 @@ function ActiveWorkoutContent() {
           >
             Ajouter un exercice
           </Button>
+
+          {/* Session notes */}
+          <SessionNotesInput sessionId={sessionId} initialNotes={session?.session.notes || ''} />
         </Stack>
       </Box>
 
@@ -842,6 +850,7 @@ function ExerciseCard({
   defaultRestTime = 90,
   isLastExercise = false,
   onStartTimer,
+  onShowInfo,
 }: {
   exercise: Exercise | undefined;
   sets: WorkoutSet[];
@@ -849,6 +858,7 @@ function ExerciseCard({
   defaultRestTime?: number;
   isLastExercise?: boolean;
   onStartTimer: (setId: string, duration: number) => void;
+  onShowInfo: (exercise: Exercise) => void;
 }) {
   const mutations = useWorkoutMutations();
   const [showAddSet, setShowAddSet] = useState(false);
@@ -883,7 +893,14 @@ function ExerciseCard({
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           <Box sx={{ flex: 1 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
-              <Typography variant="subtitle1" fontWeight={600}>{exercise.nameFr}</Typography>
+              <Typography
+                variant="subtitle1"
+                fontWeight={600}
+                onClick={(e) => { e.stopPropagation(); onShowInfo(exercise); }}
+                sx={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'divider', textUnderlineOffset: 3 }}
+              >
+                {exercise.nameFr}
+              </Typography>
               <ExpandMore sx={{
                 fontSize: 20,
                 color: 'text.disabled',
@@ -914,6 +931,9 @@ function ExerciseCard({
       </CardContent>
 
       <Collapse in={!collapsed}>
+        <Box sx={{ px: 2 }}>
+          <ExerciseNoteInline exerciseId={exercise.id} />
+        </Box>
         {/* Sets List */}
         <Box sx={{ px: 2, pb: 1 }}>
           {sets.map((set) => (
@@ -982,6 +1002,14 @@ function ExerciseCard({
                   />
                 )}
               </Stack>
+              {set.notes && (
+                <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.25, pl: 6 }}>
+                  <EditNote sx={{ fontSize: 12, color: 'text.disabled' }} />
+                  <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic', lineHeight: 1.3 }}>
+                    {set.notes}
+                  </Typography>
+                </Stack>
+              )}
             </Box>
             )
           ))}
@@ -1020,6 +1048,7 @@ function ExerciseCard({
 function SetForm({
   initialWeight,
   initialReps,
+  initialNotes = '',
   submitLabel,
   onSubmit,
   onCancel,
@@ -1027,13 +1056,16 @@ function SetForm({
 }: {
   initialWeight: number;
   initialReps: number;
+  initialNotes?: string;
   submitLabel: string;
-  onSubmit: (reps: number, weight: number) => Promise<void>;
+  onSubmit: (reps: number, weight: number, notes: string) => Promise<void>;
   onCancel: () => void;
   children?: React.ReactNode;
 }) {
   const [weight, setWeight] = useState(initialWeight);
   const [reps, setReps] = useState(initialReps);
+  const [notes, setNotes] = useState(initialNotes);
+  const [showNotes, setShowNotes] = useState(!!initialNotes);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -1041,7 +1073,7 @@ function SetForm({
     setIsSubmitting(true);
     triggerHaptic('heavy');
     try {
-      await onSubmit(reps, weight);
+      await onSubmit(reps, weight, notes.trim());
     } catch (error) {
       console.error('Error submitting set:', error);
       setIsSubmitting(false);
@@ -1054,6 +1086,31 @@ function SetForm({
         <StepperInput label="Reps" value={reps} onChange={setReps} step={1} min={0} max={100} />
         <StepperInput label="Poids" value={weight} onChange={setWeight} step={2.5} unit="kg" />
       </Stack>
+      {showNotes ? (
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Note sur cette série..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          sx={{ mb: 1.5 }}
+          slotProps={{
+            input: {
+              sx: { fontSize: '0.85rem' },
+              startAdornment: <EditNote sx={{ fontSize: 16, color: 'text.disabled', mr: 0.75 }} />,
+            },
+          }}
+        />
+      ) : (
+        <Chip
+          icon={<EditNote sx={{ fontSize: 14 }} />}
+          label="Note"
+          size="small"
+          variant="outlined"
+          onClick={() => setShowNotes(true)}
+          sx={{ mb: 1.5, alignSelf: 'flex-start', height: 24, fontSize: '0.7rem', borderStyle: 'dashed', cursor: 'pointer' }}
+        />
+      )}
       {children}
       <Stack direction="row" spacing={1.5}>
         <Button
@@ -1139,9 +1196,13 @@ function EditSetInline({
       <SetForm
         initialWeight={parseFloat(set.weight || '0')}
         initialReps={set.reps || 0}
+        initialNotes={set.notes || ''}
         submitLabel="Enregistrer"
-        onSubmit={async (reps, weight) => {
+        onSubmit={async (reps, weight, notes) => {
           await mutations.updateSet(set.id, reps, weight);
+          if ((notes || '') !== (set.notes || '')) {
+            await mutations.updateSetNotes(set.id, notes || null);
+          }
           onSave();
         }}
         onCancel={onCancel}
@@ -1179,8 +1240,9 @@ function QuickSetInput({
         initialWeight={lastWeight || 0}
         initialReps={lastReps || 0}
         submitLabel="Valider"
-        onSubmit={async (reps, weight) => {
+        onSubmit={async (reps, weight, notes) => {
           const { id } = await mutations.addSet(sessionId, exerciseId, setNumber, reps, weight, undefined, false, restTime);
+          if (notes) await mutations.updateSetNotes(id, notes);
           onAdd(id, restTime);
         }}
         onCancel={onCancel}
@@ -1632,6 +1694,153 @@ function ExercisePicker({
 
 
 // Rest Time Picker (Ultra minimal - presets + fine-tune)
+function ExerciseNoteInline({ exerciseId }: { exerciseId: string }) {
+  const mutations = useWorkoutMutations();
+  const { data: noteRows } = useExerciseNote(exerciseId);
+  const currentNote = noteRows?.[0]?.notes || '';
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(currentNote);
+
+  useEffect(() => { setValue(currentNote); }, [currentNote]);
+
+  const handleSave = () => {
+    const trimmed = value.trim();
+    if (trimmed !== currentNote) {
+      mutations.upsertExerciseNote(exerciseId, trimmed || null);
+    }
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <Stack direction="row" alignItems="flex-start" spacing={0.75} sx={{ my: 1 }}>
+        <EditNote sx={{ fontSize: 16, color: 'text.disabled', mt: 0.75 }} />
+        <TextField
+          fullWidth
+          size="small"
+          autoFocus
+          placeholder="Note persistante sur cet exercice..."
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSave(); } }}
+          sx={{ '& .MuiInputBase-input': { fontSize: '0.8rem' } }}
+        />
+      </Stack>
+    );
+  }
+
+  if (currentNote) {
+    return (
+      <Stack
+        direction="row"
+        alignItems="flex-start"
+        spacing={0.75}
+        onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+        sx={{
+          my: 1, cursor: 'pointer', py: 0.5, px: 1,
+          borderLeft: 2, borderColor: 'primary.main',
+          borderRadius: '0 4px 4px 0', bgcolor: 'action.hover',
+        }}
+      >
+        <EditNote sx={{ fontSize: 14, color: 'primary.main', mt: 0.125, flexShrink: 0 }} />
+        <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.4 }}>
+          {currentNote}
+        </Typography>
+      </Stack>
+    );
+  }
+
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      spacing={0.5}
+      onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+      sx={{ cursor: 'pointer', my: 0.75, opacity: 0.5, '&:hover': { opacity: 0.8 } }}
+    >
+      <EditNote sx={{ fontSize: 14 }} />
+      <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
+        Note exercice
+      </Typography>
+    </Stack>
+  );
+}
+
+function SessionNotesInput({ sessionId, initialNotes }: { sessionId: string; initialNotes: string }) {
+  const mutations = useWorkoutMutations();
+  const [notes, setNotes] = useState(initialNotes);
+  const [expanded, setExpanded] = useState(!!initialNotes);
+  const stateRef = useRef({ notes, initialNotes, sessionId, mutations });
+  stateRef.current = { notes, initialNotes, sessionId, mutations };
+
+  // Sync from external changes (e.g. PowerSync remote sync)
+  useEffect(() => { setNotes(initialNotes); }, [initialNotes]);
+
+  // Safe: PowerSync mutations are synchronous local writes
+  useEffect(() => {
+    return () => {
+      const { notes, initialNotes, sessionId, mutations } = stateRef.current;
+      const trimmed = notes.trim();
+      if (trimmed !== initialNotes) {
+        mutations.updateSessionNotes(sessionId, trimmed || null);
+      }
+    };
+  }, []);
+
+  const handleBlur = () => {
+    const trimmed = notes.trim();
+    if (trimmed !== initialNotes) {
+      mutations.updateSessionNotes(sessionId, trimmed || null);
+    }
+  };
+
+  if (!expanded) {
+    return (
+      <Card
+        variant="outlined"
+        onClick={() => setExpanded(true)}
+        sx={{
+          cursor: 'pointer', py: 1.5,
+          borderStyle: 'dashed', borderColor: 'divider',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75,
+          '&:active': { bgcolor: 'action.hover' },
+        }}
+      >
+        <EditNote sx={{ fontSize: 18, color: 'text.disabled' }} />
+        <Typography variant="caption" color="text.disabled">
+          Note de séance
+        </Typography>
+      </Card>
+    );
+  }
+
+  return (
+    <Card variant="outlined" sx={{ overflow: 'visible' }}>
+      <Stack direction="row" alignItems="center" spacing={0.75} sx={{ px: 2, pt: 1.5 }}>
+        <EditNote sx={{ fontSize: 16, color: 'text.disabled' }} />
+        <Typography variant="caption" color="text.disabled" fontWeight={500}>Note de séance</Typography>
+      </Stack>
+      <TextField
+        fullWidth
+        multiline
+        minRows={2}
+        maxRows={4}
+        size="small"
+        placeholder="Comment s'est passée ta séance..."
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        onBlur={handleBlur}
+        sx={{
+          px: 0.5, pb: 0.5,
+          '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+          '& .MuiInputBase-input': { fontSize: '0.85rem' },
+        }}
+      />
+    </Card>
+  );
+}
+
 function RestTimePicker({
   value,
   onChange,
@@ -1894,6 +2103,8 @@ function SetInputSheet({
   const [isWarmup, setIsWarmup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMorphoTips, setShowMorphoTips] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [showNotes, setShowNotes] = useState(false);
 
   // Set initial values from previous sets
   useEffect(() => {
@@ -1919,6 +2130,7 @@ function SetInputSheet({
         isWarmup,
         restTime
       );
+      if (notes.trim()) await mutations.updateSetNotes(id, notes.trim());
       onSetAdded(id, restTime);
       onClose();
     } catch (error) {
@@ -1975,6 +2187,9 @@ function SetInputSheet({
           <Close />
         </IconButton>
       </Stack>
+
+      {/* Exercise note (global) */}
+      <ExerciseNoteInline exerciseId={exercise.id} />
 
       {/* Quick Fill - Last Set */}
       {previousSets.length > 0 && (
@@ -2085,6 +2300,33 @@ function SetInputSheet({
           ))}
         </Stack>
       </Box>
+
+      {/* Notes */}
+      {showNotes ? (
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Note sur cette série..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          sx={{ mb: 2 }}
+          slotProps={{
+            input: {
+              sx: { fontSize: '0.85rem' },
+              startAdornment: <EditNote sx={{ fontSize: 16, color: 'text.disabled', mr: 0.75 }} />,
+            },
+          }}
+        />
+      ) : (
+        <Chip
+          icon={<EditNote sx={{ fontSize: 14 }} />}
+          label="Note"
+          size="small"
+          variant="outlined"
+          onClick={() => setShowNotes(true)}
+          sx={{ height: 24, fontSize: '0.7rem', borderStyle: 'dashed', cursor: 'pointer', mb: 2, mx: 'auto' }}
+        />
+      )}
 
       {/* Morpho Tips (collapsible) */}
       {morphotype && (

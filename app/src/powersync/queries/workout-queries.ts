@@ -111,6 +111,14 @@ export function useLastSetsForExercise(exerciseId: string, limit = 5) {
   );
 }
 
+export function useExerciseNote(exerciseId: string) {
+  const userId = useUserId();
+  return useQuery<{ id: string; notes: string }>(
+    `SELECT id, notes FROM user_exercise_notes WHERE user_id = ? AND exercise_id = ?`,
+    [userId, exerciseId]
+  );
+}
+
 export function useSimilarExercises(exerciseId: string, muscleGroup: string) {
   // In SQLite we can't use && array overlap, so we fall back to muscle_group matching
   return useQuery<ExerciseRow>(

@@ -38,7 +38,7 @@ type CrudOperation = {
 const WRITABLE_TABLES = new Set([
   'measurements', 'progress_photos', 'morpho_profiles',
   'workout_sessions', 'workout_sets', 'workout_templates',
-  'workout_template_exercises', 'cardio_intervals', 'personal_records',
+  'workout_template_exercises', 'cardio_intervals', 'personal_records', 'user_exercise_notes',
   'food_entries', 'nutrition_daily_summary', 'nutrition_profiles',
   'user_gamification', 'xp_transactions', 'user_achievements',
   'boss_fights', 'activity_log', 'user_settings',
@@ -47,7 +47,7 @@ const WRITABLE_TABLES = new Set([
 
 const USER_OWNED_TABLES = new Set([
   'measurements', 'progress_photos', 'morpho_profiles',
-  'workout_sessions', 'workout_templates', 'personal_records',
+  'workout_sessions', 'workout_templates', 'personal_records', 'user_exercise_notes',
   'food_entries', 'nutrition_daily_summary', 'nutrition_profiles',
   'user_gamification', 'xp_transactions', 'user_achievements',
   'boss_fights', 'activity_log', 'user_settings',

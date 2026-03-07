@@ -62,6 +62,11 @@ bucket_definitions:
         FROM personal_records
         WHERE user_id = bucket.user_id
 
+      # User exercise notes
+      - SELECT id, user_id, exercise_id, notes, updated_at
+        FROM user_exercise_notes
+        WHERE user_id = bucket.user_id
+
       # Food entries
       - SELECT id, user_id, food_id, craving_id, custom_name, logged_at,
                meal_type, quantity, serving_size, calories, protein,

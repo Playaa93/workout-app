@@ -362,6 +362,18 @@ export const personalRecords = pgTable(
   (table) => [unique().on(table.userId, table.exerciseId, table.recordType)]
 );
 
+export const userExerciseNotes = pgTable(
+  'user_exercise_notes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+    exerciseId: uuid('exercise_id').references(() => exercises.id, { onDelete: 'cascade' }).notNull(),
+    notes: text('notes').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [unique().on(table.userId, table.exerciseId)]
+);
+
 // =====================================================
 // 5. NUTRITION
 // =====================================================

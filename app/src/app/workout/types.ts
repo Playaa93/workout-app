@@ -56,6 +56,7 @@ export type WorkoutSet = {
   isWarmup: boolean | null;
   isPr: boolean | null;
   restTaken: number | null;
+  notes: string | null;
 };
 
 export type ActiveSession = {
