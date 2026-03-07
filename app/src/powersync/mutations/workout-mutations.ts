@@ -86,6 +86,10 @@ export function useWorkoutMutations() {
     await db.execute(`UPDATE workout_sets SET ${sets.join(', ')} WHERE id = ?`, vals);
   }
 
+  async function updateSetRestTaken(setId: string, restTaken: number): Promise<void> {
+    await db.execute(`UPDATE workout_sets SET rest_taken = ? WHERE id = ?`, [restTaken, setId]);
+  }
+
   async function deleteSet(setId: string): Promise<void> {
     // Clean up PR reference
     await db.execute(`DELETE FROM personal_records WHERE workout_set_id = ?`, [setId]);
@@ -380,6 +384,7 @@ export function useWorkoutMutations() {
     startWorkoutSession,
     addSet,
     updateSet,
+    updateSetRestTaken,
     deleteSet,
     endWorkoutSession,
     deleteSession,

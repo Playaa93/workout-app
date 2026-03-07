@@ -28,7 +28,7 @@ import {
   type MorphoRecommendation,
 } from '@/lib/morpho-exercise-scoring';
 import { triggerHaptic } from '@/lib/haptic';
-import { useRestTimer } from '@/hooks/useRestTimer';
+import { useSetRestTimer } from '@/hooks/useSetRestTimer';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -68,6 +68,26 @@ import Vibration from '@mui/icons-material/Vibration';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toWorkoutSet(s: any): WorkoutSet {
+  return {
+    id: s.id,
+    exerciseId: s.exercise_id,
+    exerciseName: s.exercise_name || '',
+    setNumber: s.set_number || 0,
+    reps: s.reps,
+    weight: s.weight,
+    rpe: s.rpe,
+    isWarmup: !!s.is_warmup,
+    isPr: !!s.is_pr,
+    restTaken: s.rest_taken,
+  };
+}
+
+function formatRestTime(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
+}
 
 function ActiveWorkoutContent() {
   const router = useRouter();
@@ -109,18 +129,7 @@ function ActiveWorkoutContent() {
 
   // Map sets
   const sets = useMemo<WorkoutSet[]>(() => {
-    return setRows.map((s: any) => ({
-      id: s.id,
-      exerciseId: s.exercise_id,
-      exerciseName: s.exercise_name || '',
-      setNumber: s.set_number || 0,
-      reps: s.reps,
-      weight: s.weight,
-      rpe: s.rpe,
-      isWarmup: !!s.is_warmup,
-      isPr: !!s.is_pr,
-      restTaken: s.rest_taken,
-    }));
+    return setRows.map(toWorkoutSet);
   }, [setRows]);
 
   // Map session (ActiveSession)
@@ -211,8 +220,8 @@ function ActiveWorkoutContent() {
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
-  // Rest timer (absolute time, wake lock, notifications)
-  const timer = useRestTimer();
+  // Rest timer with set tracking (persists rest_taken on adjust)
+  const timer = useSetRestTimer();
 
   // Elapsed time
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -304,11 +313,7 @@ function ActiveWorkoutContent() {
     );
   }
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  const formatTime = formatRestTime;
 
   // Group sets by exercise
   const setsByExercise = new Map<string, WorkoutSet[]>();
@@ -387,7 +392,7 @@ function ActiveWorkoutContent() {
           {/* Controls */}
           <Stack direction="row" justifyContent="center" alignItems="center" spacing={3} sx={{ mt: 1 }}>
             <Typography
-              onClick={() => timer.adjust(-30)}
+              onClick={() => timer.adjustForSet(-30)}
               sx={{
                 cursor: 'pointer',
                 fontSize: '0.9rem',
@@ -401,7 +406,7 @@ function ActiveWorkoutContent() {
             </Typography>
 
             <Typography
-              onClick={() => timer.adjust(30)}
+              onClick={() => timer.adjustForSet(30)}
               sx={{
                 cursor: 'pointer',
                 fontSize: '0.9rem',
@@ -415,7 +420,7 @@ function ActiveWorkoutContent() {
             </Typography>
 
             <Typography
-              onClick={timer.stop}
+              onClick={() => timer.stopForSet()}
               sx={{
                 cursor: 'pointer',
                 fontSize: '0.9rem',
@@ -557,7 +562,7 @@ function ActiveWorkoutContent() {
                                   <span>{set.reps} × {set.weight}kg</span>
                                   {set.restTaken && (
                                     <Typography component="span" sx={{ fontSize: '0.6rem', opacity: 0.6 }}>
-                                      {Math.floor(set.restTaken / 60)}:{(set.restTaken % 60).toString().padStart(2, '0')}
+                                      {formatRestTime(set.restTaken)}
                                     </Typography>
                                   )}
                                 </Stack>
@@ -595,9 +600,7 @@ function ActiveWorkoutContent() {
                     sessionId={sessionId}
                     defaultRestTime={lastRestTime}
                     isLastExercise={isLast}
-                    onSetAdded={() => {}}
-                    onSetDeleted={() => {}}
-                    onStartTimer={timer.start}
+                    onStartTimer={timer.startForSet}
                   />
                 </div>
               );
@@ -640,8 +643,8 @@ function ActiveWorkoutContent() {
             morphotype={morphotype}
             defaultRestTime={lastRestTime}
             onClose={() => setSelectedExercise(null)}
-            onSetAdded={(restDuration) => {
-              timer.start(restDuration);
+            onSetAdded={(setId, restDuration) => {
+              timer.startForSet(setId, restDuration);
             }}
           />
         )}
@@ -838,8 +841,6 @@ function ExerciseCard({
   sessionId,
   defaultRestTime = 90,
   isLastExercise = false,
-  onSetAdded,
-  onSetDeleted,
   onStartTimer,
 }: {
   exercise: Exercise | undefined;
@@ -847,9 +848,7 @@ function ExerciseCard({
   sessionId: string;
   defaultRestTime?: number;
   isLastExercise?: boolean;
-  onSetAdded: () => void;
-  onSetDeleted: () => void;
-  onStartTimer: (duration?: number) => void;
+  onStartTimer: (setId: string, duration: number) => void;
 }) {
   const mutations = useWorkoutMutations();
   const [showAddSet, setShowAddSet] = useState(false);
@@ -858,18 +857,7 @@ function ExerciseCard({
 
   const { data: prevSetRows } = useLastSetsForExercise(exercise?.id || '', 5);
   const previousSets = useMemo<WorkoutSet[]>(() => {
-    return prevSetRows.map((s: any) => ({
-      id: s.id,
-      exerciseId: s.exercise_id,
-      exerciseName: s.exercise_name || '',
-      setNumber: s.set_number || 0,
-      reps: s.reps,
-      weight: s.weight,
-      rpe: s.rpe,
-      isWarmup: !!s.is_warmup,
-      isPr: !!s.is_pr,
-      restTaken: s.rest_taken,
-    }));
+    return prevSetRows.map(toWorkoutSet);
   }, [prevSetRows]);
 
   // Auto-collapse when this exercise is no longer the last one
@@ -935,12 +923,10 @@ function ExerciseCard({
                 set={set}
                 onSave={() => {
                   setEditingSetId(null);
-                  onSetAdded();
                 }}
                 onDelete={async () => {
                   setEditingSetId(null);
                   await mutations.deleteSet(set.id);
-                  onSetDeleted();
                 }}
                 onCancel={() => setEditingSetId(null)}
               />
@@ -981,7 +967,7 @@ function ExerciseCard({
                     {set.rpe && <Typography component="span" color="text.secondary" sx={{ ml: 1 }}>RPE {set.rpe}</Typography>}
                     {set.restTaken && (
                       <Typography component="span" color="text.disabled" sx={{ ml: 1, fontSize: '0.75rem' }}>
-                        {Math.floor(set.restTaken / 60)}:{(set.restTaken % 60).toString().padStart(2, '0')}
+                        {formatRestTime(set.restTaken)}
                       </Typography>
                     )}
                   </Box>
@@ -1019,10 +1005,9 @@ function ExerciseCard({
             lastReps={lastSet?.reps || undefined}
             defaultRestTime={defaultRestTime}
             onCancel={() => setShowAddSet(false)}
-            onAdd={(restDuration) => {
+            onAdd={(setId, restDuration) => {
               setShowAddSet(false);
-              onSetAdded();
-              onStartTimer(restDuration);
+              onStartTimer(setId, restDuration);
             }}
           />
         )}
@@ -1183,7 +1168,7 @@ function QuickSetInput({
   lastReps?: number;
   defaultRestTime?: number;
   onCancel: () => void;
-  onAdd: (restDuration: number) => void;
+  onAdd: (setId: string, restDuration: number) => void;
 }) {
   const mutations = useWorkoutMutations();
   const [restTime, setRestTime] = useState(defaultRestTime);
@@ -1195,8 +1180,8 @@ function QuickSetInput({
         initialReps={lastReps || 0}
         submitLabel="Valider"
         onSubmit={async (reps, weight) => {
-          await mutations.addSet(sessionId, exerciseId, setNumber, reps, weight, undefined, false, restTime);
-          onAdd(restTime);
+          const { id } = await mutations.addSet(sessionId, exerciseId, setNumber, reps, weight, undefined, false, restTime);
+          onAdd(id, restTime);
         }}
         onCancel={onCancel}
       >
@@ -1893,24 +1878,13 @@ function SetInputSheet({
   morphotype: MorphotypeResult | null;
   defaultRestTime?: number;
   onClose: () => void;
-  onSetAdded: (restDuration: number) => void;
+  onSetAdded: (setId: string, restDuration: number) => void;
 }) {
   const mutations = useWorkoutMutations();
   const { data: prevSetRows } = useLastSetsForExercise(exercise.id, 5);
 
   const previousSets = useMemo<WorkoutSet[]>(() => {
-    return prevSetRows.map((s: any) => ({
-      id: s.id,
-      exerciseId: s.exercise_id,
-      exerciseName: s.exercise_name || '',
-      setNumber: s.set_number || 0,
-      reps: s.reps,
-      weight: s.weight,
-      rpe: s.rpe,
-      isWarmup: !!s.is_warmup,
-      isPr: !!s.is_pr,
-      restTaken: s.rest_taken,
-    }));
+    return prevSetRows.map(toWorkoutSet);
   }, [prevSetRows]);
 
   const [weight, setWeight] = useState(0);
@@ -1935,7 +1909,7 @@ function SetInputSheet({
     setIsSubmitting(true);
     triggerHaptic('heavy');
     try {
-      await mutations.addSet(
+      const { id } = await mutations.addSet(
         sessionId,
         exercise.id,
         isWarmup ? 0 : setNumber,
@@ -1945,7 +1919,7 @@ function SetInputSheet({
         isWarmup,
         restTime
       );
-      onSetAdded(restTime);
+      onSetAdded(id, restTime);
       onClose();
     } catch (error) {
       console.error('Error adding set:', error);
