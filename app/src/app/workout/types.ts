@@ -57,6 +57,22 @@ export type WorkoutSet = {
   isPr: boolean | null;
   restTaken: number | null;
   notes: string | null;
+  machineSetupId: string | null;
+};
+
+export type MachineSettingEntry = {
+  key: string;
+  value: string;
+};
+
+export type MachineSetup = {
+  id: string;
+  exerciseId: string;
+  machineLabel: string;
+  photoBase64: string | null;
+  settings: MachineSettingEntry[];
+  isDefault: boolean;
+  notes: string | null;
 };
 
 export type ActiveSession = {

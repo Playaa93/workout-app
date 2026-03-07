@@ -67,6 +67,12 @@ bucket_definitions:
         FROM user_exercise_notes
         WHERE user_id = bucket.user_id
 
+      # User machine setups
+      - SELECT id, user_id, exercise_id, machine_label, photo_base64,
+               settings, is_default, notes, created_at, updated_at
+        FROM user_machine_setups
+        WHERE user_id = bucket.user_id
+
       # Food entries
       - SELECT id, user_id, food_id, craving_id, custom_name, logged_at,
                meal_type, quantity, serving_size, calories, protein,
@@ -129,7 +135,7 @@ bucket_definitions:
     data:
       - SELECT id, session_id, exercise_id, set_number,
                reps, weight, rpe, is_warmup, is_pr,
-               rest_taken, notes, performed_at
+               rest_taken, notes, machine_setup_id, performed_at
         FROM workout_sets
         WHERE session_id = bucket.session_id
 

@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import type { ActiveSession, WorkoutSet, Exercise } from '../types';
+import type { ActiveSession, WorkoutSet, Exercise, MachineSettingEntry } from '../types';
 import { useAuth } from '@/powersync/auth-context';
-import { useSessionDetail, useSessionSets, useExercises, useExerciseNote } from '@/powersync/queries/workout-queries';
+import { useSessionDetail, useSessionSets, useExercises, useExerciseNote, useMachineSetupById } from '@/powersync/queries/workout-queries';
+import { parseJsonArray } from '@/powersync/helpers';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
 import type { CardioActivity } from '@/db/schema';
@@ -36,6 +37,7 @@ import MenuItem from '@mui/material/MenuItem';
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import FitnessCenter from '@mui/icons-material/FitnessCenter';
 import EditNote from '@mui/icons-material/EditNote';
+import Settings from '@mui/icons-material/Settings';
 import FileDownload from '@mui/icons-material/FileDownload';
 import Description from '@mui/icons-material/Description';
 import DataObject from '@mui/icons-material/DataObject';
@@ -233,9 +235,9 @@ function SessionDetailContent() {
         nameFr: e.name_fr ?? '',
         nameEn: e.name_en ?? null,
         muscleGroup: e.muscle_group ?? '',
-        primaryMuscles: e.primary_muscles ? JSON.parse(e.primary_muscles) : null,
-        secondaryMuscles: e.secondary_muscles ? JSON.parse(e.secondary_muscles) : null,
-        equipment: e.equipment ? JSON.parse(e.equipment) : null,
+        primaryMuscles: parseJsonArray(e.primary_muscles),
+        secondaryMuscles: parseJsonArray(e.secondary_muscles),
+        equipment: parseJsonArray(e.equipment),
         difficulty: (e as Record<string, unknown>).difficulty as string | null ?? null,
       });
     }
@@ -252,6 +254,7 @@ function SessionDetailContent() {
       isPr: !!r.is_pr,
       restTaken: r.rest_taken ?? null,
       notes: r.notes || null,
+      machineSetupId: r.machine_setup_id ?? null,
     }));
 
     return {
@@ -399,6 +402,11 @@ function SessionDetailContent() {
                     </Typography>
                   </Stack>
                   <ExerciseNoteReadonly exerciseId={exerciseId} />
+                  {/* Show machine setup from first set that has one */}
+                  {(() => {
+                    const machineId = exSets.find(s => s.machineSetupId)?.machineSetupId;
+                    return machineId ? <MachineSetupReadonly machineSetupId={machineId} /> : null;
+                  })()}
 
                   {exSets.map((set) => (
                     <Box key={set.id} sx={{ py: 0.75, borderBottom: 1, borderColor: 'divider', '&:last-child': { borderBottom: 0 } }}>
@@ -491,6 +499,48 @@ function StatBox({ label, value }: { label: string; value: string }) {
         {label}
       </Typography>
     </Box>
+  );
+}
+
+function MachineSetupReadonly({ machineSetupId }: { machineSetupId: string }) {
+  const { data: rows } = useMachineSetupById(machineSetupId);
+  const setup = rows?.[0];
+  if (!setup) return null;
+
+  const settings: MachineSettingEntry[] = parseJsonArray(setup.settings);
+  const filledSettings = settings.filter(s => s.value);
+
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      spacing={0.75}
+      sx={{
+        mb: 0.75, py: 0.5, px: 1,
+        borderLeft: 2, borderColor: 'info.main',
+        borderRadius: '0 4px 4px 0', bgcolor: 'action.hover',
+      }}
+    >
+      {setup.photo_base64 && (
+        <Box
+          component="img"
+          src={setup.photo_base64}
+          alt=""
+          sx={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 0.5, flexShrink: 0 }}
+        />
+      )}
+      <Settings sx={{ fontSize: 12, color: 'info.main', flexShrink: 0 }} />
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography variant="caption" fontWeight={600} sx={{ lineHeight: 1.2, display: 'block', fontSize: '0.65rem' }} noWrap>
+          {setup.machine_label}
+        </Typography>
+        {filledSettings.length > 0 && (
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.55rem', lineHeight: 1.2 }}>
+            {filledSettings.map(s => `${s.key}: ${s.value}`).join(' · ')}
+          </Typography>
+        )}
+      </Box>
+    </Stack>
   );
 }
 

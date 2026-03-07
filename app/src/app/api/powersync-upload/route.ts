@@ -39,6 +39,7 @@ const WRITABLE_TABLES = new Set([
   'measurements', 'progress_photos', 'morpho_profiles',
   'workout_sessions', 'workout_sets', 'workout_templates',
   'workout_template_exercises', 'cardio_intervals', 'personal_records', 'user_exercise_notes',
+  'user_machine_setups',
   'food_entries', 'nutrition_daily_summary', 'nutrition_profiles',
   'user_gamification', 'xp_transactions', 'user_achievements',
   'boss_fights', 'activity_log', 'user_settings',
@@ -48,6 +49,7 @@ const WRITABLE_TABLES = new Set([
 const USER_OWNED_TABLES = new Set([
   'measurements', 'progress_photos', 'morpho_profiles',
   'workout_sessions', 'workout_templates', 'personal_records', 'user_exercise_notes',
+  'user_machine_setups',
   'food_entries', 'nutrition_daily_summary', 'nutrition_profiles',
   'user_gamification', 'xp_transactions', 'user_achievements',
   'boss_fights', 'activity_log', 'user_settings',
@@ -57,6 +59,7 @@ const BOOLEAN_COLUMNS = new Set([
   'is_active', 'notifications_enabled', 'is_custom', 'is_public',
   'is_boss_fight', 'boss_fight_completed', 'is_warmup', 'is_pr',
   'verified', 'recognized_by_ai', 'is_cheat', 'is_male', 'is_secret',
+  'is_default',
 ]);
 
 function convertValue(key: string, value: unknown): unknown {

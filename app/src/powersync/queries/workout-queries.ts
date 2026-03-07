@@ -12,6 +12,7 @@ export type TemplateRow = Database['workout_templates'];
 export type TemplateExerciseRow = Database['workout_template_exercises'];
 export type PersonalRecordRow = Database['personal_records'];
 export type CardioIntervalRow = Database['cardio_intervals'];
+export type MachineSetupRow = Database['user_machine_setups'];
 
 export function useExercises() {
   return useQuery<ExerciseRow>(
@@ -189,5 +190,45 @@ export function useAllSetsForExport() {
      WHERE wses.user_id = ? AND wses.ended_at IS NOT NULL
      ORDER BY ws.performed_at`,
     [userId]
+  );
+}
+
+// Machine Setups
+export function useMachineSetups(exerciseId: string) {
+  const userId = useUserId();
+  return useQuery<MachineSetupRow>(
+    `SELECT * FROM user_machine_setups
+     WHERE user_id = ? AND exercise_id = ?
+     ORDER BY is_default DESC, updated_at DESC`,
+    [userId, exerciseId]
+  );
+}
+
+export function useLastSetsForExerciseOrMachine(exerciseId: string, machineSetupId: string | null, limit = 5) {
+  const userId = useUserId();
+  return useQuery<WorkoutSetRow & { exercise_name: string }>(
+    machineSetupId
+      ? `SELECT ws.*, e.name_fr as exercise_name
+         FROM workout_sets ws
+         INNER JOIN workout_sessions wses ON ws.session_id = wses.id
+         LEFT JOIN exercises e ON ws.exercise_id = e.id
+         WHERE wses.user_id = ? AND ws.exercise_id = ? AND ws.machine_setup_id = ? AND ws.is_warmup = 0
+         ORDER BY ws.performed_at DESC LIMIT ?`
+      : `SELECT ws.*, e.name_fr as exercise_name
+         FROM workout_sets ws
+         INNER JOIN workout_sessions wses ON ws.session_id = wses.id
+         LEFT JOIN exercises e ON ws.exercise_id = e.id
+         WHERE wses.user_id = ? AND ws.exercise_id = ? AND ws.is_warmup = 0
+         ORDER BY ws.performed_at DESC LIMIT ?`,
+    machineSetupId ? [userId, exerciseId, machineSetupId, limit] : [userId, exerciseId, limit]
+  );
+}
+
+export function useMachineSetupById(setupId: string | null) {
+  return useQuery<MachineSetupRow>(
+    setupId
+      ? `SELECT * FROM user_machine_setups WHERE id = ?`
+      : `SELECT * FROM user_machine_setups WHERE 0`,
+    setupId ? [setupId] : []
   );
 }

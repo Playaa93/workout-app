@@ -325,6 +325,7 @@ export const workoutSets = pgTable(
     isPr: boolean('is_pr').default(false),
     restTaken: integer('rest_taken'),
     notes: text('notes'),
+    machineSetupId: uuid('machine_setup_id').references(() => userMachineSetups.id, { onDelete: 'set null' }),
     performedAt: timestamp('performed_at', { withTimezone: true }).defaultNow(),
   },
   (table) => [
@@ -372,6 +373,23 @@ export const userExerciseNotes = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
   (table) => [unique().on(table.userId, table.exerciseId)]
+);
+
+export const userMachineSetups = pgTable(
+  'user_machine_setups',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+    exerciseId: uuid('exercise_id').references(() => exercises.id, { onDelete: 'cascade' }).notNull(),
+    machineLabel: varchar('machine_label', { length: 100 }).notNull(),
+    photoBase64: text('photo_base64'),
+    settings: text('settings').notNull().default('[]'),
+    isDefault: boolean('is_default').default(false),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [index('idx_machine_setups_user_exercise').on(table.userId, table.exerciseId)]
 );
 
 // =====================================================
@@ -713,3 +731,4 @@ export type Achievement = typeof achievements.$inferSelect;
 export type BossFight = typeof bossFights.$inferSelect;
 
 export type ActivityLogEntry = typeof activityLog.$inferSelect;
+export type UserMachineSetup = typeof userMachineSetups.$inferSelect;

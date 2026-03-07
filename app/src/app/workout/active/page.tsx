@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type {
   Exercise,
   WorkoutSet,
   ActiveSession,
   TemplateExercise,
+  MachineSetup,
 } from '../types';
 import { useAuth } from '@/powersync/auth-context';
 import {
@@ -14,8 +15,9 @@ import {
   useSessionSets,
   useExercises,
   useTemplateExercises,
-  useLastSetsForExercise,
+  useLastSetsForExerciseOrMachine,
   useExerciseNote,
+  useMachineSetups,
 } from '@/powersync/queries/workout-queries';
 import { useMorphoProfile } from '@/powersync/queries/morphology-queries';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
@@ -23,6 +25,8 @@ import { parseJson, parseJsonArray } from '@/powersync/helpers';
 import type { MorphotypeResult } from '@/app/morphology/types';
 import { MorphoTipsPanel, MorphoScoreBadge } from '@/components/workout/MorphoTipsPanel';
 import ExerciseDetailModal from '@/components/workout/ExerciseDetailModal';
+import MachineSetupSheet from '@/components/workout/MachineSetupSheet';
+import Settings from '@mui/icons-material/Settings';
 import {
   scoreExercise,
   getCategoryDefault,
@@ -85,6 +89,20 @@ function toWorkoutSet(s: any): WorkoutSet {
     isPr: !!s.is_pr,
     restTaken: s.rest_taken,
     notes: s.notes || null,
+    machineSetupId: s.machine_setup_id || null,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toMachineSetup(r: any): MachineSetup {
+  return {
+    id: r.id,
+    exerciseId: r.exercise_id ?? '',
+    machineLabel: r.machine_label ?? '',
+    photoBase64: r.photo_base64 ?? null,
+    settings: parseJsonArray(r.settings),
+    isDefault: !!r.is_default,
+    notes: r.notes ?? null,
   };
 }
 
@@ -842,6 +860,168 @@ export default function ActiveWorkoutPage() {
   );
 }
 
+// Machine Setup Inline (compact display in ExerciseCard)
+function MachineSetupInline({
+  exerciseId,
+  equipment,
+  selectedSetupId,
+  onSelectSetup,
+}: {
+  exerciseId: string;
+  equipment: string[] | null;
+  selectedSetupId: string | null;
+  onSelectSetup: (setup: MachineSetup | null) => void;
+}) {
+  const mutations = useWorkoutMutations();
+  const { data: setupRows } = useMachineSetups(exerciseId);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingSetup, setEditingSetup] = useState<MachineSetup | null>(null);
+
+  const setups = useMemo<MachineSetup[]>(() => {
+    return setupRows.map(toMachineSetup);
+  }, [setupRows]);
+
+  const selectedSetup = setups.find(s => s.id === selectedSetupId) || null;
+  const filledSettings = selectedSetup?.settings.filter(s => s.value) ?? [];
+
+  // Auto-select default on first load
+  useEffect(() => {
+    if (!selectedSetupId && setups.length > 0) {
+      const def = setups.find(s => s.isDefault) || setups[0];
+      onSelectSetup(def);
+    }
+  }, [setups, selectedSetupId, onSelectSetup]);
+
+  const existingLabels = useMemo(() => setups.map(s => s.machineLabel), [setups]);
+
+  if (setups.length === 0) {
+    return (
+      <>
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={0.5}
+          onClick={(e) => { e.stopPropagation(); setEditingSetup(null); setSheetOpen(true); }}
+          sx={{ cursor: 'pointer', my: 0.75, opacity: 0.5, '&:hover': { opacity: 0.8 } }}
+        >
+          <Settings sx={{ fontSize: 14 }} />
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
+            Configurer machine
+          </Typography>
+        </Stack>
+        <MachineSetupSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          exerciseId={exerciseId}
+          equipment={equipment}
+          existingLabels={existingLabels}
+          onSave={async (data) => {
+            const id = await mutations.saveMachineSetup(data);
+            onSelectSetup({ ...data, id, photoBase64: data.photoBase64 ?? null, settings: data.settings, notes: data.notes ?? null });
+          }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      {/* Horizontal selector if multiple setups */}
+      {setups.length > 1 && (
+        <Stack direction="row" spacing={0.5} sx={{ my: 0.5, overflowX: 'auto', pb: 0.5 }}>
+          {setups.map(s => (
+            <Chip
+              key={s.id}
+              label={s.machineLabel}
+              size="small"
+              variant={s.id === selectedSetupId ? 'filled' : 'outlined'}
+              color={s.id === selectedSetupId ? 'primary' : 'default'}
+              onClick={(e) => { e.stopPropagation(); triggerHaptic('light'); onSelectSetup(s); }}
+              sx={{ fontSize: '0.65rem', height: 24, maxWidth: 140, flexShrink: 0 }}
+            />
+          ))}
+          <Chip
+            icon={<Add sx={{ fontSize: 12 }} />}
+            label="Nouvelle"
+            size="small"
+            variant="outlined"
+            onClick={(e) => { e.stopPropagation(); setEditingSetup(null); setSheetOpen(true); }}
+            sx={{ fontSize: '0.65rem', height: 24, borderStyle: 'dashed', cursor: 'pointer', flexShrink: 0 }}
+          />
+        </Stack>
+      )}
+
+      {/* Selected machine compact card */}
+      {selectedSetup && (
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          onClick={(e) => { e.stopPropagation(); setEditingSetup(selectedSetup); setSheetOpen(true); }}
+          sx={{
+            my: 0.75, py: 0.5, px: 1, cursor: 'pointer',
+            borderLeft: 2, borderColor: 'info.main',
+            borderRadius: '0 4px 4px 0', bgcolor: 'action.hover',
+          }}
+        >
+          {selectedSetup.photoBase64 && (
+            <Box
+              component="img"
+              src={selectedSetup.photoBase64}
+              alt=""
+              sx={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 1, flexShrink: 0 }}
+            />
+          )}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="caption" fontWeight={600} sx={{ lineHeight: 1.2, display: 'block' }} noWrap>
+              {selectedSetup.machineLabel}
+            </Typography>
+            {filledSettings.length > 0 && (
+              <Stack direction="row" spacing={0.5} sx={{ mt: 0.25, flexWrap: 'wrap', gap: 0.25 }}>
+                {filledSettings.slice(0, 3).map((s, i) => (
+                  <Typography key={i} variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
+                    {s.key}: {s.value}
+                  </Typography>
+                ))}
+              </Stack>
+            )}
+          </Box>
+          <Settings sx={{ fontSize: 14, color: 'text.disabled', flexShrink: 0 }} />
+        </Stack>
+      )}
+
+      {/* Add button when single setup */}
+      {setups.length === 1 && (
+        <Chip
+          icon={<Add sx={{ fontSize: 12 }} />}
+          label="Autre machine"
+          size="small"
+          variant="outlined"
+          onClick={(e) => { e.stopPropagation(); setEditingSetup(null); setSheetOpen(true); }}
+          sx={{ mb: 0.5, fontSize: '0.65rem', height: 22, borderStyle: 'dashed', cursor: 'pointer' }}
+        />
+      )}
+
+      <MachineSetupSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        exerciseId={exerciseId}
+        equipment={equipment}
+        existingSetup={editingSetup}
+        existingLabels={existingLabels}
+        onSave={async (data) => {
+          const id = await mutations.saveMachineSetup(data);
+          onSelectSetup({ ...data, id, photoBase64: data.photoBase64 ?? null, settings: data.settings, notes: data.notes ?? null });
+        }}
+        onDelete={async (id) => {
+          await mutations.deleteMachineSetup(id);
+          if (selectedSetupId === id) onSelectSetup(null);
+        }}
+      />
+    </>
+  );
+}
+
 // Exercise Card Component
 function ExerciseCard({
   exercise,
@@ -864,8 +1044,9 @@ function ExerciseCard({
   const [showAddSet, setShowAddSet] = useState(false);
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(!isLastExercise && sets.length > 0);
+  const [selectedMachineSetupId, setSelectedMachineSetupId] = useState<string | null>(null);
 
-  const { data: prevSetRows } = useLastSetsForExercise(exercise?.id || '', 5);
+  const { data: prevSetRows } = useLastSetsForExerciseOrMachine(exercise?.id || '', selectedMachineSetupId, 5);
   const previousSets = useMemo<WorkoutSet[]>(() => {
     return prevSetRows.map(toWorkoutSet);
   }, [prevSetRows]);
@@ -875,6 +1056,10 @@ function ExerciseCard({
     if (!isLastExercise) setCollapsed(true);
     if (isLastExercise) setCollapsed(false);
   }, [isLastExercise]);
+
+  const handleSelectSetup = useCallback((setup: MachineSetup | null) => {
+    setSelectedMachineSetupId(setup?.id ?? null);
+  }, []);
 
   if (!exercise) return null;
 
@@ -932,6 +1117,12 @@ function ExerciseCard({
 
       <Collapse in={!collapsed}>
         <Box sx={{ px: 2 }}>
+          <MachineSetupInline
+            exerciseId={exercise.id}
+            equipment={exercise.equipment}
+            selectedSetupId={selectedMachineSetupId}
+            onSelectSetup={handleSelectSetup}
+          />
           <ExerciseNoteInline exerciseId={exercise.id} />
         </Box>
         {/* Sets List */}
@@ -1032,6 +1223,7 @@ function ExerciseCard({
             lastWeight={lastSet?.weight ? parseFloat(lastSet.weight) : undefined}
             lastReps={lastSet?.reps || undefined}
             defaultRestTime={defaultRestTime}
+            machineSetupId={selectedMachineSetupId}
             onCancel={() => setShowAddSet(false)}
             onAdd={(setId, restDuration) => {
               setShowAddSet(false);
@@ -1219,6 +1411,7 @@ function QuickSetInput({
   lastWeight,
   lastReps,
   defaultRestTime = 90,
+  machineSetupId,
   onCancel,
   onAdd,
 }: {
@@ -1228,6 +1421,7 @@ function QuickSetInput({
   lastWeight?: number;
   lastReps?: number;
   defaultRestTime?: number;
+  machineSetupId?: string | null;
   onCancel: () => void;
   onAdd: (setId: string, restDuration: number) => void;
 }) {
@@ -1241,7 +1435,7 @@ function QuickSetInput({
         initialReps={lastReps || 0}
         submitLabel="Valider"
         onSubmit={async (reps, weight, notes) => {
-          const { id } = await mutations.addSet(sessionId, exerciseId, setNumber, reps, weight, undefined, false, restTime);
+          const { id } = await mutations.addSet(sessionId, exerciseId, setNumber, reps, weight, undefined, false, restTime, machineSetupId || undefined);
           if (notes) await mutations.updateSetNotes(id, notes);
           onAdd(id, restTime);
         }}
@@ -2078,6 +2272,7 @@ function SetInputSheet({
   setNumber,
   morphotype,
   defaultRestTime = 90,
+  machineSetupId,
   onClose,
   onSetAdded,
 }: {
@@ -2086,11 +2281,12 @@ function SetInputSheet({
   setNumber: number;
   morphotype: MorphotypeResult | null;
   defaultRestTime?: number;
+  machineSetupId?: string | null;
   onClose: () => void;
   onSetAdded: (setId: string, restDuration: number) => void;
 }) {
   const mutations = useWorkoutMutations();
-  const { data: prevSetRows } = useLastSetsForExercise(exercise.id, 5);
+  const { data: prevSetRows } = useLastSetsForExerciseOrMachine(exercise.id, machineSetupId || null, 5);
 
   const previousSets = useMemo<WorkoutSet[]>(() => {
     return prevSetRows.map(toWorkoutSet);
@@ -2128,7 +2324,8 @@ function SetInputSheet({
         weight,
         rpe || undefined,
         isWarmup,
-        restTime
+        restTime,
+        machineSetupId || undefined
       );
       if (notes.trim()) await mutations.updateSetNotes(id, notes.trim());
       onSetAdded(id, restTime);

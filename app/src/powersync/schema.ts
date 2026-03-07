@@ -198,6 +198,7 @@ const workout_sets = new Table({
   is_pr: column.integer,
   rest_taken: column.integer,
   notes: column.text,
+  machine_setup_id: column.text,
   performed_at: column.text,
 });
 
@@ -205,6 +206,18 @@ const user_exercise_notes = new Table({
   user_id: column.text,
   exercise_id: column.text,
   notes: column.text,
+  updated_at: column.text,
+});
+
+const user_machine_setups = new Table({
+  user_id: column.text,
+  exercise_id: column.text,
+  machine_label: column.text,
+  photo_base64: column.text,
+  settings: column.text, // JSON array: [{"key":"Siege","value":"5"}, ...]
+  is_default: column.integer, // boolean -> integer (0/1)
+  notes: column.text,
+  created_at: column.text,
   updated_at: column.text,
 });
 
@@ -386,6 +399,7 @@ export const AppSchema = new Schema({
   workout_sessions,
   workout_sets,
   user_exercise_notes,
+  user_machine_setups,
   cardio_intervals,
   personal_records,
   foods,

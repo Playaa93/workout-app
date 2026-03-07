@@ -29,7 +29,8 @@ export function useWorkoutMutations() {
     weight: number,
     rpe?: number,
     isWarmup = false,
-    restTaken?: number
+    restTaken?: number,
+    machineSetupId?: string
   ): Promise<{ id: string; isPr: boolean }> {
     const estimated1RM = weight * (1 + reps / 30);
     let isPr = false;
@@ -47,9 +48,9 @@ export function useWorkoutMutations() {
     const now = nowISO();
 
     await db.execute(
-      `INSERT INTO workout_sets (id, session_id, exercise_id, set_number, reps, weight, rpe, is_warmup, is_pr, rest_taken, performed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, sessionId, exerciseId, setNumber, reps, weight.toString(), rpe ?? null, isWarmup ? 1 : 0, isPr ? 1 : 0, restTaken ?? null, now]
+      `INSERT INTO workout_sets (id, session_id, exercise_id, set_number, reps, weight, rpe, is_warmup, is_pr, rest_taken, machine_setup_id, performed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, sessionId, exerciseId, setNumber, reps, weight.toString(), rpe ?? null, isWarmup ? 1 : 0, isPr ? 1 : 0, restTaken ?? null, machineSetupId ?? null, now]
     );
 
     if (isPr) {
@@ -408,6 +409,49 @@ export function useWorkoutMutations() {
     };
   }
 
+  // Machine Setups
+  async function saveMachineSetup(data: {
+    id?: string;
+    exerciseId: string;
+    machineLabel: string;
+    photoBase64?: string | null;
+    settings: { key: string; value: string }[];
+    isDefault: boolean;
+    notes?: string | null;
+  }): Promise<string> {
+    const now = nowISO();
+    const setupId = data.id || uuid();
+
+    if (data.isDefault) {
+      await db.execute(
+        `UPDATE user_machine_setups SET is_default = 0, updated_at = ? WHERE user_id = ? AND exercise_id = ?`,
+        [now, userId, data.exerciseId]
+      );
+    }
+
+    const settingsJson = JSON.stringify(data.settings);
+
+    if (data.id) {
+      await db.execute(
+        `UPDATE user_machine_setups SET machine_label = ?, photo_base64 = ?, settings = ?, is_default = ?, notes = ?, updated_at = ? WHERE id = ?`,
+        [data.machineLabel, data.photoBase64 ?? null, settingsJson, data.isDefault ? 1 : 0, data.notes ?? null, now, data.id]
+      );
+    } else {
+      await db.execute(
+        `INSERT INTO user_machine_setups (id, user_id, exercise_id, machine_label, photo_base64, settings, is_default, notes, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [setupId, userId, data.exerciseId, data.machineLabel, data.photoBase64 ?? null, settingsJson, data.isDefault ? 1 : 0, data.notes ?? null, now, now]
+      );
+    }
+
+    return setupId;
+  }
+
+  async function deleteMachineSetup(setupId: string): Promise<void> {
+    await db.execute(`UPDATE workout_sets SET machine_setup_id = NULL WHERE machine_setup_id = ?`, [setupId]);
+    await db.execute(`DELETE FROM user_machine_setups WHERE id = ?`, [setupId]);
+  }
+
   return {
     startWorkoutSession,
     addSet,
@@ -424,5 +468,7 @@ export function useWorkoutMutations() {
     startCardioSession,
     addCardioInterval,
     endCardioSession,
+    saveMachineSetup,
+    deleteMachineSetup,
   };
 }
