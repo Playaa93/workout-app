@@ -903,9 +903,10 @@ function MachineSetupInline({
   const existingLabels = useMemo(() => setups.map(s => s.machineLabel), [setups]);
 
   if (setups.length === 0) {
+    if (!sheetOpen) return null;
     return (
       <MachineSetupSheet
-        open={sheetOpen}
+        open
         onClose={onSheetClose}
         exerciseId={exerciseId}
         equipment={equipment}
@@ -986,7 +987,7 @@ function MachineSetupInline({
 
       <MachineSetupSheet
         open={sheetOpen}
-        onClose={() => onSheetClose()}
+        onClose={onSheetClose}
         exerciseId={exerciseId}
         equipment={equipment}
         existingSetup={editingSetup}
@@ -1029,6 +1030,7 @@ function ExerciseCard({
   const [selectedMachineSetupId, setSelectedMachineSetupId] = useState<string | null>(null);
   const [machineSheetOpen, setMachineSheetOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [forceEditNote, setForceEditNote] = useState(false);
 
   const { data: prevSetRows } = useLastSetsForExerciseOrMachine(exercise?.id || '', selectedMachineSetupId, 5);
   const previousSets = useMemo<WorkoutSet[]>(() => {
@@ -1088,36 +1090,37 @@ function ExerciseCard({
               </Typography>
             )}
           </Box>
-          {!collapsed && (
-            <Stack direction="row" alignItems="center" spacing={0.5} onClick={(e) => e.stopPropagation()}>
-              {previousSets.length > 0 && (
-                <Box sx={{ textAlign: 'right' }}>
-                  <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
-                  <Typography variant="body2" color="text.primary">
-                    {previousSets[0].reps} × {previousSets[0].weight}kg
-                  </Typography>
-                </Box>
-              )}
-              <IconButton
-                size="small"
-                onClick={(e) => setMenuAnchor(e.currentTarget)}
-                sx={{ ml: 0.5 }}
-              >
-                <MoreVert sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Stack>
-          )}
+          <Stack direction="row" alignItems="center" spacing={0.5} onClick={(e) => e.stopPropagation()}>
+            {!collapsed && previousSets.length > 0 && (
+              <Box sx={{ textAlign: 'right' }}>
+                <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
+                <Typography variant="body2" color="text.primary">
+                  {previousSets[0].reps} × {previousSets[0].weight}kg
+                </Typography>
+              </Box>
+            )}
+            <IconButton
+              size="small"
+              onClick={(e) => setMenuAnchor(e.currentTarget)}
+            >
+              <MoreVert sx={{ fontSize: 18, color: 'text.disabled' }} />
+            </IconButton>
+          </Stack>
         </Stack>
       </CardContent>
       <Menu
         anchorEl={menuAnchor}
         open={!!menuAnchor}
         onClose={() => setMenuAnchor(null)}
-        slotProps={{ paper: { sx: { minWidth: 180 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 180 } } }}
       >
-        <MenuItem onClick={() => { setMenuAnchor(null); setMachineSheetOpen(true); }}>
+        <MenuItem onClick={() => { setMenuAnchor(null); setCollapsed(false); setMachineSheetOpen(true); }}>
           <Settings sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
           Configurer machine
+        </MenuItem>
+        <MenuItem onClick={() => { setMenuAnchor(null); setCollapsed(false); setForceEditNote(true); }}>
+          <EditNote sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
+          Note exercice
         </MenuItem>
         <MenuItem onClick={() => { setMenuAnchor(null); onShowInfo(exercise); }}>
           <InfoOutlined sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
@@ -1125,7 +1128,7 @@ function ExerciseCard({
         </MenuItem>
       </Menu>
 
-      <Collapse in={!collapsed}>
+      <Collapse in={!collapsed} unmountOnExit>
         <Box sx={{ px: 2 }}>
           <MachineSetupInline
             exerciseId={exercise.id}
@@ -1136,7 +1139,7 @@ function ExerciseCard({
             onSheetOpen={() => setMachineSheetOpen(true)}
             onSheetClose={() => setMachineSheetOpen(false)}
           />
-          <ExerciseNoteInline exerciseId={exercise.id} />
+          <ExerciseNoteInline exerciseId={exercise.id} forceEdit={forceEditNote} onForceEditDone={() => setForceEditNote(false)} />
         </Box>
         {/* Sets List */}
         <Box sx={{ px: 2, pb: 1 }}>
@@ -1901,7 +1904,7 @@ function ExercisePicker({
 
 
 // Rest Time Picker (Ultra minimal - presets + fine-tune)
-function ExerciseNoteInline({ exerciseId }: { exerciseId: string }) {
+function ExerciseNoteInline({ exerciseId, forceEdit, onForceEditDone }: { exerciseId: string; forceEdit?: boolean; onForceEditDone?: () => void }) {
   const mutations = useWorkoutMutations();
   const { data: noteRows } = useExerciseNote(exerciseId);
   const currentNote = noteRows?.[0]?.notes || '';
@@ -1909,6 +1912,13 @@ function ExerciseNoteInline({ exerciseId }: { exerciseId: string }) {
   const [value, setValue] = useState(currentNote);
 
   useEffect(() => { setValue(currentNote); }, [currentNote]);
+
+  useEffect(() => {
+    if (forceEdit) {
+      setEditing(true);
+      onForceEditDone?.();
+    }
+  }, [forceEdit, onForceEditDone]);
 
   const handleSave = () => {
     const trimmed = value.trim();
