@@ -365,7 +365,7 @@ function WorkoutContent() {
               </Stack>
               <Stack spacing={1.5}>
                 {templates.map((t) => (
-                  <Card key={t.id} component={Link} href={`/workout/program/${t.id}`} sx={{ textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.8 } }}>
+                  <Card key={t.id} component={Link} href={`/workout/program/detail?id=${t.id}`} sx={{ textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.8 } }}>
                     <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
                       <Stack direction="row" alignItems="center" spacing={2}>
                         <Box sx={{

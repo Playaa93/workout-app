@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/powersync/auth-context';
 import { useQuery } from '@powersync/react';
 import { useTemplateExercises } from '@/powersync/queries/workout-queries';
@@ -32,15 +32,17 @@ function formatRestTime(seconds: number): string {
 
 function ProgramDetailContent() {
   const router = useRouter();
-  const params = useParams();
-  const templateId = params.id as string;
+  const searchParams = useSearchParams();
+  const templateId = searchParams.get('id') ?? '';
   const mutations = useWorkoutMutations();
 
   const { data: templateRows, isLoading } = useQuery(
-    `SELECT * FROM workout_templates WHERE id = ?`,
+    templateId
+      ? `SELECT * FROM workout_templates WHERE id = ?`
+      : `SELECT * FROM workout_templates WHERE 0`,
     [templateId]
   );
-  const { data: exerciseRows } = useTemplateExercises(templateId);
+  const { data: exerciseRows } = useTemplateExercises(templateId || null);
 
   const template = useMemo(() => {
     const t = templateRows?.[0] as Record<string, unknown> | undefined;
@@ -72,6 +74,14 @@ function ProgramDetailContent() {
     await mutations.deleteTemplate(templateId);
     router.push('/workout');
   };
+
+  if (!templateId) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <Typography color="text.secondary">ID manquant</Typography>
+      </Box>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -232,5 +242,13 @@ export default function ProgramDetailPage() {
       </Box>
     );
   }
-  return <ProgramDetailContent />;
+  return (
+    <Suspense fallback={
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
+    }>
+      <ProgramDetailContent />
+    </Suspense>
+  );
 }
