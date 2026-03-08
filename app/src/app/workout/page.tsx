@@ -120,7 +120,6 @@ function WorkoutContent() {
   }, [templateRows]);
 
   const [isStarting, setIsStarting] = useState(false);
-  const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [showNewSessionDrawer, setShowNewSessionDrawer] = useState(false);
@@ -156,16 +155,6 @@ function WorkoutContent() {
     }
   };
 
-  const handleStartFromTemplate = async (templateId: string) => {
-    setStartingTemplateId(templateId);
-    try {
-      const sessionId = await mutations.startWorkoutSession(templateId);
-      router.push(`/workout/active?id=${sessionId}`);
-    } catch (error) {
-      console.error('Error starting from template:', error);
-      setStartingTemplateId(null);
-    }
-  };
 
   const handleDeleteClick = (sessionId: string) => {
     setSessionToDelete(sessionId);
@@ -376,7 +365,7 @@ function WorkoutContent() {
               </Stack>
               <Stack spacing={1.5}>
                 {templates.map((t) => (
-                  <Card key={t.id}>
+                  <Card key={t.id} component={Link} href={`/workout/program/${t.id}`} sx={{ textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.8 } }}>
                     <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
                       <Stack direction="row" alignItems="center" spacing={2}>
                         <Box sx={{
@@ -400,22 +389,7 @@ function WorkoutContent() {
                             ))}
                           </Stack>
                         </Box>
-                        <IconButton
-                          onClick={() => handleStartFromTemplate(t.id)}
-                          disabled={startingTemplateId === t.id}
-                          sx={{
-                            width: 42, height: 42, flexShrink: 0,
-                            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
-                            color: 'white',
-                            '&:hover': { background: 'linear-gradient(135deg, #5a4494 0%, #8a5ad4 100%)' },
-                            '&.Mui-disabled': { background: 'action.disabledBackground', color: 'action.disabled' },
-                          }}
-                        >
-                          {startingTemplateId === t.id
-                            ? <CircularProgress size={20} sx={{ color: 'white' }} />
-                            : <PlayArrow />
-                          }
-                        </IconButton>
+                        <ChevronRight sx={{ color: 'text.disabled', flexShrink: 0 }} />
                       </Stack>
                     </CardContent>
                   </Card>
