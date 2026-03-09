@@ -33,6 +33,35 @@ function formatRestTime(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 }
 
+interface TemplateExerciseRow {
+  id: string;
+  exercise_id: string;
+  exercise_name: string;
+  name_en: string | null;
+  muscle_group: string | null;
+  primary_muscles: string | null;
+  secondary_muscles: string | null;
+  equipment: string | null;
+  difficulty: string | null;
+  target_sets: number;
+  target_reps: string;
+  rest_seconds: number | null;
+  notes: string | null;
+}
+
+function toExerciseDetail(row: TemplateExerciseRow): ExerciseDetail {
+  return {
+    id: row.exercise_id,
+    nameFr: row.exercise_name,
+    nameEn: row.name_en,
+    muscleGroup: row.muscle_group || '',
+    primaryMuscles: parseJsonArray<string>(row.primary_muscles),
+    secondaryMuscles: parseJsonArray<string>(row.secondary_muscles),
+    equipment: parseJsonArray<string>(row.equipment),
+    difficulty: row.difficulty,
+  };
+}
+
 function ProgramDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,7 +74,7 @@ function ProgramDetailContent() {
       : `SELECT * FROM workout_templates WHERE 0`,
     [templateId]
   );
-  const { data: exerciseRows } = useQuery<Record<string, unknown>>(
+  const { data: exerciseRows } = useQuery<TemplateExerciseRow>(
     templateId
       ? `SELECT wte.*, e.name_fr as exercise_name, e.name_en, e.muscle_group,
                 e.primary_muscles, e.secondary_muscles, e.equipment, e.difficulty
@@ -164,7 +193,7 @@ function ProgramDetailContent() {
         <Stack spacing={1}>
           {exerciseRows.map((ex, i) => (
             <Paper
-              key={ex.id as string}
+              key={ex.id}
               variant="outlined"
               sx={{ px: 2, py: 1.5, borderRadius: 2 }}
             >
@@ -179,39 +208,30 @@ function ProgramDetailContent() {
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="body2" fontWeight={600} noWrap>
-                    {ex.exercise_name as string}
+                    {ex.exercise_name}
                   </Typography>
                   <Stack direction="row" spacing={1.5} sx={{ mt: 0.25 }}>
                     <Typography variant="caption" color="text.secondary">
-                      {ex.target_sets as number} × {ex.target_reps as string}
+                      {ex.target_sets} × {ex.target_reps}
                     </Typography>
-                    {((ex.rest_seconds as number) ?? 0) > 0 && (
+                    {(ex.rest_seconds ?? 0) > 0 && (
                       <Typography variant="caption" color="text.disabled">
-                        repos {formatRestTime(ex.rest_seconds as number)}
+                        repos {formatRestTime(ex.rest_seconds!)}
                       </Typography>
                     )}
                   </Stack>
                 </Box>
                 <IconButton
                   size="small"
-                  onClick={() => setDetailExercise({
-                    id: ex.exercise_id as string,
-                    nameFr: ex.exercise_name as string,
-                    nameEn: (ex.name_en as string) || null,
-                    muscleGroup: (ex.muscle_group as string) || '',
-                    primaryMuscles: parseJsonArray<string>(ex.primary_muscles as string | null),
-                    secondaryMuscles: parseJsonArray<string>(ex.secondary_muscles as string | null),
-                    equipment: parseJsonArray<string>(ex.equipment as string | null),
-                    difficulty: (ex.difficulty as string) || null,
-                  })}
+                  onClick={() => setDetailExercise(toExerciseDetail(ex))}
                   sx={{ color: 'text.disabled', flexShrink: 0 }}
                 >
                   <InfoOutlined sx={{ fontSize: 18 }} />
                 </IconButton>
               </Stack>
-              {(ex.notes as string) && (
+              {ex.notes && (
                 <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: 'block', pl: 5.5, fontStyle: 'italic' }}>
-                  {ex.notes as string}
+                  {ex.notes}
                 </Typography>
               )}
             </Paper>
