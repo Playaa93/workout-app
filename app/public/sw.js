@@ -58,9 +58,17 @@ self.addEventListener('message', (event) => {
     if (endTime - Date.now() <= 0) return;
 
     const gen = ++timerGeneration;
+    // Show initial notification immediately (stays visible without updates)
+    self.registration.showNotification('Repos en cours', {
+      body: formatRemaining(endTime - Date.now()),
+      icon: TIMER_ICON,
+      tag: TIMER_TAG,
+      silent: true,
+      requireInteraction: false,
+    });
     event.waitUntil(new Promise((resolve) => {
       const tick = () => {
-        if (gen !== timerGeneration) return; // stale tick from previous timer
+        if (gen !== timerGeneration) return;
         const remaining = endTime - Date.now();
         if (remaining <= 0) {
           clearInterval(self._timer?.interval);
@@ -69,11 +77,12 @@ self.addEventListener('message', (event) => {
             body: "C'est reparti 💪",
             icon: TIMER_ICON,
             tag: TIMER_TAG,
+            renotify: true,
             requireInteraction: true,
             vibrate: [200, 100, 200, 100, 200],
           });
           resolve();
-        } else {
+        } else if (remaining <= 5000) {
           self.registration.showNotification('Repos en cours', {
             body: formatRemaining(remaining),
             icon: TIMER_ICON,
@@ -83,16 +92,13 @@ self.addEventListener('message', (event) => {
           });
         }
       };
-      tick();
       self._timer = { interval: setInterval(tick, 1000), resolve };
     }));
   }
   if (event.data?.type === 'CANCEL_TIMER_NOTIFICATION') {
     timerGeneration++;
     clearTimer();
-    self.registration.getNotifications({ tag: TIMER_TAG }).then((notifications) => {
-      notifications.forEach((n) => n.close());
-    });
+    self.registration.getNotifications({ tag: TIMER_TAG }).then((n) => n.forEach((x) => x.close()));
   }
 });
 
