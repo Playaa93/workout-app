@@ -28,6 +28,43 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+// ── Rest timer notification scheduler ──
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SCHEDULE_TIMER_NOTIFICATION') {
+    if (self._timerTimeout) clearTimeout(self._timerTimeout);
+    const delay = event.data.endTime - Date.now();
+    if (delay > 0) {
+      self._timerTimeout = setTimeout(() => {
+        self.registration.showNotification('Repos terminé !', {
+          body: "C'est reparti 💪",
+          icon: '/icons/icon-192.svg',
+          tag: 'rest-timer',
+          requireInteraction: true,
+          vibrate: [200, 100, 200, 100, 200],
+        });
+      }, delay);
+    }
+  }
+  if (event.data?.type === 'CANCEL_TIMER_NOTIFICATION') {
+    if (self._timerTimeout) clearTimeout(self._timerTimeout);
+    // Close any existing rest-timer notification
+    self.registration.getNotifications({ tag: 'rest-timer' }).then((notifications) => {
+      notifications.forEach((n) => n.close());
+    });
+  }
+});
+
+// Focus app on notification tap
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      if (clients.length > 0) return clients[0].focus();
+      return self.clients.openWindow('/');
+    })
+  );
+});
+
 // Network-first strategy
 self.addEventListener('fetch', (event) => {
   event.respondWith(

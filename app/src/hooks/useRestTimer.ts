@@ -14,27 +14,25 @@ export interface RestTimerState {
 
 const DEFAULT_REST_SECONDS = 90;
 
-function playBeeps() {
-  try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AudioCtx();
-    [0, 0.25, 0.5].forEach((delay) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 880;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + 0.2);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.2);
-    });
-    setTimeout(() => ctx.close(), 1000);
-  } catch {
-    // Audio not supported
-  }
+// ── Service Worker helpers ───────────────────────────────────
+
+function scheduleTimerNotification(endTime: number) {
+  navigator.serviceWorker?.controller?.postMessage({ type: 'SCHEDULE_TIMER_NOTIFICATION', endTime });
 }
+
+function cancelTimerNotification() {
+  navigator.serviceWorker?.controller?.postMessage({ type: 'CANCEL_TIMER_NOTIFICATION' });
+}
+
+function dismissSwNotification() {
+  navigator.serviceWorker?.ready.then((reg) => {
+    reg.getNotifications({ tag: 'rest-timer' }).then((notifs) => {
+      notifs.forEach((n) => n.close());
+    });
+  }).catch(() => {});
+}
+
+// ── Hook ─────────────────────────────────────────────────────
 
 export function useRestTimer(): RestTimerState {
   const [remaining, setRemaining] = useState(0);
@@ -44,35 +42,108 @@ export function useRestTimer(): RestTimerState {
   const endRef = useRef(0);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const notifRequested = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const firedRef = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Alert on completion
-  const fireAlert = useCallback(() => {
+  // ── Audio helpers ──
+
+  const getAudio = useCallback(() => {
+    if (!audioRef.current) audioRef.current = new Audio();
+    return audioRef.current;
+  }, []);
+
+  const startSilentAudioLoop = useCallback(() => {
+    try {
+      const audio = getAudio();
+      audio.pause();
+      audio.src = '/sounds/silence.wav';
+      audio.loop = true;
+      audio.volume = 0.01;
+      audio.onended = null;
+      audio.play().catch(() => {});
+    } catch { /* audio not supported */ }
+  }, [getAudio]);
+
+  const stopSilentAudioLoop = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.loop = false;
+      audioRef.current.onended = null;
+    }
+  }, []);
+
+  const playBeepAudio = useCallback(() => {
+    try {
+      const audio = getAudio();
+      audio.pause();
+      audio.src = '/sounds/beep.wav';
+      audio.loop = false;
+      audio.volume = 0.7;
+      audio.onended = () => stopSilentAudioLoop();
+      audio.play().catch(() => {});
+    } catch { /* audio not supported */ }
+  }, [getAudio, stopSilentAudioLoop]);
+
+  // ── End timer (shared logic for tick + visibility catch-up) ──
+
+  const endTimer = useCallback(() => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    endRef.current = 0;
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    setIsRunning(false);
+    setRemaining(0);
+
     if (vibration && 'vibrate' in navigator) {
       navigator.vibrate([200, 100, 200, 100, 200]);
     }
-    if (sound) playBeeps();
-  }, [sound, vibration]);
+    if (sound) playBeepAudio();
+    else stopSilentAudioLoop();
 
-  // Countdown tick — absolute time, immune to throttling
+    dismissSwNotification();
+  }, [sound, vibration, playBeepAudio, stopSilentAudioLoop]);
+
+  // ── Countdown tick — absolute time, immune to throttling ──
+
   useEffect(() => {
     if (!isRunning) return;
+    firedRef.current = false;
     const tick = () => {
       const r = Math.max(0, Math.ceil((endRef.current - Date.now()) / 1000));
       setRemaining(r);
-      if (r <= 0) {
-        setIsRunning(false);
-        fireAlert();
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Repos terminé !', { body: 'C\'est reparti 💪', icon: '/icon-192.png', tag: 'rest-timer' });
-        }
-      }
+      if (r <= 0) endTimer();
     };
     tick();
-    const interval = setInterval(tick, 250);
-    return () => clearInterval(interval);
-  }, [isRunning, fireAlert]);
+    intervalRef.current = setInterval(tick, 250);
+    return () => { if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; } };
+  }, [isRunning, endTimer]);
 
-  // Wake Lock — keep screen on
+  // ── Visibility change: catch-up + wake lock re-acquire (single listener) ──
+
+  useEffect(() => {
+    const onVisChange = async () => {
+      if (document.visibilityState !== 'visible') return;
+
+      // Catch-up: timer expired while in background
+      if (endRef.current > 0 && Date.now() >= endRef.current) {
+        endTimer();
+      }
+
+      // Dismiss stale notification only if a timer was involved
+      if (firedRef.current) dismissSwNotification();
+
+      // Re-acquire wake lock (iOS releases on tab switch)
+      if (isRunning && !wakeLockRef.current && 'wakeLock' in navigator) {
+        try { wakeLockRef.current = await navigator.wakeLock.request('screen'); } catch { /* ignored */ }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisChange);
+    return () => document.removeEventListener('visibilitychange', onVisChange);
+  }, [isRunning, endTimer]);
+
+  // ── Wake Lock — keep screen on ──
+
   useEffect(() => {
     if (!isRunning) {
       wakeLockRef.current?.release().catch(() => {});
@@ -93,49 +164,47 @@ export function useRestTimer(): RestTimerState {
     return () => { active = false; wakeLockRef.current?.release().catch(() => {}); };
   }, [isRunning]);
 
-  // Re-acquire Wake Lock after visibility change (iOS releases on tab switch)
-  useEffect(() => {
-    if (!isRunning) return;
-    const onVisChange = async () => {
-      if (document.visibilityState === 'visible' && !wakeLockRef.current) {
-        try {
-          if ('wakeLock' in navigator) {
-            wakeLockRef.current = await navigator.wakeLock.request('screen');
-          }
-        } catch { /* ignored */ }
-      }
-    };
-    document.addEventListener('visibilitychange', onVisChange);
-    return () => document.removeEventListener('visibilitychange', onVisChange);
-  }, [isRunning]);
+  // ── Start ──
 
   const start = useCallback((duration?: number) => {
     const seconds = duration || DEFAULT_REST_SECONDS;
     endRef.current = Date.now() + seconds * 1000;
     setRemaining(seconds);
     setIsRunning(true);
+
+    if (sound) startSilentAudioLoop();
+    scheduleTimerNotification(endRef.current);
+
     if (!notifRequested.current && 'Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
       notifRequested.current = true;
     }
-  }, []);
+  }, [sound, startSilentAudioLoop]);
+
+  // ── Stop ──
 
   const stop = useCallback(() => {
     setIsRunning(false);
     setRemaining(0);
     endRef.current = 0;
-  }, []);
+    stopSilentAudioLoop();
+    cancelTimerNotification();
+  }, [stopSilentAudioLoop]);
+
+  // ── Adjust ──
 
   const adjust = useCallback((deltaSeconds: number) => {
     if (deltaSeconds < 0 && endRef.current - Date.now() <= Math.abs(deltaSeconds) * 1000) {
-      // Would go to 0 or below — just stop
       setIsRunning(false);
       setRemaining(0);
       endRef.current = 0;
+      stopSilentAudioLoop();
+      cancelTimerNotification();
     } else {
       endRef.current += deltaSeconds * 1000;
+      scheduleTimerNotification(endRef.current);
     }
-  }, []);
+  }, [stopSilentAudioLoop]);
 
   return { remaining, isRunning, sound, vibration, setSound, setVibration, start, stop, adjust };
 }
