@@ -4,10 +4,12 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 import Stack from '@mui/material/Stack';
+import { alpha } from '@mui/material/styles';
 import FreeBreakfast from '@mui/icons-material/FreeBreakfast';
 import LunchDining from '@mui/icons-material/LunchDining';
 import DinnerDining from '@mui/icons-material/DinnerDining';
 import Icecream from '@mui/icons-material/Icecream';
+import { tc } from '@/lib/design-tokens';
 
 export type {
   CravingData,
@@ -36,16 +38,18 @@ export function MacroBar({
   target,
   color,
   unit,
+  isDark = false,
 }: {
   label: string;
   current: number;
   target: number;
   color: string;
   unit: string;
+  isDark?: boolean;
 }) {
   return (
     <Box sx={{ flex: 1, textAlign: 'center' }}>
-      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+      <Typography sx={{ fontSize: '0.65rem', color: tc.m(isDark) }}>
         {label}
       </Typography>
       <LinearProgress
@@ -55,17 +59,15 @@ export function MacroBar({
           height: 6,
           borderRadius: 3,
           my: 0.5,
-          bgcolor: 'action.hover',
+          bgcolor: isDark ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06),
           '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 3 },
         }}
       />
       <Typography
-        variant="caption"
-        fontWeight={600}
-        sx={{ fontSize: '0.7rem', fontVariantNumeric: 'tabular-nums' }}
+        sx={{ fontSize: '0.7rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: tc.h(isDark) }}
       >
         {current}
-        <Typography component="span" variant="caption" color="text.secondary">
+        <Typography component="span" sx={{ fontSize: '0.7rem', color: tc.m(isDark) }}>
           /{target}{unit}
         </Typography>
       </Typography>
@@ -78,28 +80,23 @@ export function MacroPill({
   value,
   target,
   color,
+  isDark = false,
 }: {
   label: string;
   value: number;
   target: number;
   color: string;
+  isDark?: boolean;
 }) {
   return (
-    <Box
-      sx={{
-        bgcolor: 'rgba(255,255,255,0.15)',
-        borderRadius: 2,
-        px: 1.5,
-        py: 0.5,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.75,
-      }}
-    >
-      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: color }} />
-      <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
-        {label} {value}/{target}g
+    <Stack direction="row" alignItems="center" spacing={0.75}>
+      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: color, flexShrink: 0 }} />
+      <Typography sx={{ fontSize: '0.65rem', color: tc.m(isDark), fontWeight: 500 }}>
+        {label}
       </Typography>
-    </Box>
+      <Typography sx={{ fontSize: '0.65rem', color: tc.h(isDark), fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+        {value}/{target}g
+      </Typography>
+    </Stack>
   );
 }

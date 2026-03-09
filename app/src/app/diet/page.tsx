@@ -9,23 +9,24 @@ import type {
 } from './actions';
 import { useAuth } from '@/powersync/auth-context';
 import {
-  useTodayEntries,
+  useEntriesForDate,
   useCravings,
-  useDailySummary,
+  useSummaryForDate,
   useWeekHistory,
   useNutritionProfile,
   useRecentFoods,
 } from '@/powersync/queries/diet-queries';
 import { useTodayWorkoutCalories } from '@/powersync/queries/workout-queries';
 import { useDietMutations } from '@/powersync/mutations/diet-mutations';
-import Link from 'next/link';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
-import ArrowBack from '@mui/icons-material/ArrowBack';
 import Settings from '@mui/icons-material/Settings';
+import { useTheme } from 'next-themes';
+import { surfaceBg, tc, GOLD } from '@/lib/design-tokens';
+import { getLocalDateStr } from '@/lib/date-utils';
 import { triggerHaptic } from './components/shared';
 import type { MealType } from './components/shared';
 import type { Segment } from './components/SegmentedControl';
@@ -42,6 +43,24 @@ import BottomNav from '@/components/BottomNav';
 
 type View = 'main' | 'cravings' | 'search' | 'quick' | 'settings' | 'scanner' | 'photo';
 
+function toFoodEntryData(e: any): FoodEntryData {
+  return {
+    id: e.id,
+    foodId: e.food_id,
+    cravingId: e.craving_id,
+    customName: e.custom_name,
+    loggedAt: new Date(e.logged_at),
+    mealType: e.meal_type,
+    quantity: e.quantity ?? '1',
+    calories: e.calories,
+    protein: e.protein,
+    carbohydrates: e.carbohydrates,
+    fat: e.fat,
+    isCheat: !!e.is_cheat,
+    notes: e.notes,
+  };
+}
+
 export default function DietPage() {
   const { userId, loading: authLoading } = useAuth();
 
@@ -57,8 +76,11 @@ export default function DietPage() {
 }
 
 function DietContent() {
+  const { resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
   const [view, setView] = useState<View>('main');
   const [segment, setSegment] = useState<Segment>('today');
+  const [selectedDate, setSelectedDate] = useState(getLocalDateStr);
 
   // Bottom sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -66,12 +88,12 @@ function DietContent() {
 
   // PowerSync reactive hooks
   const { data: cravingRows } = useCravings();
-  const { data: entryRows, isLoading: entriesLoading } = useTodayEntries();
-  const { data: summaryRows } = useDailySummary();
+  const { data: entryRows, isLoading: entriesLoading } = useEntriesForDate(selectedDate);
+  const { data: summaryRows } = useSummaryForDate(selectedDate);
   const { data: weekRows } = useWeekHistory();
   const { data: profileRows } = useNutritionProfile();
   const { data: workoutCalRows } = useTodayWorkoutCalories();
-  const { data: recentRows } = useRecentFoods(10);
+  const { data: recentRows } = useRecentFoods();
   const mutations = useDietMutations();
 
   // Map cravings
@@ -87,26 +109,12 @@ function DietContent() {
 
   // Map entries
   const entries = useMemo<FoodEntryData[]>(() => {
-    return entryRows.map((e: any) => ({
-      id: e.id,
-      foodId: e.food_id,
-      cravingId: e.craving_id,
-      customName: e.custom_name,
-      loggedAt: new Date(e.logged_at),
-      mealType: e.meal_type,
-      quantity: e.quantity ?? '1',
-      calories: e.calories,
-      protein: e.protein,
-      carbohydrates: e.carbohydrates,
-      fat: e.fat,
-      isCheat: !!e.is_cheat,
-      notes: e.notes,
-    }));
+    return entryRows.map(toFoodEntryData);
   }, [entryRows]);
 
   // Map summary
   const summary = useMemo<{ today: DailySummaryData; avg7d: DailySummaryData } | null>(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = selectedDate;
     if (summaryRows.length === 0) {
       return {
         today: { date: today, totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0, entriesCount: 0 },
@@ -178,21 +186,7 @@ function DietContent() {
       const key = e.food_id || e.custom_name || e.id;
       if (seen.has(key)) continue;
       seen.add(key);
-      unique.push({
-        id: e.id,
-        foodId: e.food_id,
-        cravingId: e.craving_id,
-        customName: e.custom_name,
-        loggedAt: new Date(e.logged_at),
-        mealType: e.meal_type,
-        quantity: e.quantity ?? '1',
-        calories: e.calories,
-        protein: e.protein,
-        carbohydrates: e.carbohydrates,
-        fat: e.fat,
-        isCheat: !!e.is_cheat,
-        notes: e.notes,
-      });
+      unique.push(toFoodEntryData(e));
       if (unique.length >= 10) break;
     }
     return unique;
@@ -207,23 +201,7 @@ function DietContent() {
 
   const handleSheetAction = (action: SheetAction) => {
     setSheetOpen(false);
-    switch (action) {
-      case 'search':
-        setView('search');
-        break;
-      case 'scanner':
-        setView('scanner');
-        break;
-      case 'photo':
-        setView('photo');
-        break;
-      case 'quick':
-        setView('quick');
-        break;
-      case 'cravings':
-        setView('cravings');
-        break;
-    }
+    setView(action as View);
   };
 
   const handleQuickReAdd = async (entry: FoodEntryData) => {
@@ -336,23 +314,13 @@ function DietContent() {
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: 'background.default',
+        bgcolor: surfaceBg(d),
       }}
     >
       {/* Header */}
-      <Box
-        sx={{
-          px: 2.5,
-          pt: 2,
-          pb: 1,
-          background: 'linear-gradient(180deg, rgba(103,80,164,0.08) 0%, transparent 100%)',
-        }}
-      >
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <IconButton component={Link} href="/" size="small" sx={{ color: 'text.secondary' }}>
-            <ArrowBack fontSize="small" />
-          </IconButton>
-          <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>
+      <Box sx={{ px: 3, pt: 3, pb: 1 }}>
+        <Stack direction="row" alignItems="center">
+          <Typography sx={{ flex: 1, fontSize: '1.5rem', fontWeight: 700, color: tc.h(d), letterSpacing: '-0.02em' }}>
             Journal
           </Typography>
           <IconButton
@@ -361,7 +329,7 @@ function DietContent() {
               triggerHaptic('light');
               setView('settings');
             }}
-            sx={{ color: 'text.secondary' }}
+            sx={{ color: GOLD }}
           >
             <Settings fontSize="small" />
           </IconButton>
@@ -373,6 +341,8 @@ function DietContent() {
         <MainView
           segment={segment}
           onSegmentChange={setSegment}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
           summary={summary}
           entries={entries}
           weekHistory={weekHistory}

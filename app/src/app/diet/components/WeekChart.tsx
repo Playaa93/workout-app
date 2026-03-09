@@ -2,11 +2,11 @@
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
-import Chip from '@mui/material/Chip';
 import TrendingUp from '@mui/icons-material/TrendingUp';
+import { alpha } from '@mui/material/styles';
+import { useTheme } from 'next-themes';
+import { tc, card, GOLD } from '@/lib/design-tokens';
 import type { DailySummaryData } from './shared';
 
 export default function WeekChart({
@@ -16,84 +16,82 @@ export default function WeekChart({
   weekHistory: DailySummaryData[];
   targetCalories: number;
 }) {
+  const { resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
+
   if (weekHistory.length < 2) return null;
 
-  const maxCal = Math.max(...weekHistory.map((d) => d.totalCalories), 1);
+  const maxCal = Math.max(...weekHistory.map((day) => day.totalCalories), targetCalories || 1);
   const avg = Math.round(
-    weekHistory.reduce((s, d) => s + d.totalCalories, 0) / weekHistory.length
+    weekHistory.reduce((s, day) => s + day.totalCalories, 0) / weekHistory.length,
   );
 
   return (
-    <Card>
-      <CardContent sx={{ py: 2 }}>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ mb: 1.5 }}
-        >
-          <Typography variant="subtitle2" color="text.secondary">
-            Cette semaine
+    <Box sx={card(d, { p: 2.5 })}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(d) }}>
+          Cette semaine
+        </Typography>
+        <Stack direction="row" alignItems="center" spacing={0.5}>
+          <TrendingUp sx={{ fontSize: 14, color: GOLD }} />
+          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.h(d) }}>
+            Moy: {avg} kcal
           </Typography>
-          <Chip
-            icon={<TrendingUp sx={{ fontSize: 14 }} />}
-            label={`Moy: ${avg} kcal`}
-            size="small"
-            variant="outlined"
-            sx={{ fontSize: '0.65rem', height: 24 }}
-          />
         </Stack>
-        <Box
-          sx={{ height: 80, display: 'flex', alignItems: 'flex-end', gap: 0.75, px: 0.5 }}
-        >
-          {weekHistory.map((day, i) => {
-            const pct = Math.min(day.totalCalories / (maxCal * 1.1), 1);
-            const isOver = targetCalories > 0 && day.totalCalories > targetCalories;
-            const isToday = i === weekHistory.length - 1;
-            const dayName = new Date(day.date).toLocaleDateString('fr-FR', {
-              weekday: 'short',
-            });
+      </Stack>
 
-            return (
-              <Box key={i} sx={{ flex: 1, textAlign: 'center' }}>
-                <Box
-                  sx={{
-                    height: `${pct * 60}px`,
-                    bgcolor: isToday
-                      ? 'primary.main'
-                      : isOver
-                        ? 'rgba(239,68,68,0.3)'
-                        : 'action.hover',
-                    borderRadius: 0.75,
-                    mb: 0.5,
-                    border: isToday ? '2px solid' : 'none',
-                    borderColor: 'primary.main',
-                    transition: 'height 0.3s ease',
-                  }}
-                />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontSize: '0.6rem',
-                    fontWeight: isToday ? 700 : 400,
-                    color: isToday ? 'primary.main' : 'text.secondary',
-                    textTransform: 'capitalize',
-                  }}
-                >
-                  {dayName}
-                </Typography>
-              </Box>
-            );
-          })}
+      <Stack direction="row" spacing={0.5} sx={{ height: 120, alignItems: 'flex-end' }}>
+        {weekHistory.map((day, i) => {
+          const h = (day.totalCalories / maxCal) * 100;
+          const isToday = i === weekHistory.length - 1;
+          const isOver = targetCalories > 0 && day.totalCalories > targetCalories;
+          const dayName = new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'short' });
+
+          return (
+            <Box key={i} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <Typography sx={{ fontSize: '0.55rem', fontWeight: 600, color: tc.f(d), fontVariantNumeric: 'tabular-nums' }}>
+                {day.totalCalories > 0 ? Math.round(day.totalCalories) : ''}
+              </Typography>
+              <Box
+                sx={{
+                  width: '100%',
+                  maxWidth: 28,
+                  height: `${h}%`,
+                  minHeight: 4,
+                  borderRadius: '6px 6px 2px 2px',
+                  bgcolor: isToday
+                    ? GOLD
+                    : isOver
+                      ? alpha('#ef4444', 0.6)
+                      : d
+                        ? alpha('#ffffff', 0.08)
+                        : alpha('#000000', 0.06),
+                  border: isToday ? `1px solid ${GOLD}` : 'none',
+                  transition: 'height 0.4s ease',
+                }}
+              />
+              <Typography
+                sx={{
+                  fontSize: '0.6rem',
+                  fontWeight: isToday ? 700 : 500,
+                  color: isToday ? GOLD : tc.f(d),
+                  textTransform: 'capitalize',
+                }}
+              >
+                {dayName}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Stack>
+
+      {targetCalories > 0 && (
+        <Box sx={{ mt: 1, borderTop: '1px dashed', borderColor: d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06), pt: 0.5 }}>
+          <Typography sx={{ fontSize: '0.6rem', color: tc.f(d), textAlign: 'right' }}>
+            Objectif: {targetCalories} kcal/j
+          </Typography>
         </Box>
-        {targetCalories > 0 && (
-          <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
-            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.55rem' }}>
-              Objectif : {targetCalories} kcal/j
-            </Typography>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </Box>
   );
 }

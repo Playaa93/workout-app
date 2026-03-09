@@ -1,8 +1,10 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useQuery } from '@powersync/react';
 import { useUserId } from '../auth-context';
-import { todayStr, localDayBoundsUTC, toSqliteTimestamp } from '../helpers';
+import { todayStr, localDayBoundsUTC } from '../helpers';
+import { getLocalDateStr } from '@/lib/date-utils';
 import type { Database } from '../schema';
 
 export type FoodRow = Database['foods'];
@@ -12,13 +14,17 @@ export type NutritionSummaryRow = Database['nutrition_daily_summary'];
 export type NutritionProfileRow = Database['nutrition_profiles'];
 
 export function useTodayEntries() {
+  return useEntriesForDate(todayStr());
+}
+
+export function useEntriesForDate(dateStr: string) {
   const userId = useUserId();
-  const { start, end } = localDayBoundsUTC(todayStr());
+  const bounds = useMemo(() => localDayBoundsUTC(dateStr), [dateStr]);
   return useQuery<FoodEntryRow>(
     `SELECT * FROM food_entries
      WHERE user_id = ? AND logged_at >= ? AND logged_at < ?
      ORDER BY logged_at DESC`,
-    [userId, start, end]
+    [userId, bounds.start, bounds.end]
   );
 }
 
@@ -39,19 +45,24 @@ export function useSearchFoods(query: string) {
 }
 
 export function useDailySummary() {
+  return useSummaryForDate(todayStr());
+}
+
+export function useSummaryForDate(dateStr: string) {
   const userId = useUserId();
-  const today = todayStr();
   return useQuery<NutritionSummaryRow>(
     `SELECT * FROM nutrition_daily_summary WHERE user_id = ? AND date = ?`,
-    [userId, today]
+    [userId, dateStr]
   );
 }
 
 export function useWeekHistory() {
   const userId = useUserId();
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const sinceDate = `${sevenDaysAgo.getFullYear()}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sevenDaysAgo.getDate()).padStart(2, '0')}`;
+  const sinceDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return getLocalDateStr(d);
+  }, []);
 
   return useQuery<NutritionSummaryRow>(
     `SELECT * FROM nutrition_daily_summary WHERE user_id = ? AND date >= ? ORDER BY date`,
@@ -67,10 +78,13 @@ export function useNutritionProfile() {
   );
 }
 
-export function useRecentFoods(limit = 10) {
+export function useRecentFoods() {
   const userId = useUserId();
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const sinceDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return getLocalDateStr(d);
+  }, []);
 
   return useQuery<FoodEntryRow & { food_name: string | null }>(
     `SELECT fe.*, f.name_fr as food_name
@@ -78,7 +92,7 @@ export function useRecentFoods(limit = 10) {
      LEFT JOIN foods f ON fe.food_id = f.id
      WHERE fe.user_id = ? AND fe.logged_at >= ?
      ORDER BY fe.logged_at DESC LIMIT 50`,
-    [userId, toSqliteTimestamp(sevenDaysAgo)]
+    [userId, sinceDate]
   );
 }
 

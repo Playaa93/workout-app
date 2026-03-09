@@ -2,18 +2,16 @@
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardActionArea from '@mui/material/CardActionArea';
-import CardContent from '@mui/material/CardContent';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
-import Avatar from '@mui/material/Avatar';
 import Close from '@mui/icons-material/Close';
 import Search from '@mui/icons-material/Search';
 import QrCodeScanner from '@mui/icons-material/QrCodeScanner';
 import CameraAlt from '@mui/icons-material/CameraAlt';
 import Bolt from '@mui/icons-material/Bolt';
+import { alpha } from '@mui/material/styles';
+import { useTheme } from 'next-themes';
+import { tc, card, panelBg, GOLD } from '@/lib/design-tokens';
 import { MEAL_CONFIG, triggerHaptic } from './shared';
 import type { MealType, FoodEntryData } from './shared';
 
@@ -23,34 +21,49 @@ function SheetActionCard({
   icon,
   label,
   desc,
-  color,
+  d,
   onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   desc: string;
-  color: string;
+  d: boolean;
   onClick: () => void;
 }) {
   return (
-    <Card
-      variant="outlined"
-      sx={{ cursor: 'pointer', '&:hover': { borderColor: color, bgcolor: `${color}08` } }}
+    <Box
+      onClick={onClick}
+      sx={card(d, {
+        cursor: 'pointer',
+        p: 2,
+        textAlign: 'center',
+        transition: 'all 0.2s ease',
+        '&:hover': { borderColor: alpha(GOLD, 0.3) },
+      })}
     >
-      <CardActionArea onClick={onClick}>
-        <CardContent sx={{ py: 2, textAlign: 'center' }}>
-          <Avatar sx={{ width: 44, height: 44, bgcolor: `${color}15`, mx: 'auto', mb: 1 }}>
-            <Box sx={{ color }}>{icon}</Box>
-          </Avatar>
-          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8rem' }}>
-            {label}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-            {desc}
-          </Typography>
-        </CardContent>
-      </CardActionArea>
-    </Card>
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          bgcolor: alpha(GOLD, 0.1),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          mx: 'auto',
+          mb: 1,
+          color: GOLD,
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d) }}>
+        {label}
+      </Typography>
+      <Typography sx={{ fontSize: '0.65rem', color: tc.f(d) }}>
+        {desc}
+      </Typography>
+    </Box>
   );
 }
 
@@ -69,6 +82,9 @@ export default function AddEntryBottomSheet({
   onSelectAction: (action: SheetAction) => void;
   onQuickReAdd: (entry: FoodEntryData) => void;
 }) {
+  const { resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
+
   if (!open) return null;
 
   const meal = MEAL_CONFIG[mealType];
@@ -85,7 +101,7 @@ export default function AddEntryBottomSheet({
           backdropFilter: 'blur(4px)',
         }}
       />
-      <Paper
+      <Box
         sx={{
           position: 'fixed',
           bottom: 0,
@@ -95,6 +111,7 @@ export default function AddEntryBottomSheet({
           borderRadius: '20px 20px 0 0',
           maxWidth: 500,
           mx: 'auto',
+          bgcolor: panelBg(d),
           animation: 'slide-up 0.3s ease-out',
           '@keyframes slide-up': {
             from: { transform: 'translateY(100%)' },
@@ -103,7 +120,7 @@ export default function AddEntryBottomSheet({
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5 }}>
-          <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: 'action.hover' }} />
+          <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }} />
         </Box>
 
         <Box sx={{ px: 3, pt: 1.5, pb: 3 }}>
@@ -113,10 +130,10 @@ export default function AddEntryBottomSheet({
             alignItems="center"
             sx={{ mb: 2.5 }}
           >
-            <Typography variant="subtitle1" fontWeight={700}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(d) }}>
               Ajouter - {meal.label}
             </Typography>
-            <IconButton size="small" onClick={onClose}>
+            <IconButton size="small" onClick={onClose} sx={{ color: tc.f(d) }}>
               <Close fontSize="small" />
             </IconButton>
           </Stack>
@@ -126,7 +143,7 @@ export default function AddEntryBottomSheet({
               icon={<Search />}
               label="Chercher"
               desc="Base de données"
-              color="#3b82f6"
+              d={d}
               onClick={() => {
                 triggerHaptic('light');
                 onSelectAction('search');
@@ -136,7 +153,7 @@ export default function AddEntryBottomSheet({
               icon={<QrCodeScanner />}
               label="Scanner"
               desc="Code-barres"
-              color="#10b981"
+              d={d}
               onClick={() => {
                 triggerHaptic('light');
                 onSelectAction('scanner');
@@ -146,7 +163,7 @@ export default function AddEntryBottomSheet({
               icon={<CameraAlt />}
               label="Photo IA"
               desc="Reconnaissance"
-              color="#f59e0b"
+              d={d}
               onClick={() => {
                 triggerHaptic('light');
                 onSelectAction('photo');
@@ -156,7 +173,7 @@ export default function AddEntryBottomSheet({
               icon={<Bolt />}
               label="Rapide"
               desc="Estimation"
-              color="#ef4444"
+              d={d}
               onClick={() => {
                 triggerHaptic('light');
                 onSelectAction('quick');
@@ -166,42 +183,43 @@ export default function AddEntryBottomSheet({
 
           {recentFoods.length > 0 && (
             <>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2.5, mb: 1 }}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(d), mt: 2.5, mb: 1 }}>
                 Récemment ajoutés
               </Typography>
-              <Stack spacing={0.5}>
-                {recentFoods.slice(0, 5).map((entry) => (
-                  <Card key={entry.id} variant="outlined">
-                    <CardActionArea
-                      onClick={() => {
-                        triggerHaptic('light');
-                        onQuickReAdd(entry);
-                      }}
-                    >
-                      <CardContent sx={{ py: 1.5, px: 2 }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography
-                            variant="body2"
-                            fontWeight={500}
-                            sx={{ fontSize: '0.8rem' }}
-                          >
-                            {entry.customName || 'Aliment'}
-                          </Typography>
-                          <Typography variant="caption" fontWeight={600}>
-                            {entry.calories
-                              ? `${Math.round(parseFloat(entry.calories))} kcal`
-                              : '--'}
-                          </Typography>
-                        </Stack>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
+              <Box sx={card(d, { overflow: 'hidden' })}>
+                {recentFoods.slice(0, 5).map((entry, i, arr) => (
+                  <Box
+                    key={entry.id}
+                    onClick={() => {
+                      triggerHaptic('light');
+                      onQuickReAdd(entry);
+                    }}
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      cursor: 'pointer',
+                      borderBottom: i < arr.length - 1 ? '1px solid' : 'none',
+                      borderColor: d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.04),
+                      '&:hover': { bgcolor: d ? alpha('#ffffff', 0.03) : alpha('#000000', 0.02) },
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: tc.h(d) }}>
+                        {entry.customName || 'Aliment'}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.m(d) }}>
+                        {entry.calories
+                          ? `${Math.round(parseFloat(entry.calories))} kcal`
+                          : '--'}
+                      </Typography>
+                    </Stack>
+                  </Box>
                 ))}
-              </Stack>
+              </Box>
             </>
           )}
         </Box>
-      </Paper>
+      </Box>
     </>
   );
 }

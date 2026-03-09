@@ -3,9 +3,12 @@
 import { useMemo } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardActionArea from '@mui/material/CardActionArea';
 import Stack from '@mui/material/Stack';
+import { alpha } from '@mui/material/styles';
+import { useTheme } from 'next-themes';
+import { tc, card, GOLD } from '@/lib/design-tokens';
+import { getLocalDateStr } from '@/lib/date-utils';
+import DateStrip from './DateStrip';
 import SegmentedControl from './SegmentedControl';
 import type { Segment } from './SegmentedControl';
 import SummaryBanner from './SummaryBanner';
@@ -22,6 +25,8 @@ import type {
 export default function MainView({
   segment,
   onSegmentChange,
+  selectedDate,
+  onDateChange,
   summary,
   entries,
   weekHistory,
@@ -33,6 +38,8 @@ export default function MainView({
 }: {
   segment: Segment;
   onSegmentChange: (s: Segment) => void;
+  selectedDate: string;
+  onDateChange: (date: string) => void;
   summary: { today: DailySummaryData; avg7d: DailySummaryData } | null;
   entries: FoodEntryData[];
   weekHistory: DailySummaryData[];
@@ -42,6 +49,10 @@ export default function MainView({
   onOpenSettings: () => void;
   onDeleteEntry: (id: string) => void;
 }) {
+  const { resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
+  const viewingToday = selectedDate === getLocalDateStr();
+
   const entriesByMeal = useMemo(() => {
     const grouped: Record<MealType, FoodEntryData[]> = {
       breakfast: [],
@@ -58,12 +69,14 @@ export default function MainView({
   }, [entries]);
 
   const adjustedTarget = profile?.targetCalories
-    ? profile.targetCalories + workoutCalories
+    ? profile.targetCalories + (viewingToday ? workoutCalories : 0)
     : 2000;
 
   return (
-    <Box sx={{ flex: 1, p: 2, pb: 12 }}>
+    <Box sx={{ flex: 1, px: 3, pb: 12 }}>
       <Stack spacing={2}>
+        <DateStrip selectedDate={selectedDate} onDateChange={onDateChange} />
+
         <SegmentedControl value={segment} onChange={onSegmentChange} />
 
         {segment === 'today' && summary && (
@@ -71,36 +84,28 @@ export default function MainView({
             <SummaryBanner
               summary={summary.today}
               profile={profile}
-              workoutCalories={workoutCalories}
+              workoutCalories={viewingToday ? workoutCalories : 0}
             />
 
-            <WorkoutBonusChip workoutCalories={workoutCalories} />
+            {viewingToday && <WorkoutBonusChip workoutCalories={workoutCalories} />}
 
-            {!profile && (
-              <Card
-                sx={{
-                  background: (theme: { palette: { mode: string } }) =>
-                    theme.palette.mode === 'dark'
-                      ? 'linear-gradient(135deg, rgba(103,80,164,0.2) 0%, rgba(156,39,176,0.15) 100%)'
-                      : 'linear-gradient(135deg, rgba(103,80,164,0.15) 0%, rgba(156,39,176,0.1) 100%)',
-                  border: 1,
-                  borderColor: 'primary.main',
-                }}
+            {!profile && viewingToday && (
+              <Box
+                onClick={onOpenSettings}
+                sx={card(d, {
+                  p: 2,
+                  cursor: 'pointer',
+                  borderColor: alpha(GOLD, 0.2),
+                  '&:hover': { borderColor: alpha(GOLD, 0.4) },
+                })}
               >
-                <CardActionArea onClick={onOpenSettings} sx={{ p: 2 }}>
-                  <Stack direction="row" alignItems="center" spacing={2}>
-                    <Typography variant="h5">⚙️</Typography>
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Configure ton profil
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        On calcule tes besoins pour t&apos;aider à atteindre ton objectif
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </CardActionArea>
-              </Card>
+                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(d) }}>
+                  Configure ton profil
+                </Typography>
+                <Typography sx={{ fontSize: '0.7rem', color: tc.m(d) }}>
+                  On calcule tes besoins pour t&apos;aider à atteindre ton objectif
+                </Typography>
+              </Box>
             )}
 
             {(['breakfast', 'lunch', 'snack', 'dinner'] as MealType[]).map((mealType) => (
@@ -111,6 +116,7 @@ export default function MainView({
                 targetCalories={adjustedTarget}
                 onAddPress={onOpenAddSheet}
                 onDeleteEntry={onDeleteEntry}
+                readOnly={!viewingToday}
               />
             ))}
           </>
@@ -133,48 +139,45 @@ export default function MainView({
         )}
 
         {segment === 'month' && summary && (
-          <Card>
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h6" sx={{ mb: 0.5 }}>📊</Typography>
-              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-                Résumé mensuel
+          <Box sx={card(d, { p: 3, textAlign: 'center' })}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(d), mb: 0.5 }}>
+              Résumé mensuel
+            </Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: tc.m(d), mb: 2 }}>
+              Moyenne sur 7 jours
+            </Typography>
+            <Typography sx={{ fontSize: '2rem', fontWeight: 800, color: GOLD, lineHeight: 1 }}>
+              {Math.round(summary.avg7d.totalCalories)}
+            </Typography>
+            <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.5 }}>
+              kcal/jour en moyenne
+            </Typography>
+            {profile?.targetCalories && (
+              <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mt: 0.5 }}>
+                Objectif : {profile.targetCalories} kcal/jour
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Moyenne sur 7 jours
-              </Typography>
-              <Typography variant="h4" fontWeight={700} color="primary.main">
-                {Math.round(summary.avg7d.totalCalories)} kcal
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                /jour en moyenne
-              </Typography>
-              {profile?.targetCalories && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                  Objectif : {profile.targetCalories} kcal/jour
+            )}
+            <Stack direction="row" justifyContent="center" spacing={3} sx={{ mt: 2.5 }}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: tc.h(d) }}>
+                  {Math.round(summary.avg7d.totalProtein)}
                 </Typography>
-              )}
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mt: 3 }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Protéines</Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {Math.round(summary.avg7d.totalProtein)}g
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Glucides</Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {Math.round(summary.avg7d.totalCarbs)}g
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Lipides</Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {Math.round(summary.avg7d.totalFat)}g
-                  </Typography>
-                </Box>
+                <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>Protéines (g)</Typography>
               </Box>
-            </Box>
-          </Card>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: tc.h(d) }}>
+                  {Math.round(summary.avg7d.totalCarbs)}
+                </Typography>
+                <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>Glucides (g)</Typography>
+              </Box>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: tc.h(d) }}>
+                  {Math.round(summary.avg7d.totalFat)}
+                </Typography>
+                <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>Lipides (g)</Typography>
+              </Box>
+            </Stack>
+          </Box>
         )}
       </Stack>
     </Box>

@@ -2,16 +2,16 @@
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
-import Avatar from '@mui/material/Avatar';
-import LinearProgress from '@mui/material/LinearProgress';
 import Add from '@mui/icons-material/Add';
 import Close from '@mui/icons-material/Close';
+import { alpha } from '@mui/material/styles';
+import { useTheme } from 'next-themes';
+import { tc, card, GOLD } from '@/lib/design-tokens';
 import { MEAL_CONFIG, triggerHaptic } from './shared';
 import type { MealType, FoodEntryData } from './shared';
+
 
 export default function MealSlotCard({
   mealType,
@@ -19,131 +19,101 @@ export default function MealSlotCard({
   targetCalories,
   onAddPress,
   onDeleteEntry,
+  readOnly = false,
 }: {
   mealType: MealType;
   entries: FoodEntryData[];
   targetCalories: number;
   onAddPress: (mealType: MealType) => void;
   onDeleteEntry: (id: string) => void;
+  readOnly?: boolean;
 }) {
+  const { resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
+
   const meal = MEAL_CONFIG[mealType];
-  const MealIcon = meal.icon;
   const mealCals = entries.reduce(
     (s, e) => s + (e.calories ? parseFloat(e.calories) : 0),
-    0
+    0,
   );
   const mealTarget = Math.round(targetCalories * (mealType === 'snack' ? 0.1 : 0.3));
 
   return (
-    <Card>
-      <CardContent sx={{ py: 2, px: 2 }}>
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1.5}
-          sx={{ mb: entries.length > 0 ? 1.5 : 0 }}
-        >
-          <Avatar sx={{ width: 40, height: 40, bgcolor: `${meal.color}15` }}>
-            <MealIcon sx={{ fontSize: 22, color: meal.color }} />
-          </Avatar>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" fontWeight={700}>
-              {meal.label}
-            </Typography>
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <LinearProgress
-                variant="determinate"
-                value={mealTarget > 0 ? Math.min((mealCals / mealTarget) * 100, 100) : 0}
-                sx={{
-                  flex: 1,
-                  height: 4,
-                  borderRadius: 2,
-                  bgcolor: 'action.hover',
-                  '& .MuiLinearProgress-bar': { bgcolor: meal.color, borderRadius: 2 },
-                }}
-              />
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: '0.65rem', minWidth: 60, textAlign: 'right' }}
-              >
-                {Math.round(mealCals)}/{mealTarget}
-              </Typography>
-            </Stack>
-          </Box>
+    <Box sx={card(d, { p: 2 })}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: entries.length > 0 ? 1.5 : 0 }}>
+        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: meal.color, flexShrink: 0 }} />
+        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d), flex: 1 }}>
+          {meal.label}
+        </Typography>
+        <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), fontVariantNumeric: 'tabular-nums' }}>
+          {Math.round(mealCals)}/{mealTarget}
+        </Typography>
+        {!readOnly && (
           <IconButton
             size="small"
             onClick={() => {
               triggerHaptic('light');
               onAddPress(mealType);
             }}
-            sx={{
-              bgcolor: `${meal.color}12`,
-              color: meal.color,
-              '&:hover': { bgcolor: `${meal.color}20` },
-            }}
+            sx={{ width: 28, height: 28, bgcolor: alpha(GOLD, 0.1) }}
           >
-            <Add sx={{ fontSize: 20 }} />
+            <Add sx={{ fontSize: 16, color: GOLD }} />
           </IconButton>
-        </Stack>
+        )}
+      </Stack>
 
-        {entries.length > 0 && (
-          <Stack spacing={0.5} sx={{ pl: 7 }}>
-            {entries.map((entry) => {
-              const time = entry.loggedAt
-                ? new Date(entry.loggedAt).toLocaleTimeString('fr-FR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : '';
-              return (
-                <Stack
-                  key={entry.id}
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
+      {entries.length > 0 && (
+        <Stack spacing={0}>
+          {entries.map((entry, i) => {
+            const time = entry.loggedAt
+              ? new Date(entry.loggedAt).toLocaleTimeString('fr-FR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '';
+            return (
+              <Box
+                key={entry.id}
+                sx={{
+                  py: 1,
+                  borderTop: i > 0 ? '1px solid' : 'none',
+                  borderColor: d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06),
+                }}
+              >
+                <Stack direction="row" alignItems="center">
                   <Typography
-                    variant="caption"
-                    fontWeight={500}
+                    sx={{ fontSize: '0.8rem', fontWeight: 500, color: tc.h(d), flex: 1 }}
                     noWrap
-                    sx={{ flex: 1, minWidth: 0, fontSize: '0.75rem' }}
                   >
                     {entry.customName || 'Aliment'}
                   </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ fontSize: '0.65rem' }}
-                    >
-                      {time}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      fontWeight={600}
-                      sx={{ fontSize: '0.75rem', fontVariantNumeric: 'tabular-nums' }}
-                    >
-                      {entry.calories ? Math.round(parseFloat(entry.calories)) : '--'}
-                    </Typography>
+                  <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mr: 1.5 }}>
+                    {time}
+                  </Typography>
+                  <Typography
+                    sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.m(d), fontVariantNumeric: 'tabular-nums', mr: 0.5 }}
+                  >
+                    {entry.calories ? Math.round(parseFloat(entry.calories)) : '--'}
+                  </Typography>
+                  {!readOnly && (
                     <IconButton
                       size="small"
                       onClick={() => onDeleteEntry(entry.id)}
                       sx={{
                         p: 0.25,
-                        color: 'text.disabled',
-                        '&:hover': { color: 'error.main' },
+                        color: tc.f(d),
+                        '&:hover': { color: '#ef4444' },
                       }}
                     >
                       <Close sx={{ fontSize: 14 }} />
                     </IconButton>
-                  </Stack>
+                  )}
                 </Stack>
-              );
-            })}
-          </Stack>
-        )}
-      </CardContent>
-    </Card>
+              </Box>
+            );
+          })}
+        </Stack>
+      )}
+    </Box>
   );
 }
