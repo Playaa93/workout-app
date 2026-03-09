@@ -16,25 +16,44 @@ const DEFAULT_REST_SECONDS = 90;
 
 // ── Service Worker helpers ───────────────────────────────────
 
+function postToSw(msg: Record<string, unknown>) {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then((reg) => {
+    reg.active?.postMessage(msg);
+  }).catch(() => {});
+}
+
 function scheduleTimerNotification(endTime: number) {
-  navigator.serviceWorker?.controller?.postMessage({ type: 'SCHEDULE_TIMER_NOTIFICATION', endTime });
+  postToSw({ type: 'SCHEDULE_TIMER_NOTIFICATION', endTime });
 }
 
 function cancelTimerNotification() {
-  navigator.serviceWorker?.controller?.postMessage({ type: 'CANCEL_TIMER_NOTIFICATION' });
+  postToSw({ type: 'CANCEL_TIMER_NOTIFICATION' });
 }
 
 function dismissSwNotification() {
-  navigator.serviceWorker?.ready.then((reg) => {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then((reg) => {
     reg.getNotifications({ tag: 'rest-timer' }).then((notifs) => {
       notifs.forEach((n) => n.close());
     });
   }).catch(() => {});
 }
 
+// ── Ensure SW is registered ──────────────────────────────────
+
+let swRegistered = false;
+function ensureSwRegistered() {
+  if (swRegistered || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  swRegistered = true;
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 // ── Hook ─────────────────────────────────────────────────────
 
 export function useRestTimer(): RestTimerState {
+  useEffect(() => { ensureSwRegistered(); }, []);
+
   const [remaining, setRemaining] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [sound, setSound] = useState(true);
