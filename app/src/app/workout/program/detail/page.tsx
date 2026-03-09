@@ -4,10 +4,10 @@ import { useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/powersync/auth-context';
 import { useQuery } from '@powersync/react';
-import { useTemplateExercises } from '@/powersync/queries/workout-queries';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { parseJsonArray } from '@/powersync/helpers';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
+import ExerciseDetailModal, { type ExerciseDetail } from '@/components/workout/ExerciseDetailModal';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
@@ -26,6 +26,7 @@ import ArrowBack from '@mui/icons-material/ArrowBack';
 import PlayArrow from '@mui/icons-material/PlayArrow';
 import Delete from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import Timer from '@mui/icons-material/Timer';
 
 function formatRestTime(seconds: number): string {
@@ -44,7 +45,17 @@ function ProgramDetailContent() {
       : `SELECT * FROM workout_templates WHERE 0`,
     [templateId]
   );
-  const { data: exerciseRows } = useTemplateExercises(templateId || null);
+  const { data: exerciseRows } = useQuery<Record<string, unknown>>(
+    templateId
+      ? `SELECT wte.*, e.name_fr as exercise_name, e.name_en, e.muscle_group,
+                e.primary_muscles, e.secondary_muscles, e.equipment, e.difficulty
+         FROM workout_template_exercises wte
+         LEFT JOIN exercises e ON wte.exercise_id = e.id
+         WHERE wte.template_id = ?
+         ORDER BY wte.order_index`
+      : `SELECT * FROM workout_template_exercises WHERE 0`,
+    [templateId]
+  );
 
   const template = useMemo(() => {
     const t = templateRows?.[0] as Record<string, unknown> | undefined;
@@ -60,6 +71,7 @@ function ProgramDetailContent() {
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [detailExercise, setDetailExercise] = useState<ExerciseDetail | null>(null);
 
   const handleStart = async () => {
     setStarting(true);
@@ -152,7 +164,7 @@ function ProgramDetailContent() {
         <Stack spacing={1}>
           {exerciseRows.map((ex, i) => (
             <Paper
-              key={ex.id}
+              key={ex.id as string}
               variant="outlined"
               sx={{ px: 2, py: 1.5, borderRadius: 2 }}
             >
@@ -167,23 +179,39 @@ function ProgramDetailContent() {
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="body2" fontWeight={600} noWrap>
-                    {ex.exercise_name}
+                    {ex.exercise_name as string}
                   </Typography>
                   <Stack direction="row" spacing={1.5} sx={{ mt: 0.25 }}>
                     <Typography variant="caption" color="text.secondary">
-                      {ex.target_sets} × {ex.target_reps}
+                      {ex.target_sets as number} × {ex.target_reps as string}
                     </Typography>
-                    {(ex.rest_seconds ?? 0) > 0 && (
+                    {((ex.rest_seconds as number) ?? 0) > 0 && (
                       <Typography variant="caption" color="text.disabled">
-                        repos {formatRestTime(ex.rest_seconds!)}
+                        repos {formatRestTime(ex.rest_seconds as number)}
                       </Typography>
                     )}
                   </Stack>
                 </Box>
+                <IconButton
+                  size="small"
+                  onClick={() => setDetailExercise({
+                    id: ex.exercise_id as string,
+                    nameFr: ex.exercise_name as string,
+                    nameEn: (ex.name_en as string) || null,
+                    muscleGroup: (ex.muscle_group as string) || '',
+                    primaryMuscles: parseJsonArray<string>(ex.primary_muscles as string | null),
+                    secondaryMuscles: parseJsonArray<string>(ex.secondary_muscles as string | null),
+                    equipment: parseJsonArray<string>(ex.equipment as string | null),
+                    difficulty: (ex.difficulty as string) || null,
+                  })}
+                  sx={{ color: 'text.disabled', flexShrink: 0 }}
+                >
+                  <InfoOutlined sx={{ fontSize: 18 }} />
+                </IconButton>
               </Stack>
-              {ex.notes && (
+              {(ex.notes as string) && (
                 <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: 'block', pl: 5.5, fontStyle: 'italic' }}>
-                  {ex.notes}
+                  {ex.notes as string}
                 </Typography>
               )}
             </Paper>
@@ -220,6 +248,12 @@ function ProgramDetailContent() {
           </Button>
         </Stack>
       </Box>
+
+      <ExerciseDetailModal
+        exercise={detailExercise}
+        open={!!detailExercise}
+        onClose={() => setDetailExercise(null)}
+      />
 
       {/* Delete confirmation */}
       <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)} maxWidth="xs" fullWidth>
