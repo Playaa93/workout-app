@@ -29,26 +29,68 @@ self.addEventListener('activate', (event) => {
 })
 
 // ── Rest timer notification scheduler ──
+const TIMER_TAG = 'rest-timer';
+const TIMER_ICON = '/icons/icon-192.svg';
+let timerGeneration = 0;
+
+function formatRemaining(ms) {
+  const totalSec = Math.ceil(ms / 1000);
+  if (totalSec >= 60) {
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${String(s).padStart(2, '0')} restantes`;
+  }
+  return `${totalSec}s restantes`;
+}
+
+function clearTimer() {
+  if (self._timer) {
+    clearInterval(self._timer.interval);
+    if (self._timer.resolve) self._timer.resolve();
+    self._timer = null;
+  }
+}
+
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SCHEDULE_TIMER_NOTIFICATION') {
-    if (self._timerTimeout) clearTimeout(self._timerTimeout);
-    const delay = event.data.endTime - Date.now();
-    if (delay > 0) {
-      self._timerTimeout = setTimeout(() => {
-        self.registration.showNotification('Repos terminé !', {
-          body: "C'est reparti 💪",
-          icon: '/icons/icon-192.svg',
-          tag: 'rest-timer',
-          requireInteraction: true,
-          vibrate: [200, 100, 200, 100, 200],
-        });
-      }, delay);
-    }
+    clearTimer();
+    const endTime = event.data.endTime;
+    if (endTime - Date.now() <= 0) return;
+
+    const gen = ++timerGeneration;
+    event.waitUntil(new Promise((resolve) => {
+      const tick = () => {
+        if (gen !== timerGeneration) return; // stale tick from previous timer
+        const remaining = endTime - Date.now();
+        if (remaining <= 0) {
+          clearInterval(self._timer?.interval);
+          self._timer = null;
+          self.registration.showNotification('Repos terminé !', {
+            body: "C'est reparti 💪",
+            icon: TIMER_ICON,
+            tag: TIMER_TAG,
+            requireInteraction: true,
+            vibrate: [200, 100, 200, 100, 200],
+          });
+          resolve();
+        } else {
+          self.registration.showNotification('Repos en cours', {
+            body: formatRemaining(remaining),
+            icon: TIMER_ICON,
+            tag: TIMER_TAG,
+            silent: true,
+            requireInteraction: false,
+          });
+        }
+      };
+      tick();
+      self._timer = { interval: setInterval(tick, 1000), resolve };
+    }));
   }
   if (event.data?.type === 'CANCEL_TIMER_NOTIFICATION') {
-    if (self._timerTimeout) clearTimeout(self._timerTimeout);
-    // Close any existing rest-timer notification
-    self.registration.getNotifications({ tag: 'rest-timer' }).then((notifications) => {
+    timerGeneration++;
+    clearTimer();
+    self.registration.getNotifications({ tag: TIMER_TAG }).then((notifications) => {
       notifications.forEach((n) => n.close());
     });
   }
