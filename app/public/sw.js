@@ -33,14 +33,14 @@ const TIMER_TAG = 'rest-timer';
 const TIMER_ICON = '/icons/icon-192.svg';
 let timerGeneration = 0;
 
-function formatRemaining(ms) {
+function formatDuration(ms) {
   const totalSec = Math.ceil(ms / 1000);
   if (totalSec >= 60) {
     const m = Math.floor(totalSec / 60);
     const s = totalSec % 60;
-    return `${m}:${String(s).padStart(2, '0')} restantes`;
+    return `${m}:${String(s).padStart(2, '0')} de repos`;
   }
-  return `${totalSec}s restantes`;
+  return `${totalSec}s de repos`;
 }
 
 function clearTimer() {
@@ -58,9 +58,8 @@ self.addEventListener('message', (event) => {
     if (endTime - Date.now() <= 0) return;
 
     const gen = ++timerGeneration;
-    // Show initial notification immediately (stays visible without updates)
     self.registration.showNotification('Repos en cours', {
-      body: formatRemaining(endTime - Date.now()),
+      body: formatDuration(endTime - Date.now()),
       icon: TIMER_ICON,
       tag: TIMER_TAG,
       silent: true,
@@ -82,14 +81,6 @@ self.addEventListener('message', (event) => {
             vibrate: [200, 100, 200, 100, 200],
           });
           resolve();
-        } else if (remaining <= 5000) {
-          self.registration.showNotification('Repos en cours', {
-            body: formatRemaining(remaining),
-            icon: TIMER_ICON,
-            tag: TIMER_TAG,
-            silent: true,
-            requireInteraction: false,
-          });
         }
       };
       self._timer = { interval: setInterval(tick, 1000), resolve };
