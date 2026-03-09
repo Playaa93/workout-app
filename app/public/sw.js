@@ -98,7 +98,10 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      if (clients.length > 0) return clients[0].focus();
+      for (const client of clients) {
+        if (client.visibilityState === 'visible') return client.focus();
+      }
+      if (clients.length > 0) return clients[0].navigate('/').then((c) => c?.focus());
       return self.clients.openWindow('/');
     })
   );
