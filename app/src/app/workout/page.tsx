@@ -60,6 +60,8 @@ import DataObject from '@mui/icons-material/DataObject';
 import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import Watch from '@mui/icons-material/Watch';
+import EditIcon from '@mui/icons-material/Edit';
+import AutoAwesome from '@mui/icons-material/AutoAwesome';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import { parseJsonArray } from '@/powersync/helpers';
 import BottomNav from '@/components/BottomNav';
@@ -137,6 +139,7 @@ function WorkoutContent() {
     dateTime: string | null;
     confidence: number;
   } | null>(null);
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importSaving, setImportSaving] = useState(false);
@@ -354,8 +357,7 @@ function WorkoutContent() {
                   Mes Programmes
                 </Typography>
                 <Button
-                  component={Link}
-                  href="/workout/program"
+                  onClick={() => setShowCreateDrawer(true)}
                   size="small"
                   startIcon={<Add sx={{ fontSize: 16 }} />}
                   sx={{ fontSize: '0.75rem', textTransform: 'none', color: 'primary.main' }}
@@ -401,7 +403,7 @@ function WorkoutContent() {
           {/* Lien créer programme si aucun */}
           {!isLoading && templates.length === 0 && (
             <Card sx={{ border: '1px dashed', borderColor: 'divider' }}>
-              <CardActionArea component={Link} href="/workout/program">
+              <CardActionArea onClick={() => setShowCreateDrawer(true)}>
                 <CardContent sx={{ py: 2.5, textAlign: 'center' }}>
                   <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
                     <Add sx={{ fontSize: 20, color: 'text.secondary' }} />
@@ -481,6 +483,53 @@ function WorkoutContent() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Create Program Drawer */}
+      <Drawer
+        anchor="bottom"
+        open={showCreateDrawer}
+        onClose={() => setShowCreateDrawer(false)}
+        PaperProps={{
+          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.paper' },
+        }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Box sx={{ width: 40, height: 4, borderRadius: 2, bgcolor: 'divider', mx: 'auto', mb: 2 }} />
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.5 }}>
+            Créer un programme
+          </Typography>
+          <List disablePadding>
+            <ListItemButton
+              onClick={() => { setShowCreateDrawer(false); router.push('/workout/program/manual'); }}
+              sx={{ borderRadius: 2, mb: 0.5 }}
+            >
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <EditIcon sx={{ color: 'primary.main' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Créer manuellement"
+                secondary="Choisis tes exercices et configure"
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem' }}
+                secondaryTypographyProps={{ fontSize: '0.8rem' }}
+              />
+            </ListItemButton>
+            <ListItemButton
+              onClick={() => { setShowCreateDrawer(false); router.push('/workout/program'); }}
+              sx={{ borderRadius: 2 }}
+            >
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <AutoAwesome sx={{ color: '#a855f7' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Générer avec l'IA"
+                secondary="Programme personnalisé en 5 étapes"
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem' }}
+                secondaryTypographyProps={{ fontSize: '0.8rem' }}
+              />
+            </ListItemButton>
+          </List>
+        </Box>
+      </Drawer>
 
       {/* New Session Drawer */}
       <Drawer

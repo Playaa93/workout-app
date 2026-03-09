@@ -452,6 +452,73 @@ export function useWorkoutMutations() {
     await db.execute(`DELETE FROM user_machine_setups WHERE id = ?`, [setupId]);
   }
 
+  type TemplateExerciseInput = {
+    exerciseId: string;
+    muscleGroup: string;
+    targetSets: number;
+    targetReps: string;
+    restSeconds: number;
+  };
+
+  function computeTemplateMeta(exercises: TemplateExerciseInput[]) {
+    const targetMuscles = [...new Set(exercises.map(e => e.muscleGroup))];
+    const estimatedDuration = Math.round(
+      exercises.reduce((acc, ex) => acc + ex.targetSets * 2 + (ex.restSeconds / 60) * (ex.targetSets - 1), 0)
+    );
+    return { targetMuscles, estimatedDuration };
+  }
+
+  async function insertTemplateExercises(tx: Parameters<Parameters<typeof db.writeTransaction>[0]>[0], templateId: string, exercises: TemplateExerciseInput[]) {
+    for (let i = 0; i < exercises.length; i++) {
+      const ex = exercises[i];
+      await tx.execute(
+        `INSERT INTO workout_template_exercises (id, template_id, exercise_id, order_index, target_sets, target_reps, rest_seconds)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [uuid(), templateId, ex.exerciseId, i, ex.targetSets, ex.targetReps, ex.restSeconds]
+      );
+    }
+  }
+
+  async function createTemplateWithExercises(
+    name: string,
+    description: string | null,
+    exercises: TemplateExerciseInput[]
+  ): Promise<string> {
+    const templateId = uuid();
+    const now = nowISO();
+    const { targetMuscles, estimatedDuration } = computeTemplateMeta(exercises);
+
+    await db.writeTransaction(async (tx) => {
+      await tx.execute(
+        `INSERT INTO workout_templates (id, user_id, name, description, target_muscles, estimated_duration, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [templateId, userId, name, description, JSON.stringify(targetMuscles), estimatedDuration, now]
+      );
+      await insertTemplateExercises(tx, templateId, exercises);
+    });
+
+    return templateId;
+  }
+
+  async function updateTemplateWithExercises(
+    templateId: string,
+    name: string,
+    description: string | null,
+    exercises: TemplateExerciseInput[]
+  ): Promise<void> {
+    const now = nowISO();
+    const { targetMuscles, estimatedDuration } = computeTemplateMeta(exercises);
+
+    await db.writeTransaction(async (tx) => {
+      await tx.execute(
+        `UPDATE workout_templates SET name = ?, description = ?, target_muscles = ?, estimated_duration = ?, updated_at = ? WHERE id = ?`,
+        [name, description, JSON.stringify(targetMuscles), estimatedDuration, now, templateId]
+      );
+      await tx.execute(`DELETE FROM workout_template_exercises WHERE template_id = ?`, [templateId]);
+      await insertTemplateExercises(tx, templateId, exercises);
+    });
+  }
+
   return {
     startWorkoutSession,
     addSet,
@@ -470,5 +537,7 @@ export function useWorkoutMutations() {
     endCardioSession,
     saveMachineSetup,
     deleteMachineSetup,
+    createTemplateWithExercises,
+    updateTemplateWithExercises,
   };
 }

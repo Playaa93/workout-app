@@ -24,6 +24,7 @@ import Paper from '@mui/material/Paper';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import PlayArrow from '@mui/icons-material/PlayArrow';
 import Delete from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import Timer from '@mui/icons-material/Timer';
 
 function formatRestTime(seconds: number): string {
@@ -113,6 +114,9 @@ function ProgramDetailContent() {
           <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }} noWrap>
             {template.name}
           </Typography>
+          <IconButton onClick={() => router.push(`/workout/program/manual?id=${templateId}`)} size="small">
+            <EditIcon sx={{ fontSize: 20 }} />
+          </IconButton>
         </Stack>
       </Paper>
 

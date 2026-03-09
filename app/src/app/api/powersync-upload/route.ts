@@ -62,9 +62,28 @@ const BOOLEAN_COLUMNS = new Set([
   'is_default',
 ]);
 
+// Columns stored as JSON text in SQLite but as text[] in PostgreSQL
+const ARRAY_COLUMNS = new Set([
+  'target_muscles', 'primary_muscles', 'secondary_muscles',
+  'equipment', 'equipment_alternatives', 'aliases',
+  'stabilizers', 'good_for', 'bad_for', 'modifications',
+  'synergies', 'antagonists', 'contraindications',
+  'technique_cues', 'common_mistakes', 'instructions',
+  'strengths', 'weaknesses', 'recommended_exercises', 'exercises_to_avoid',
+]);
+
 function convertValue(key: string, value: unknown): unknown {
   if (value === null || value === undefined) return null;
   if (BOOLEAN_COLUMNS.has(key)) return value === 1 || value === true;
+  if (ARRAY_COLUMNS.has(key) && typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        // Convert to PostgreSQL array literal format: {"val1","val2"}
+        return `{${parsed.map((v: string) => `"${String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`).join(',')}}`;
+      }
+    } catch { /* not JSON, return as-is */ }
+  }
   return value;
 }
 
