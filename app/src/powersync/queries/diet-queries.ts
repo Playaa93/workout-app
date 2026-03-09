@@ -70,6 +70,20 @@ export function useWeekHistory() {
   );
 }
 
+export function useMonthHistory() {
+  const userId = useUserId();
+  const sinceDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return getLocalDateStr(d);
+  }, []);
+
+  return useQuery<NutritionSummaryRow>(
+    `SELECT * FROM nutrition_daily_summary WHERE user_id = ? AND date >= ? ORDER BY date`,
+    [userId, sinceDate]
+  );
+}
+
 export function useNutritionProfile() {
   const userId = useUserId();
   return useQuery<NutritionProfileRow>(

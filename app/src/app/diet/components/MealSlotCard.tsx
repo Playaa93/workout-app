@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
@@ -9,7 +10,7 @@ import Close from '@mui/icons-material/Close';
 import { alpha } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
 import { tc, card, GOLD } from '@/lib/design-tokens';
-import { MEAL_CONFIG, triggerHaptic } from './shared';
+import { MEAL_CONFIG, EXTRA_MEALS, MACRO_COLORS, triggerHaptic } from './shared';
 import type { MealType, FoodEntryData } from './shared';
 
 
@@ -32,15 +33,23 @@ export default function MealSlotCard({
   const d = resolvedTheme !== 'light';
 
   const meal = MEAL_CONFIG[mealType];
-  const mealCals = entries.reduce(
-    (s, e) => s + (e.calories ? parseFloat(e.calories) : 0),
-    0,
-  );
-  const mealTarget = Math.round(targetCalories * (mealType === 'snack' ? 0.1 : 0.3));
+  const { mealCals, mealProt, mealCarbs, mealFat } = useMemo(() => {
+    let cals = 0, prot = 0, carbs = 0, fat = 0;
+    for (const e of entries) {
+      cals += e.calories ? parseFloat(e.calories) : 0;
+      prot += e.protein ? parseFloat(e.protein) : 0;
+      carbs += e.carbohydrates ? parseFloat(e.carbohydrates) : 0;
+      fat += e.fat ? parseFloat(e.fat) : 0;
+    }
+    return { mealCals: cals, mealProt: prot, mealCarbs: carbs, mealFat: fat };
+  }, [entries]);
+  const isSnackLike = mealType === 'snack' || EXTRA_MEALS.includes(mealType);
+  const mealTarget = Math.round(targetCalories * (isSnackLike ? 0.1 : 0.3));
+  const hasMacros = entries.length > 0 && (mealProt > 0 || mealCarbs > 0 || mealFat > 0);
 
   return (
     <Box sx={card(d, { p: 2 })}>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: entries.length > 0 ? 1.5 : 0 }}>
+      <Stack direction="row" alignItems="center" spacing={1}>
         <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: meal.color, flexShrink: 0 }} />
         <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d), flex: 1 }}>
           {meal.label}
@@ -61,6 +70,23 @@ export default function MealSlotCard({
           </IconButton>
         )}
       </Stack>
+
+      {hasMacros && (
+        <Stack direction="row" spacing={1.5} sx={{ mt: 0.5, ml: 1.75, mb: entries.length > 0 ? 0.5 : 0 }}>
+          {[
+            { label: 'P', value: Math.round(mealProt), color: MACRO_COLORS.protein },
+            { label: 'G', value: Math.round(mealCarbs), color: MACRO_COLORS.carbs },
+            { label: 'L', value: Math.round(mealFat), color: MACRO_COLORS.fat },
+          ].map((m) => (
+            <Stack key={m.label} direction="row" alignItems="center" spacing={0.3}>
+              <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: m.color, flexShrink: 0 }} />
+              <Typography sx={{ fontSize: '0.55rem', color: tc.f(d), fontVariantNumeric: 'tabular-nums' }}>
+                {m.label} {m.value}g
+              </Typography>
+            </Stack>
+          ))}
+        </Stack>
+      )}
 
       {entries.length > 0 && (
         <Stack spacing={0}>

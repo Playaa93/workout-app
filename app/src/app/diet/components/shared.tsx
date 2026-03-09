@@ -21,16 +21,37 @@ export type {
   ActivityLevel,
 } from '../actions';
 
-export type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner';
+export type MealType =
+  | 'breakfast'
+  | 'morning_snack'
+  | 'lunch'
+  | 'afternoon_snack'
+  | 'snack'
+  | 'dinner'
+  | 'evening_snack'
+  | 'pre_workout'
+  | 'intra_workout'
+  | 'post_workout';
 
-export const MEAL_CONFIG = {
+export const MEAL_CONFIG: Record<MealType, { label: string; icon: typeof FreeBreakfast; color: string }> = {
   breakfast: { label: 'Petit-déj', icon: FreeBreakfast, color: '#ff9800' },
+  morning_snack: { label: 'Collation matin', icon: Icecream, color: '#f59e0b' },
   lunch: { label: 'Déjeuner', icon: LunchDining, color: '#4caf50' },
+  afternoon_snack: { label: 'Goûter', icon: Icecream, color: '#ec4899' },
   snack: { label: 'Snack', icon: Icecream, color: '#e91e63' },
   dinner: { label: 'Dîner', icon: DinnerDining, color: '#7c3aed' },
-} as const;
+  evening_snack: { label: 'Collation soir', icon: Icecream, color: '#8b5cf6' },
+  pre_workout: { label: 'Pre-workout', icon: FreeBreakfast, color: '#06b6d4' },
+  intra_workout: { label: 'Intra-workout', icon: LunchDining, color: '#0891b2' },
+  post_workout: { label: 'Post-workout', icon: LunchDining, color: '#14b8a6' },
+};
+
+export const DEFAULT_MEALS: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner'];
+export const EXTRA_MEALS: MealType[] = ['morning_snack', 'afternoon_snack', 'evening_snack', 'pre_workout', 'intra_workout', 'post_workout'];
 
 export { triggerHaptic } from '@/lib/haptic';
+
+export const MACRO_COLORS = { protein: '#93c5fd', carbs: '#fcd34d', fat: '#fca5a5' } as const;
 
 export function MacroBar({
   label,

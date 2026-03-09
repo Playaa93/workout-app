@@ -13,19 +13,19 @@ import {
   useCravings,
   useSummaryForDate,
   useWeekHistory,
+  useMonthHistory,
   useNutritionProfile,
   useRecentFoods,
 } from '@/powersync/queries/diet-queries';
+import { useLatestMeasurement } from '@/powersync/queries/measurement-queries';
 import { useTodayWorkoutCalories } from '@/powersync/queries/workout-queries';
 import { useDietMutations } from '@/powersync/mutations/diet-mutations';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
-import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
-import Settings from '@mui/icons-material/Settings';
+import { alpha } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
-import { surfaceBg, tc, GOLD } from '@/lib/design-tokens';
+import { surfaceBg, panelBg, tc, GOLD } from '@/lib/design-tokens';
 import { getLocalDateStr } from '@/lib/date-utils';
 import { triggerHaptic } from './components/shared';
 import type { MealType } from './components/shared';
@@ -41,7 +41,7 @@ import PhotoAIView from './components/PhotoAIView';
 import AddEntryBottomSheet from './components/AddEntryBottomSheet';
 import BottomNav from '@/components/BottomNav';
 
-type View = 'main' | 'cravings' | 'search' | 'quick' | 'settings' | 'scanner' | 'photo';
+type View = 'main' | 'cravings' | 'search' | 'quick' | 'scanner' | 'photo';
 
 function toFoodEntryData(e: any): FoodEntryData {
   return {
@@ -58,6 +58,17 @@ function toFoodEntryData(e: any): FoodEntryData {
     fat: e.fat,
     isCheat: !!e.is_cheat,
     notes: e.notes,
+  };
+}
+
+function toSummaryRow(s: any): DailySummaryData {
+  return {
+    date: s.date,
+    totalCalories: parseFloat(s.total_calories || '0'),
+    totalProtein: parseFloat(s.total_protein || '0'),
+    totalCarbs: parseFloat(s.total_carbs || '0'),
+    totalFat: parseFloat(s.total_fat || '0'),
+    entriesCount: s.entries_count || 0,
   };
 }
 
@@ -84,6 +95,7 @@ function DietContent() {
 
   // Bottom sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeMealType, setActiveMealType] = useState<MealType>('snack');
 
   // PowerSync reactive hooks
@@ -91,9 +103,11 @@ function DietContent() {
   const { data: entryRows, isLoading: entriesLoading } = useEntriesForDate(selectedDate);
   const { data: summaryRows } = useSummaryForDate(selectedDate);
   const { data: weekRows } = useWeekHistory();
+  const { data: monthRows } = useMonthHistory();
   const { data: profileRows } = useNutritionProfile();
   const { data: workoutCalRows } = useTodayWorkoutCalories();
   const { data: recentRows } = useRecentFoods();
+  const { data: latestMeasurement } = useLatestMeasurement();
   const mutations = useDietMutations();
 
   // Map cravings
@@ -142,27 +156,23 @@ function DietContent() {
     };
   }, [summaryRows]);
 
-  // Map week history
-  const weekHistory = useMemo<DailySummaryData[]>(() => {
-    return weekRows.map((s: any) => ({
-      date: s.date,
-      totalCalories: parseFloat(s.total_calories || '0'),
-      totalProtein: parseFloat(s.total_protein || '0'),
-      totalCarbs: parseFloat(s.total_carbs || '0'),
-      totalFat: parseFloat(s.total_fat || '0'),
-      entriesCount: s.entries_count || 0,
-    }));
-  }, [weekRows]);
+  // Map week/month history
+  const weekHistory = useMemo(() => weekRows.map(toSummaryRow), [weekRows]);
+  const monthHistory = useMemo(() => monthRows.map(toSummaryRow), [monthRows]);
 
-  // Map profile
+  // Map profile (use latest measurement weight if available)
+  const row = latestMeasurement[0] as any;
+  const latestWeight = row?.weight ? parseFloat(row.weight) : null;
+
   const profile = useMemo<NutritionProfileData | null>(() => {
     if (profileRows.length === 0) return null;
     const p = profileRows[0] as any;
+    const profileWeight = p.weight ? parseFloat(p.weight) : null;
     return {
       goal: p.goal,
       activityLevel: p.activity_level,
       height: p.height ? parseFloat(p.height) : null,
-      weight: p.weight ? parseFloat(p.weight) : null,
+      weight: latestWeight ?? profileWeight,
       age: p.age,
       isMale: !!p.is_male,
       tdee: p.tdee,
@@ -171,7 +181,7 @@ function DietContent() {
       targetCarbs: p.target_carbs,
       targetFat: p.target_fat,
     };
-  }, [profileRows]);
+  }, [profileRows, latestWeight]);
 
   // Workout calories
   const workoutCalories = useMemo(() => {
@@ -283,7 +293,7 @@ function DietContent() {
     const targetCarbs = Math.max(0, Math.round((targetCalories - targetProtein * 4 - targetFat * 9) / 4));
 
     await mutations.saveNutritionProfile({ ...data, tdee, targetCalories, targetProtein, targetCarbs, targetFat });
-    setView('main');
+    setSettingsOpen(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -319,21 +329,9 @@ function DietContent() {
     >
       {/* Header */}
       <Box sx={{ px: 3, pt: 3, pb: 1 }}>
-        <Stack direction="row" alignItems="center">
-          <Typography sx={{ flex: 1, fontSize: '1.5rem', fontWeight: 700, color: tc.h(d), letterSpacing: '-0.02em' }}>
-            Journal
-          </Typography>
-          <IconButton
-            size="small"
-            onClick={() => {
-              triggerHaptic('light');
-              setView('settings');
-            }}
-            sx={{ color: GOLD }}
-          >
-            <Settings fontSize="small" />
-          </IconButton>
-        </Stack>
+        <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: tc.h(d), letterSpacing: '-0.02em' }}>
+          Journal
+        </Typography>
       </Box>
 
       {/* Views */}
@@ -346,10 +344,11 @@ function DietContent() {
           summary={summary}
           entries={entries}
           weekHistory={weekHistory}
+          monthHistory={monthHistory}
           profile={profile}
           workoutCalories={workoutCalories}
           onOpenAddSheet={handleOpenAddSheet}
-          onOpenSettings={() => setView('settings')}
+          onOpenSettings={() => setSettingsOpen(true)}
           onDeleteEntry={handleDelete}
         />
       )}
@@ -396,13 +395,13 @@ function DietContent() {
         />
       )}
 
-      {view === 'settings' && (
-        <SettingsView
-          profile={profile}
-          onSave={handleSaveProfile}
-          onClose={handleBackToMain}
-        />
-      )}
+      {/* Settings overlay */}
+      <SettingsSheet
+        open={settingsOpen}
+        profile={profile}
+        onSave={handleSaveProfile}
+        onClose={() => setSettingsOpen(false)}
+      />
 
       {/* Bottom Sheet */}
       <AddEntryBottomSheet
@@ -417,5 +416,71 @@ function DietContent() {
       {/* Bottom Nav */}
       <BottomNav />
     </Box>
+  );
+}
+
+// ─── Settings Bottom Sheet ──────────────────────────────────────────
+
+function SettingsSheet({
+  open,
+  profile,
+  onSave,
+  onClose,
+}: {
+  open: boolean;
+  profile: Parameters<typeof SettingsView>[0]['profile'];
+  onSave: Parameters<typeof SettingsView>[0]['onSave'];
+  onClose: () => void;
+}) {
+  const { resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
+
+  if (!open) return null;
+
+  return (
+    <>
+      <Box
+        onClick={onClose}
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          bgcolor: 'rgba(0,0,0,0.4)',
+          zIndex: 299,
+          backdropFilter: 'blur(4px)',
+        }}
+      />
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          top: 48,
+          zIndex: 300,
+          borderRadius: '20px 20px 0 0',
+          maxWidth: 500,
+          mx: 'auto',
+          bgcolor: panelBg(d),
+          display: 'flex',
+          flexDirection: 'column',
+          animation: 'settings-slide-up 0.3s ease-out',
+          '@keyframes settings-slide-up': {
+            from: { transform: 'translateY(100%)' },
+            to: { transform: 'translateY(0)' },
+          },
+        }}
+      >
+        {/* Drag handle */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
+          <Box sx={{
+            width: 36,
+            height: 4,
+            borderRadius: 2,
+            bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+          }} />
+        </Box>
+        <SettingsView profile={profile} onSave={onSave} onClose={onClose} />
+      </Box>
+    </>
   );
 }

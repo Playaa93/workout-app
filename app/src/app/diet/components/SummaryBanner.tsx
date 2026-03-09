@@ -6,7 +6,7 @@ import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
 import { tc, card, GOLD } from '@/lib/design-tokens';
-import { MacroPill } from './shared';
+import { MacroPill, MACRO_COLORS } from './shared';
 import type { DailySummaryData, NutritionProfileData } from './shared';
 
 function CalorieRing({ size, stroke, pct, d }: { size: number; stroke: number; pct: number; d: boolean }) {
@@ -35,10 +35,12 @@ export default function SummaryBanner({
   summary,
   profile,
   workoutCalories,
+  onTap,
 }: {
   summary: DailySummaryData;
   profile: NutritionProfileData | null;
   workoutCalories: number;
+  onTap?: () => void;
 }) {
   const { resolvedTheme } = useTheme();
   const d = resolvedTheme !== 'light';
@@ -51,7 +53,15 @@ export default function SummaryBanner({
   const pct = Math.min(Math.round((consumed / targetCals) * 100), 100);
 
   return (
-    <Box sx={card(d, { p: 2.5 })}>
+    <Box
+      onClick={onTap}
+      sx={card(d, {
+        p: 2.5,
+        cursor: onTap ? 'pointer' : 'default',
+        transition: 'all 0.15s ease',
+        ...(onTap && { '&:active': { transform: 'scale(0.98)' } }),
+      })}
+    >
       <Stack direction="row" alignItems="center" spacing={2.5}>
         <CalorieRing size={72} stroke={6} pct={pct} d={d} />
         <Box sx={{ flex: 1 }}>
@@ -64,9 +74,9 @@ export default function SummaryBanner({
         </Box>
       </Stack>
       <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-        <MacroPill label="Prot" value={Math.round(summary.totalProtein)} target={profile?.targetProtein ?? 150} color="#93c5fd" isDark={d} />
-        <MacroPill label="Gluc" value={Math.round(summary.totalCarbs)} target={profile?.targetCarbs ?? 250} color="#fcd34d" isDark={d} />
-        <MacroPill label="Lip" value={Math.round(summary.totalFat)} target={profile?.targetFat ?? 70} color="#fca5a5" isDark={d} />
+        <MacroPill label="Prot" value={Math.round(summary.totalProtein)} target={profile?.targetProtein ?? 150} color={MACRO_COLORS.protein} isDark={d} />
+        <MacroPill label="Gluc" value={Math.round(summary.totalCarbs)} target={profile?.targetCarbs ?? 250} color={MACRO_COLORS.carbs} isDark={d} />
+        <MacroPill label="Lip" value={Math.round(summary.totalFat)} target={profile?.targetFat ?? 70} color={MACRO_COLORS.fat} isDark={d} />
       </Stack>
     </Box>
   );

@@ -1,21 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardActionArea from '@mui/material/CardActionArea';
-import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import TextField from '@mui/material/TextField';
+import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
-import InputAdornment from '@mui/material/InputAdornment';
 import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import Search from '@mui/icons-material/Search';
+import { alpha } from '@mui/material/styles';
+import { useTheme } from 'next-themes';
+import { tc, card, GOLD } from '@/lib/design-tokens';
+import { triggerHaptic, MACRO_COLORS } from './shared';
 import { searchFoods, searchOpenFoodFacts, cacheOpenFoodFactsProduct, addFoodEntry } from '../actions';
 import type { FoodData, MealType } from './shared';
 
@@ -23,41 +20,37 @@ function foodDedupeKey(f: FoodData): string {
   return (f.nameFr + '\0' + (f.brand || '')).toLowerCase();
 }
 
-// Portions courantes par mot-clé dans le nom
 const PORTION_PRESETS: { keywords: string[]; portions: { label: string; grams: number }[] }[] = [
   { keywords: ['banane'], portions: [{ label: '1 banane', grams: 120 }, { label: '2 bananes', grams: 240 }] },
-  { keywords: ['pomme'], portions: [{ label: '1 pomme', grams: 150 }, { label: '½ pomme', grams: 75 }] },
+  { keywords: ['pomme'], portions: [{ label: '1 pomme', grams: 150 }, { label: '1/2 pomme', grams: 75 }] },
   { keywords: ['orange'], portions: [{ label: '1 orange', grams: 150 }] },
   { keywords: ['oeuf', 'œuf'], portions: [{ label: '1 oeuf', grams: 60 }, { label: '2 oeufs', grams: 120 }, { label: '3 oeufs', grams: 180 }] },
-  { keywords: ['pain', 'baguette'], portions: [{ label: '1 tranche', grams: 30 }, { label: '½ baguette', grams: 125 }] },
+  { keywords: ['pain', 'baguette'], portions: [{ label: '1 tranche', grams: 30 }, { label: '1/2 baguette', grams: 125 }] },
   { keywords: ['yaourt', 'yogourt'], portions: [{ label: '1 pot', grams: 125 }] },
   { keywords: ['lait'], portions: [{ label: '1 verre', grams: 200 }, { label: '1 bol', grams: 300 }] },
   { keywords: ['fromage'], portions: [{ label: '1 portion', grams: 30 }] },
   { keywords: ['beurre'], portions: [{ label: '1 noix', grams: 10 }, { label: '1 tartine', grams: 15 }] },
-  { keywords: ['huile'], portions: [{ label: '1 c. à soupe', grams: 10 }, { label: '1 filet', grams: 5 }] },
+  { keywords: ['huile'], portions: [{ label: '1 c. a soupe', grams: 10 }, { label: '1 filet', grams: 5 }] },
   { keywords: ['riz', 'pâtes', 'spaghetti', 'nouille', 'semoule', 'quinoa'], portions: [{ label: '1 portion cuit', grams: 200 }, { label: '1 portion cru', grams: 80 }] },
   { keywords: ['poulet', 'dinde', 'boeuf', 'bœuf', 'veau', 'porc', 'agneau', 'steak', 'escalope', 'filet'], portions: [{ label: '1 portion', grams: 150 }, { label: '1 gros', grams: 200 }] },
-  { keywords: ['saumon', 'thon', 'cabillaud', 'poisson', 'truite', 'sardine'], portions: [{ label: '1 filet', grams: 150 }, { label: '1 boîte', grams: 120 }] },
+  { keywords: ['saumon', 'thon', 'cabillaud', 'poisson', 'truite', 'sardine'], portions: [{ label: '1 filet', grams: 150 }, { label: '1 boite', grams: 120 }] },
   { keywords: ['tomate'], portions: [{ label: '1 tomate', grams: 120 }] },
   { keywords: ['carotte'], portions: [{ label: '1 carotte', grams: 80 }] },
   { keywords: ['pomme de terre', 'patate'], portions: [{ label: '1 moyenne', grams: 150 }, { label: '1 grosse', grams: 250 }] },
-  { keywords: ['avocat'], portions: [{ label: '½ avocat', grams: 80 }, { label: '1 avocat', grams: 160 }] },
-  { keywords: ['amande', 'noix', 'noisette', 'cacahuète'], portions: [{ label: '1 poignée', grams: 30 }] },
-  { keywords: ['miel', 'confiture', 'sucre'], portions: [{ label: '1 c. à café', grams: 8 }, { label: '1 c. à soupe', grams: 20 }] },
-  { keywords: ['chocolat'], portions: [{ label: '2 carrés', grams: 20 }, { label: '1 barre', grams: 40 }] },
-  { keywords: ['crème'], portions: [{ label: '1 c. à soupe', grams: 15 }] },
+  { keywords: ['avocat'], portions: [{ label: '1/2 avocat', grams: 80 }, { label: '1 avocat', grams: 160 }] },
+  { keywords: ['amande', 'noix', 'noisette', 'cacahuète'], portions: [{ label: '1 poignee', grams: 30 }] },
+  { keywords: ['miel', 'confiture', 'sucre'], portions: [{ label: '1 c. a cafe', grams: 8 }, { label: '1 c. a soupe', grams: 20 }] },
+  { keywords: ['chocolat'], portions: [{ label: '2 carres', grams: 20 }, { label: '1 barre', grams: 40 }] },
+  { keywords: ['crème'], portions: [{ label: '1 c. a soupe', grams: 15 }] },
 ];
 
 function getPortions(foodName: string, servingSize?: number | null) {
-  // D'abord, vérifier les presets manuels par mot-clé
   const lower = foodName.toLowerCase();
   for (const preset of PORTION_PRESETS) {
     if (preset.keywords.some(k => lower.includes(k))) {
       return preset.portions;
     }
   }
-
-  // Sinon, si on a un serving_size != 100, générer "1 X", "2 X"
   if (servingSize && Math.round(servingSize) !== 100) {
     const g = Math.round(servingSize);
     const shortName = foodName.replace(/\s*\(.*\)/, '').trim();
@@ -67,7 +60,6 @@ function getPortions(foodName: string, servingSize?: number | null) {
     }
     return portions;
   }
-
   return [];
 }
 
@@ -80,6 +72,9 @@ export default function SearchView({
   onAdd: (data: Parameters<typeof addFoodEntry>[0]) => void;
   onClose: () => void;
 }) {
+  const { resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
+
   const [query, setQuery] = useState('');
   const [localResults, setLocalResults] = useState<FoodData[]>([]);
   const [offResults, setOffResults] = useState<FoodData[]>([]);
@@ -118,7 +113,7 @@ export default function SearchView({
           setOffResults(filtered);
         }
       } catch {
-        // degrade gracefully — show whatever we have
+        // degrade gracefully
       } finally {
         if (!cancelled) {
           setIsSearching(false);
@@ -168,250 +163,383 @@ export default function SearchView({
     }
   };
 
+  // Food detail view
   if (selectedFood) {
-    const multiplier = (parseFloat(quantity) || 0) / 100;
-    const calories = selectedFood.calories ? parseFloat(selectedFood.calories) * multiplier : 0;
-
     return (
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={() => setSelectedFood(null)}
-          sx={{ alignSelf: 'flex-start', mb: 2, color: 'text.secondary' }}
-        >
-          Retour
-        </Button>
-
-        <Typography variant="h6" fontWeight={600} sx={{ mb: 0.5 }}>
-          {selectedFood.nameFr}
-        </Typography>
-        {selectedFood.brand && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {selectedFood.brand}
-          </Typography>
-        )}
-
-        <Stack spacing={3} sx={{ flex: 1 }}>
-          <Box>
-            <TextField
-              label="Quantité (g)"
-              type="number"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              fullWidth
-            />
-            {(() => {
-              const portions = getPortions(selectedFood.nameFr, selectedFood.servingSize ? parseFloat(selectedFood.servingSize) : null);
-              if (portions.length === 0) return null;
-              return (
-                <Stack direction="row" spacing={0.75} sx={{ mt: 1, flexWrap: 'wrap', gap: 0.75 }}>
-                  {portions.map((p) => (
-                    <Chip
-                      key={p.label}
-                      label={`${p.label} (${p.grams}g)`}
-                      size="small"
-                      variant={quantity === String(p.grams) ? 'filled' : 'outlined'}
-                      color={quantity === String(p.grams) ? 'primary' : 'default'}
-                      onClick={() => setQuantity(String(p.grams))}
-                      sx={{ fontSize: '0.7rem' }}
-                    />
-                  ))}
-                </Stack>
-              );
-            })()}
-          </Box>
-
-          <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Repas
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
-              {[
-                { value: 'breakfast', label: '🌅 Petit-déj' },
-                { value: 'lunch', label: '☀️ Déjeuner' },
-                { value: 'dinner', label: '🌙 Dîner' },
-                { value: 'snack', label: '🍎 Snack' },
-              ].map((meal) => (
-                <Chip
-                  key={meal.value}
-                  label={meal.label}
-                  onClick={() => setMealType(meal.value)}
-                  color={mealType === meal.value ? 'primary' : 'default'}
-                  variant={mealType === meal.value ? 'filled' : 'outlined'}
-                  size="small"
-                  sx={{ fontSize: '0.7rem' }}
-                />
-              ))}
-            </Box>
-          </Box>
-
-          <Card>
-            <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
-                {Math.round(calories)} kcal
-              </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Protéines
-                  </Typography>
-                  <Typography variant="body2">
-                    {selectedFood.protein
-                      ? Math.round(parseFloat(selectedFood.protein) * multiplier)
-                      : 0}
-                    g
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Glucides
-                  </Typography>
-                  <Typography variant="body2">
-                    {selectedFood.carbohydrates
-                      ? Math.round(parseFloat(selectedFood.carbohydrates) * multiplier)
-                      : 0}
-                    g
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Lipides
-                  </Typography>
-                  <Typography variant="body2">
-                    {selectedFood.fat
-                      ? Math.round(parseFloat(selectedFood.fat) * multiplier)
-                      : 0}
-                    g
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Stack>
-
-        <Box
-          onClick={handleAdd}
-          sx={{
-            mt: 2,
-            py: 1.5,
-            textAlign: 'center',
-            bgcolor: 'text.primary',
-            color: 'background.default',
-            borderRadius: 2,
-            fontWeight: 600,
-            cursor: isAdding ? 'default' : 'pointer',
-            opacity: isAdding ? 0.5 : 1,
-            pointerEvents: isAdding ? 'none' : 'auto',
-            '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
-          }}
-        >
-          {isAdding ? 'Ajout...' : 'Ajouter'}
-        </Box>
-      </Box>
+      <FoodDetail
+        food={selectedFood}
+        quantity={quantity}
+        isAdding={isAdding}
+        d={d}
+        onBack={() => setSelectedFood(null)}
+        onQuantityChange={setQuantity}
+        onAdd={handleAdd}
+      />
     );
   }
 
+  // Search list view
   return (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ pt: 1.5, pb: 1, px: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ mb: 2 }}
-        >
-          <Box
-            onClick={onClose}
-            sx={{
-              cursor: 'pointer',
-              p: 0.5,
-              display: 'flex',
-              alignItems: 'center',
-              color: 'text.secondary',
-              '&:active': { opacity: 0.5 },
-            }}
-          >
-            <ArrowBack sx={{ fontSize: 24 }} />
-          </Box>
-          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-            Rechercher un aliment
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Header */}
+      <Box sx={{ px: 2, pt: 1, pb: 1.5 }}>
+        <Stack direction="row" alignItems="center" sx={{ mb: 1.5 }}>
+          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(d), mr: 1 }}>
+            <ArrowBack sx={{ fontSize: 20 }} />
+          </IconButton>
+          <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(d) }}>
+            Rechercher
           </Typography>
-          <Box sx={{ width: 32 }} />
         </Stack>
-        <TextField
-          fullWidth
-          placeholder="Ex: poulet, riz, pomme..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          size="small"
-          autoFocus
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search sx={{ color: 'text.secondary' }} />
-              </InputAdornment>
-            ),
-          }}
-        />
+
+        {/* Search input */}
+        <Box
+          sx={card(d, {
+            display: 'flex',
+            alignItems: 'center',
+            px: 1.5,
+            py: 0.25,
+          })}
+        >
+          <Search sx={{ fontSize: 18, color: tc.f(d), mr: 1, flexShrink: 0 }} />
+          <Box
+            component="input"
+            type="text"
+            value={query}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+            autoFocus
+            placeholder="Poulet, riz, pomme..."
+            sx={{
+              flex: 1,
+              py: 1,
+              border: 'none',
+              bgcolor: 'transparent',
+              color: tc.h(d),
+              fontSize: '0.85rem',
+              fontFamily: 'inherit',
+              outline: 'none',
+              '&::placeholder': { color: tc.f(d) },
+            }}
+          />
+          {isSearching && <CircularProgress size={16} sx={{ color: GOLD, ml: 1 }} />}
+        </Box>
       </Box>
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-        {isSearching ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={24} />
-          </Box>
-        ) : results.length === 0 && !isSearchingOff ? (
-          <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
-            {query.length >= 2 ? 'Aucun résultat' : 'Tape au moins 2 caractères'}
+      {/* Results */}
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 12 }}>
+        {!isSearching && results.length === 0 && !isSearchingOff ? (
+          <Typography sx={{ textAlign: 'center', color: tc.f(d), fontSize: '0.8rem', py: 6 }}>
+            {query.length >= 2 ? 'Aucun resultat' : 'Tape au moins 2 caracteres'}
           </Typography>
-        ) : (
-          <Stack spacing={1}>
-            {results.map((food) => (
-              <Card key={food.id}>
-                <CardActionArea onClick={() => {
+        ) : results.length > 0 ? (
+          <Box sx={card(d, { overflow: 'hidden' })}>
+            {results.map((food, i) => (
+              <Box
+                key={food.id}
+                onClick={() => {
+                  triggerHaptic('light');
                   setSelectedFood(food);
                   const serving = food.servingSize ? Math.round(parseFloat(food.servingSize)) : 100;
                   setQuantity(String(serving !== 100 ? serving : 100));
-                }} sx={{ p: 2 }}>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" fontWeight={500}>
-                        {food.nameFr}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {food.calories ? `${Math.round(parseFloat(food.calories))} kcal/100g` : ''}{' '}
-                        {food.brand ? `• ${food.brand}` : ''}
-                      </Typography>
-                    </Box>
-                    {food.id.startsWith('off:') && (
-                      <Chip label="OFF" size="small" variant="outlined" color="info" sx={{ fontSize: '0.6rem', height: 20 }} />
-                    )}
-                  </Stack>
-                </CardActionArea>
-              </Card>
-            ))}
-            {isSearchingOff && (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 2 }}>
-                <CircularProgress size={16} />
-                <Typography variant="caption" color="text.secondary">
-                  Recherche Open Food Facts...
-                </Typography>
+                }}
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  cursor: 'pointer',
+                  borderBottom: i < results.length - 1 ? '1px solid' : 'none',
+                  borderColor: d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.04),
+                  transition: 'background-color 0.15s ease',
+                  '&:active': { bgcolor: d ? alpha('#ffffff', 0.04) : alpha('#000000', 0.02) },
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                      color: tc.h(d),
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {food.nameFr}
+                    </Typography>
+                    <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.2 }}>
+                      {food.calories && (
+                        <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), fontVariantNumeric: 'tabular-nums' }}>
+                          {Math.round(parseFloat(food.calories))} kcal/100g
+                        </Typography>
+                      )}
+                      {food.brand && (
+                        <Typography sx={{ fontSize: '0.65rem', color: tc.f(d) }}>
+                          {food.brand}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Box>
+                  {food.id.startsWith('off:') && (
+                    <Typography sx={{
+                      fontSize: '0.5rem',
+                      fontWeight: 700,
+                      color: GOLD,
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      px: 0.75,
+                      py: 0.25,
+                      borderRadius: '6px',
+                      bgcolor: alpha(GOLD, 0.1),
+                      flexShrink: 0,
+                    }}>
+                      OFF
+                    </Typography>
+                  )}
+                </Stack>
               </Box>
-            )}
+            ))}
+          </Box>
+        ) : null}
+
+        {isSearchingOff && (
+          <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ py: 3 }}>
+            <CircularProgress size={14} sx={{ color: GOLD }} />
+            <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
+              Open Food Facts...
+            </Typography>
           </Stack>
         )}
       </Box>
 
+      {/* Snackbar */}
       <Snackbar
         open={!!addedSnackbar}
         autoHideDuration={2000}
         onClose={() => setAddedSnackbar(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" variant="filled" sx={{ width: '100%' }}>
-          {addedSnackbar} ajouté
-        </Alert>
+        <Box sx={{
+          ...card(d, { px: 2.5, py: 1.5 }),
+          bgcolor: d ? alpha('#ffffff', 0.12) : '#ffffff',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+        }}>
+          <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d) }}>
+            {addedSnackbar} ajoute
+          </Typography>
+        </Box>
       </Snackbar>
+    </Box>
+  );
+}
+
+// ─── Food Detail View ───────────────────────────────────────────────
+
+function FoodDetail({
+  food,
+  quantity,
+  isAdding,
+  d,
+  onBack,
+  onQuantityChange,
+  onAdd,
+}: {
+  food: FoodData;
+  quantity: string;
+  isAdding: boolean;
+  d: boolean;
+  onBack: () => void;
+  onQuantityChange: (v: string) => void;
+  onAdd: () => void;
+}) {
+  const multiplier = (parseFloat(quantity) || 0) / 100;
+  const calories = food.calories ? parseFloat(food.calories) * multiplier : 0;
+  const protein = food.protein ? parseFloat(food.protein) * multiplier : 0;
+  const carbs = food.carbohydrates ? parseFloat(food.carbohydrates) * multiplier : 0;
+  const fat = food.fat ? parseFloat(food.fat) * multiplier : 0;
+
+  const portions = useMemo(
+    () => getPortions(food.nameFr, food.servingSize ? parseFloat(food.servingSize) : null),
+    [food.nameFr, food.servingSize],
+  );
+
+  const isValid = (parseFloat(quantity) || 0) > 0;
+
+  return (
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Header */}
+      <Box sx={{ px: 2, pt: 1, pb: 1 }}>
+        <Stack direction="row" alignItems="center">
+          <IconButton onClick={onBack} size="small" sx={{ color: tc.m(d), mr: 1 }}>
+            <ArrowBack sx={{ fontSize: 20 }} />
+          </IconButton>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{
+              fontWeight: 700,
+              fontSize: '1.1rem',
+              color: tc.h(d),
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {food.nameFr}
+            </Typography>
+            {food.brand && (
+              <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mt: -0.2 }}>
+                {food.brand}
+              </Typography>
+            )}
+          </Box>
+        </Stack>
+      </Box>
+
+      {/* Scrollable content with sticky button inside */}
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2.5 }}>
+        <Stack spacing={2}>
+
+          {/* Calorie hero + macros */}
+          <Box sx={card(d, { p: 2.5, textAlign: 'center' })}>
+            <Typography sx={{
+              fontSize: '2.4rem',
+              fontWeight: 800,
+              color: GOLD,
+              lineHeight: 1,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {Math.round(calories)}
+            </Typography>
+            <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.5 }}>
+              kcal pour {quantity || 0}g
+            </Typography>
+
+            <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 1.5 }}>
+              {[
+                { label: 'Prot', value: Math.round(protein), color: MACRO_COLORS.protein },
+                { label: 'Gluc', value: Math.round(carbs), color: MACRO_COLORS.carbs },
+                { label: 'Lip', value: Math.round(fat), color: MACRO_COLORS.fat },
+              ].map((m) => (
+                <Stack key={m.label} direction="row" alignItems="center" spacing={0.5}>
+                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: m.color, flexShrink: 0 }} />
+                  <Typography sx={{ fontSize: '0.65rem', color: tc.m(d) }}>
+                    {m.label}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.h(d), fontVariantNumeric: 'tabular-nums' }}>
+                    {m.value}g
+                  </Typography>
+                </Stack>
+              ))}
+            </Stack>
+          </Box>
+
+          {/* Quantity input + portion presets */}
+          <Box sx={card(d, { p: 2 })}>
+            <Box sx={{ position: 'relative', mb: portions.length > 0 ? 1.5 : 0 }}>
+              <Box
+                component="input"
+                type="number"
+                inputMode="decimal"
+                value={quantity}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onQuantityChange(e.target.value)}
+                sx={{
+                  width: '100%',
+                  py: 1.5,
+                  px: 1,
+                  textAlign: 'center',
+                  borderRadius: '14px',
+                  border: '1px solid',
+                  borderColor: quantity ? (d ? alpha('#ffffff', 0.12) : alpha('#000000', 0.1)) : (d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.04)),
+                  bgcolor: 'transparent',
+                  color: tc.h(d),
+                  fontSize: '1.2rem',
+                  fontWeight: 700,
+                  fontFamily: 'inherit',
+                  fontVariantNumeric: 'tabular-nums',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease',
+                  '&:focus': { borderColor: GOLD },
+                  '&::placeholder': { color: tc.f(d), fontWeight: 400, fontSize: '0.8rem' },
+                  '&::-webkit-inner-spin-button, &::-webkit-outer-spin-button': { WebkitAppearance: 'none', margin: 0 },
+                  MozAppearance: 'textfield',
+                }}
+                placeholder="Grammes"
+              />
+              <Typography sx={{
+                position: 'absolute',
+                right: 16,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: '0.7rem',
+                color: tc.f(d),
+                pointerEvents: 'none',
+              }}>
+                g
+              </Typography>
+            </Box>
+
+            {portions.length > 0 && (
+              <Stack direction="row" spacing={0.75} sx={{ flexWrap: 'wrap', gap: 0.75 }}>
+                {portions.map((p) => {
+                  const selected = quantity === String(p.grams);
+                  return (
+                    <Box
+                      key={p.label}
+                      onClick={() => { triggerHaptic('light'); onQuantityChange(String(p.grams)); }}
+                      sx={{
+                        px: 1.5,
+                        py: 0.6,
+                        borderRadius: '10px',
+                        border: '1px solid',
+                        borderColor: selected ? GOLD : d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+                        bgcolor: selected ? alpha(GOLD, 0.1) : 'transparent',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <Typography sx={{
+                        fontSize: '0.65rem',
+                        fontWeight: selected ? 600 : 500,
+                        color: selected ? GOLD : tc.m(d),
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {p.label} ({p.grams}g)
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            )}
+          </Box>
+        </Stack>
+
+        {/* Add button — sticky at bottom of scroll area, above BottomNav */}
+        <Box sx={{
+          position: 'sticky',
+          bottom: 0,
+          pt: 2,
+          pb: 10,
+          background: d
+            ? `linear-gradient(transparent, rgba(10,10,9,0.95) 20%)`
+            : `linear-gradient(transparent, rgba(243,241,236,0.95) 20%)`,
+        }}>
+          <Box
+            onClick={isValid && !isAdding ? onAdd : undefined}
+            sx={{
+              py: 1.5,
+              textAlign: 'center',
+              bgcolor: !isValid || isAdding ? (d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06)) : GOLD,
+              color: !isValid || isAdding ? tc.f(d) : '#1a1715',
+              borderRadius: '14px',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              cursor: !isValid || isAdding ? 'default' : 'pointer',
+              transition: 'all 0.2s ease',
+              ...((isValid && !isAdding) && {
+                boxShadow: `0 4px 16px ${alpha(GOLD, 0.3)}`,
+                '&:active': { transform: 'scale(0.97)' },
+              }),
+            }}
+          >
+            {isAdding ? 'Ajout...' : 'Ajouter'}
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 }
