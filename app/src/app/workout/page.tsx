@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type {
@@ -22,13 +22,9 @@ import { compressImage } from '@/lib/image-utils';
 import type { CardioActivity } from '@/db/schema';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardActionArea from '@mui/material/CardActionArea';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
 import Skeleton from '@mui/material/Skeleton';
@@ -48,7 +44,6 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import FitnessCenter from '@mui/icons-material/FitnessCenter';
-import PlayArrow from '@mui/icons-material/PlayArrow';
 import Bolt from '@mui/icons-material/Bolt';
 import Add from '@mui/icons-material/Add';
 import ChevronRight from '@mui/icons-material/ChevronRight';
@@ -62,9 +57,12 @@ import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import Watch from '@mui/icons-material/Watch';
 import EditIcon from '@mui/icons-material/Edit';
 import AutoAwesome from '@mui/icons-material/AutoAwesome';
+import { useTheme } from 'next-themes';
+import { alpha } from '@mui/material/styles';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import { parseJsonArray } from '@/powersync/helpers';
 import BottomNav from '@/components/BottomNav';
+import { GOLD, GOLD_LIGHT, tc, card, surfaceBg, panelBg } from '@/lib/design-tokens';
 import { downloadFile, fmtDateFR, fmtTimeFR, formatDuration, escapeHtml, writeExcelFile, openPrintableHtml } from '@/lib/export-utils';
 
 export default function WorkoutPage() {
@@ -84,6 +82,8 @@ export default function WorkoutPage() {
 function WorkoutContent() {
   const router = useRouter();
   const mutations = useWorkoutMutations();
+  const { resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
 
   // PowerSync reactive hooks
   const { data: sessionRows, isLoading: sessionsLoading } = useRecentSessions();
@@ -249,49 +249,30 @@ function WorkoutContent() {
   const completedSessions = sessions.filter(s => !!s.endedAt);
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
       {/* Header */}
-      <Box sx={{
-        px: 2.5, pt: 2.5, pb: 3,
-        background: 'linear-gradient(180deg, rgba(103,80,164,0.1) 0%, transparent 100%)',
-      }}>
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <IconButton component={Link} href="/" size="small" sx={{ color: 'text.secondary' }}>
-            <ArrowBack fontSize="small" />
-          </IconButton>
-          <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>
-            Entraînement
-          </Typography>
-        </Stack>
+      <Box sx={{ px: 3, pt: 3, pb: 2.5 }}>
+        <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: tc.h(d), letterSpacing: '-0.02em' }}>
+          Entraînement
+        </Typography>
       </Box>
 
-      <Box sx={{ px: 2.5, mt: -1 }}>
-        <Stack spacing={2}>
+      <Box sx={{ px: 3 }}>
+        <Stack spacing={2.5}>
           {/* CTA Nouvelle séance */}
-          <Card sx={{
-            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
-            color: 'white',
-            borderRadius: 3,
-          }}>
-            <CardActionArea onClick={() => { setDrawerView('main'); setShowNewSessionDrawer(true); }}>
-              <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
-                <Stack direction="row" alignItems="center" spacing={2}>
-                  <Box sx={{
-                    width: 44, height: 44, borderRadius: '50%',
-                    bgcolor: 'rgba(255,255,255,0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <Add sx={{ fontSize: 24 }} />
-                  </Box>
-                  <Typography variant="body1" fontWeight={700} sx={{ flex: 1 }}>
-                    Nouvelle séance
-                  </Typography>
-                  <ChevronRight sx={{ opacity: 0.5 }} />
-                </Stack>
-              </CardContent>
-            </CardActionArea>
-          </Card>
+          <Button
+            fullWidth
+            onClick={() => { setDrawerView('main'); setShowNewSessionDrawer(true); }}
+            startIcon={<Add />}
+            sx={{
+              py: 2, borderRadius: '16px', fontSize: '0.95rem', fontWeight: 600,
+              bgcolor: GOLD, color: '#1a1a1a', textTransform: 'none',
+              boxShadow: `0 4px 20px ${alpha(GOLD, 0.3)}`,
+              '&:hover': { bgcolor: GOLD_LIGHT },
+            }}
+          >
+            Nouvelle séance
+          </Button>
 
           {/* Session en cours */}
           {inProgressSessions.map((session) => {
@@ -304,97 +285,77 @@ function WorkoutContent() {
               ? CARDIO_ACTIVITIES[session.cardioActivity as CardioActivity]
               : null;
             return (
-              <Card key={session.id} sx={{ border: '2px solid', borderColor: 'warning.main', bgcolor: 'rgba(255,152,0,0.05)' }}>
-                <CardContent sx={{ py: 2 }}>
-                  <Stack direction="row" alignItems="center" spacing={2}>
-                    <Box sx={{
-                      width: 44, height: 44, borderRadius: '50%',
-                      bgcolor: 'rgba(255,152,0,0.15)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: activityInfo ? '1.2rem' : undefined,
-                    }}>
-                      {activityInfo ? activityInfo.emoji : <PlayArrow sx={{ color: 'warning.main' }} />}
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" fontWeight={600}>
-                        {isCardio ? `Cardio en cours — ${activityInfo?.label || 'Cardio'}` : 'Séance en cours'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Commencée à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={0.5} alignItems="center">
-                      <Button
-                        component={Link}
-                        href={resumeHref}
-                        size="small"
-                        variant="contained"
-                        color="warning"
-                        sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 2 }}
-                      >
-                        Reprendre
-                      </Button>
-                      <IconButton size="small" onClick={() => handleDeleteClick(session.id)} sx={{ color: 'text.secondary' }}>
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </Stack>
-                  </Stack>
-                </CardContent>
-              </Card>
+              <Box key={session.id} sx={card(d, {
+                borderRadius: '16px', borderColor: alpha(GOLD, 0.3), p: 2.5,
+              })}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: GOLD, boxShadow: `0 0 8px ${alpha(GOLD, 0.5)}`, flexShrink: 0 }} />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(d) }}>
+                      {isCardio ? `Cardio en cours — ${activityInfo?.label || 'Cardio'}` : 'Séance en cours'}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: tc.m(d) }}>
+                      Depuis {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </Typography>
+                  </Box>
+                  <Button
+                    component={Link}
+                    href={resumeHref}
+                    size="small"
+                    sx={{ fontWeight: 600, textTransform: 'none', borderRadius: '10px', bgcolor: alpha(GOLD, 0.1), color: GOLD }}
+                  >
+                    Reprendre
+                  </Button>
+                  <IconButton size="small" onClick={() => handleDeleteClick(session.id)} sx={{ color: tc.f(d) }}>
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Stack>
+              </Box>
             );
           })}
 
           {/* Programmes */}
           {isLoading ? (
-            <Stack spacing={1.5}>
-              <Skeleton variant="rounded" height={70} sx={{ borderRadius: 2 }} />
-              <Skeleton variant="rounded" height={70} sx={{ borderRadius: 2 }} />
+            <Stack spacing={1}>
+              <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
+              <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
             </Stack>
           ) : templates.length > 0 && (
             <Box>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Mes Programmes
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(d) }}>
+                  Programmes
                 </Typography>
                 <Button
                   onClick={() => setShowCreateDrawer(true)}
                   size="small"
-                  startIcon={<Add sx={{ fontSize: 16 }} />}
-                  sx={{ fontSize: '0.75rem', textTransform: 'none', color: 'primary.main' }}
+                  startIcon={<Add sx={{ fontSize: 14 }} />}
+                  sx={{ fontSize: '0.7rem', textTransform: 'none', color: GOLD, fontWeight: 600 }}
                 >
                   Créer
                 </Button>
               </Stack>
-              <Stack spacing={1.5}>
+              <Stack spacing={1}>
                 {templates.map((t) => (
-                  <Card key={t.id} component={Link} href={`/workout/program/detail?id=${t.id}`} sx={{ textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.8 } }}>
-                    <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
-                      <Stack direction="row" alignItems="center" spacing={2}>
-                        <Box sx={{
-                          width: 50, height: 50, borderRadius: 3,
-                          background: 'linear-gradient(135deg, rgba(187,134,252,0.15), rgba(103,80,164,0.08))',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          flexShrink: 0,
-                        }}>
-                          <FitnessCenter sx={{ color: '#bb86fc', fontSize: 24 }} />
-                        </Box>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography variant="body1" fontWeight={600} noWrap>{t.name}</Typography>
-                          <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
-                            {t.targetMuscles.map((m) => (
-                              <Chip
-                                key={m}
-                                label={MUSCLE_LABELS[m] || m}
-                                size="small"
-                                sx={{ height: 20, fontSize: '0.65rem', fontWeight: 500 }}
-                              />
-                            ))}
-                          </Stack>
-                        </Box>
-                        <ChevronRight sx={{ color: 'text.disabled', flexShrink: 0 }} />
-                      </Stack>
-                    </CardContent>
-                  </Card>
+                  <Box
+                    key={t.id}
+                    component={Link}
+                    href={`/workout/program/detail?id=${t.id}`}
+                    sx={card(d, {
+                      p: 2, textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.8 },
+                    })}
+                  >
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <FitnessCenter sx={{ color: GOLD, fontSize: 20 }} />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(d) }} noWrap>{t.name}</Typography>
+                        <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.3 }}>
+                          {t.targetMuscles.map((m) => MUSCLE_LABELS[m] || m).join(' · ')}
+                        </Typography>
+                      </Box>
+                      <ChevronRight sx={{ color: tc.f(d), fontSize: 18 }} />
+                    </Stack>
+                  </Box>
                 ))}
               </Stack>
             </Box>
@@ -402,58 +363,57 @@ function WorkoutContent() {
 
           {/* Lien créer programme si aucun */}
           {!isLoading && templates.length === 0 && (
-            <Card sx={{ border: '1px dashed', borderColor: 'divider' }}>
-              <CardActionArea onClick={() => setShowCreateDrawer(true)}>
-                <CardContent sx={{ py: 2.5, textAlign: 'center' }}>
-                  <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
-                    <Add sx={{ fontSize: 20, color: 'text.secondary' }} />
-                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                      Créer un programme
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </CardActionArea>
-            </Card>
+            <Box
+              onClick={() => setShowCreateDrawer(true)}
+              sx={{
+                border: '1px dashed', borderColor: d ? alpha(GOLD, 0.2) : alpha(GOLD, 0.3),
+                borderRadius: '14px', py: 2.5, textAlign: 'center', cursor: 'pointer',
+                '&:active': { bgcolor: alpha(GOLD, 0.05) },
+              }}
+            >
+              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
+                <Add sx={{ fontSize: 20, color: GOLD }} />
+                <Typography sx={{ fontSize: '0.85rem', color: tc.m(d), fontWeight: 500 }}>
+                  Créer un programme
+                </Typography>
+              </Stack>
+            </Box>
           )}
 
-          {/* Historique - Style B (inline PR + stats bar) */}
+          {/* Historique */}
           <Box sx={{ pb: 4 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Dernières séances
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(d) }}>
+                Récent
               </Typography>
               {completedSessions.length > 0 && (
-                <IconButton size="small" onClick={() => setShowExport(true)} sx={{ color: 'text.secondary' }}>
-                  <FileDownload fontSize="small" />
+                <IconButton size="small" onClick={() => setShowExport(true)} sx={{ color: tc.f(d) }}>
+                  <FileDownload sx={{ fontSize: 18 }} />
                 </IconButton>
               )}
             </Stack>
 
             {isLoading ? (
-              <Skeleton variant="rounded" height={200} sx={{ borderRadius: 2 }} />
+              <Stack spacing={1}>
+                <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
+                <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
+              </Stack>
             ) : completedSessions.length === 0 ? (
-              <Card sx={{ textAlign: 'center', py: 5 }}>
-                <CardContent>
-                  <FitnessCenter sx={{ fontSize: 48, color: 'text.disabled', mb: 1.5 }} />
-                  <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>
-                    Pas encore de séance
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Ta première séance t&apos;attend !
-                  </Typography>
-                </CardContent>
-              </Card>
+              <Box sx={card(d, { textAlign: 'center', py: 5 })}>
+                <FitnessCenter sx={{ fontSize: 48, color: tc.f(d), mb: 1.5 }} />
+                <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(d), mb: 0.5 }}>
+                  Pas encore de séance
+                </Typography>
+                <Typography sx={{ fontSize: '0.8rem', color: tc.m(d) }}>
+                  Ta première séance t&apos;attend !
+                </Typography>
+              </Box>
             ) : (
-              <Card>
-                <Stack divider={<Divider />}>
-                  {completedSessions.map((session) => (
-                    <SessionCard
-                      key={session.id}
-                      session={session}
-                    />
-                  ))}
-                </Stack>
-              </Card>
+              <Stack spacing={1}>
+                {completedSessions.map((session) => (
+                  <SessionCard key={session.id} session={session} isDark={d} />
+                ))}
+              </Stack>
             )}
           </Box>
         </Stack>
@@ -466,7 +426,7 @@ function WorkoutContent() {
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        PaperProps={{ sx: { borderRadius: '16px', bgcolor: panelBg(d) } }}
       >
         <DialogTitle>Supprimer la séance ?</DialogTitle>
         <DialogContent>
@@ -490,41 +450,41 @@ function WorkoutContent() {
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
         PaperProps={{
-          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.paper' },
+          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: panelBg(d) },
         }}
       >
         <Box sx={{ p: 2 }}>
-          <Box sx={{ width: 40, height: 4, borderRadius: 2, bgcolor: 'divider', mx: 'auto', mb: 2 }} />
-          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.5 }}>
+          <Box sx={{ width: 40, height: 4, borderRadius: 2, bgcolor: tc.f(d), opacity: 0.3, mx: 'auto', mb: 2 }} />
+          <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(d), mb: 1.5 }}>
             Créer un programme
           </Typography>
           <List disablePadding>
             <ListItemButton
               onClick={() => { setShowCreateDrawer(false); router.push('/workout/program/manual'); }}
-              sx={{ borderRadius: 2, mb: 0.5 }}
+              sx={{ borderRadius: '12px', mb: 0.5 }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>
-                <EditIcon sx={{ color: 'primary.main' }} />
+                <EditIcon sx={{ color: GOLD }} />
               </ListItemIcon>
               <ListItemText
                 primary="Créer manuellement"
                 secondary="Choisis tes exercices et configure"
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem' }}
-                secondaryTypographyProps={{ fontSize: '0.8rem' }}
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem', color: tc.h(d) }}
+                secondaryTypographyProps={{ fontSize: '0.8rem', color: tc.m(d) }}
               />
             </ListItemButton>
             <ListItemButton
               onClick={() => { setShowCreateDrawer(false); router.push('/workout/program'); }}
-              sx={{ borderRadius: 2 }}
+              sx={{ borderRadius: '12px' }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>
-                <AutoAwesome sx={{ color: '#a855f7' }} />
+                <AutoAwesome sx={{ color: GOLD_LIGHT }} />
               </ListItemIcon>
               <ListItemText
                 primary="Générer avec l'IA"
                 secondary="Programme personnalisé en 5 étapes"
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem' }}
-                secondaryTypographyProps={{ fontSize: '0.8rem' }}
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem', color: tc.h(d) }}
+                secondaryTypographyProps={{ fontSize: '0.8rem', color: tc.m(d) }}
               />
             </ListItemButton>
           </List>
@@ -537,7 +497,7 @@ function WorkoutContent() {
         open={showNewSessionDrawer}
         onClose={() => { setShowNewSessionDrawer(false); setDrawerView('main'); }}
         PaperProps={{
-          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.paper', maxHeight: '70vh' },
+          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: panelBg(d), maxHeight: '70vh' },
         }}
       >
         <Box sx={{ p: 2 }}>
@@ -578,11 +538,11 @@ function WorkoutContent() {
               >
                 <Box sx={{
                   width: 40, height: 40, borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+                  background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   mr: 2,
                 }}>
-                  <Bolt sx={{ color: 'white', fontSize: 22 }} />
+                  <Bolt sx={{ color: '#1a1a1a', fontSize: 22 }} />
                 </Box>
                 <ListItemText
                   primary="Séance libre"
@@ -795,7 +755,7 @@ function WorkoutContent() {
 }
 
 
-function SessionCard({ session }: { session: WorkoutSession }) {
+function SessionCard({ session, isDark: d }: { session: WorkoutSession; isDark: boolean }) {
   const router = useRouter();
   const date = new Date(session.startedAt);
   const formattedDate = date.toLocaleDateString('fr-FR', {
@@ -818,94 +778,39 @@ function SessionCard({ session }: { session: WorkoutSession }) {
   const mins = session.durationMinutes || 0;
   const durationFormatted = formatDuration(mins);
 
+  // Build inline stats text
+  const stats: string[] = [durationFormatted];
+  if (isCardio) {
+    if (distanceM > 0) stats.push(formatDistance(distanceM));
+    if (session.avgPaceSecondsPerKm) stats.push(formatPace(session.avgPaceSecondsPerKm));
+  } else {
+    stats.push(volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`);
+  }
+  if (session.caloriesBurned) stats.push(`${session.caloriesBurned} kcal`);
+
   return (
     <Box
-      sx={{ px: 2.5, py: 2, cursor: 'pointer', '&:active': { bgcolor: 'action.hover' } }}
       onClick={() => router.push(`/workout/session?id=${session.id}`)}
+      sx={card(d, { px: 2, py: 1.8, cursor: 'pointer', '&:active': { opacity: 0.85 } })}
     >
-      {/* Row 1: Name + date */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
-          {isCardio && activityInfo ? (
-            <>
-              <Typography component="span" sx={{ fontSize: '1rem' }}>{activityInfo.emoji}</Typography>
-              <Typography variant="body2" fontWeight={600} noWrap>
-                {activityInfo.label}
-              </Typography>
-            </>
-          ) : (
-            <Typography variant="body2" fontWeight={600} noWrap sx={{ textTransform: 'capitalize' }}>
-              {formattedDate}
-            </Typography>
-          )}
-          <Typography variant="caption" color="text.secondary">
-            {isCardio ? formattedDate : formattedTime}
-          </Typography>
-          <Chip label={durationFormatted} size="small" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600 }} />
-        </Stack>
-        <ChevronRight sx={{ color: 'text.disabled', fontSize: 20 }} />
-      </Stack>
-
-      {/* Row 2: Stats bar */}
-      <Stack
-        direction="row"
-        spacing={0}
-        sx={{
-          mt: 1.5,
-          bgcolor: 'action.hover',
-          borderRadius: 2,
-          overflow: 'hidden',
-        }}
-      >
-        {isCardio ? (
-          <>
-            <Box sx={{ flex: 1, py: 1, textAlign: 'center', borderRight: 1, borderColor: 'divider' }}>
-              <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                {distanceM > 0 ? formatDistance(distanceM) : '—'}
-              </Typography>
-              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-                Distance
-              </Typography>
-            </Box>
-            <Box sx={{ flex: 1, py: 1, textAlign: 'center', borderRight: 1, borderColor: 'divider' }}>
-              <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                {session.avgPaceSecondsPerKm ? formatPace(session.avgPaceSecondsPerKm) : '—'}
-              </Typography>
-              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-                Allure
-              </Typography>
-            </Box>
-            <Box sx={{ flex: 1, py: 1, textAlign: 'center' }}>
-              <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                {session.caloriesBurned || '—'}
-              </Typography>
-              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-                kcal
-              </Typography>
-            </Box>
-          </>
-        ) : (
-          <>
-            <Box sx={{ flex: 1, py: 1, textAlign: 'center', borderRight: 1, borderColor: 'divider' }}>
-              <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                {volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`}
-              </Typography>
-              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-                Volume
-              </Typography>
-            </Box>
-            {session.caloriesBurned != null && session.caloriesBurned > 0 && (
-              <Box sx={{ flex: 1, py: 1, textAlign: 'center' }}>
-                <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                  {session.caloriesBurned}
-                </Typography>
-                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-                  kcal
-                </Typography>
-              </Box>
+      <Stack direction="row" alignItems="center">
+        <Box sx={{ flex: 1 }}>
+          <Stack direction="row" spacing={0.75} alignItems="center">
+            {isCardio && activityInfo && (
+              <Typography component="span" sx={{ fontSize: '0.95rem' }}>{activityInfo.emoji}</Typography>
             )}
-          </>
-        )}
+            <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(d), textTransform: 'capitalize' }}>
+              {isCardio && activityInfo ? activityInfo.label : formattedDate}
+            </Typography>
+            <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
+              {isCardio ? formattedDate : formattedTime}
+            </Typography>
+          </Stack>
+          <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.2 }}>
+            {stats.join(' · ')}
+          </Typography>
+        </Box>
+        <ChevronRight sx={{ color: tc.f(d), fontSize: 18 }} />
       </Stack>
     </Box>
   );
@@ -1037,10 +942,10 @@ function WorkoutExportDrawer({ open, onClose }: { open: boolean; onClose: () => 
   h1 { font-size: 22px; margin-bottom: 4px; }
   .subtitle { color: #666; font-size: 13px; margin-bottom: 24px; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { background: #6750a4; color: white; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
+  th { background: #d4af37; color: #1a1a1a; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
   td { padding: 7px 10px; border-bottom: 1px solid #e0e0e0; white-space: nowrap; }
-  tr:nth-child(even) td { background: #f8f6ff; }
-  tr:hover td { background: #ece6ff; }
+  tr:nth-child(even) td { background: #faf8f2; }
+  tr:hover td { background: #f5f0e0; }
   .footer { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
   @media print { body { padding: 16px; } }
 </style>

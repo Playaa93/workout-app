@@ -7,8 +7,8 @@ export const GOLD_LIGHT = '#e8c860'
 // Explicit text color tokens (independent of MUI theme)
 export const tc = {
   h: (dark: boolean) => dark ? '#f5f0e6' : '#1a1715',
-  m: (dark: boolean) => dark ? '#8a8478' : '#8a7e70',
-  f: (dark: boolean) => dark ? '#5c574e' : '#b5ad9f',
+  m: (dark: boolean) => dark ? '#9a9488' : '#7a7468',
+  f: (dark: boolean) => dark ? '#6b655c' : '#a09888',
 }
 
 // Glassmorphism card style
@@ -24,6 +24,21 @@ export const glass = (isDark: boolean, extra?: object) => ({
     : `0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 ${alpha('#ffffff', 0.6)}`,
   ...extra,
 })
+
+// Minimal card style (flat, subtle border)
+export const card = (isDark: boolean, extra?: object) => ({
+  bgcolor: isDark ? alpha('#ffffff', 0.07) : '#ffffff',
+  borderRadius: '14px',
+  border: '1px solid',
+  borderColor: isDark ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+  ...extra,
+})
+
+// Surface background (page-level)
+export const surfaceBg = (isDark: boolean) => isDark ? '#0a0a09' : '#f3f1ec'
+
+// Drawer / dialog background
+export const panelBg = (isDark: boolean) => isDark ? '#1c1a14' : '#ffffff'
 
 // Mesh gradient background
 export const meshBg = (isDark: boolean) => isDark
