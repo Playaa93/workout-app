@@ -1031,6 +1031,7 @@ function ExerciseCard({
   const [machineSheetOpen, setMachineSheetOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [forceEditNote, setForceEditNote] = useState(false);
+  const [confirmDeleteLast, setConfirmDeleteLast] = useState(false);
 
   const { data: prevSetRows } = useLastSetsForExerciseOrMachine(exercise?.id || '', selectedMachineSetupId, 5);
   const previousSets = useMemo<WorkoutSet[]>(() => {
@@ -1126,7 +1127,38 @@ function ExerciseCard({
           <InfoOutlined sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
           Info exercice
         </MenuItem>
+        {sets.length > 0 && (
+          <MenuItem
+            onClick={() => {
+              setMenuAnchor(null);
+              setConfirmDeleteLast(true);
+            }}
+            sx={{ color: 'error.main' }}
+          >
+            <Delete sx={{ fontSize: 18, mr: 1.5 }} />
+            Supprimer dernière série
+          </MenuItem>
+        )}
       </Menu>
+
+      <Dialog open={confirmDeleteLast} onClose={() => setConfirmDeleteLast(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Supprimer la dernière série ?</DialogTitle>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setConfirmDeleteLast(false)} variant="outlined">Annuler</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={async () => {
+              setConfirmDeleteLast(false);
+              triggerHaptic('heavy');
+              const lastSetToDelete = sets[sets.length - 1];
+              await mutations.deleteSet(lastSetToDelete.id);
+            }}
+          >
+            Supprimer
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Collapse in={!collapsed} unmountOnExit>
         <Box sx={{ px: 2 }}>
@@ -1277,7 +1309,7 @@ function SetForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!weight || !reps) return;
+    if (weight == null || !reps) return;
     setIsSubmitting(true);
     triggerHaptic('heavy');
     try {
@@ -1331,7 +1363,7 @@ function SetForm({
         <Button
           fullWidth
           onClick={handleSubmit}
-          disabled={!weight || !reps || isSubmitting}
+          disabled={weight == null || !reps || isSubmitting}
           sx={{
             bgcolor: 'text.primary',
             color: 'background.default',
@@ -1884,7 +1916,7 @@ function SetInputSheet({
   }, [previousSets.length]);
 
   const handleSubmit = async () => {
-    if (!weight || !reps) return;
+    if (weight == null || !reps) return;
     setIsSubmitting(true);
     triggerHaptic('heavy');
     try {
@@ -2134,7 +2166,7 @@ function SetInputSheet({
         variant="contained"
         size="large"
         onClick={handleSubmit}
-        disabled={!weight || !reps || isSubmitting}
+        disabled={weight == null || !reps || isSubmitting}
         sx={{
           py: 2,
           fontSize: '1rem',

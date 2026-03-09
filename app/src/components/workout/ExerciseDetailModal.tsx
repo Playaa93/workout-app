@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Model, { type Muscle, type IExerciseData } from 'react-body-highlighter';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -95,6 +95,44 @@ const MUSCLE_LABELS: Record<string, string> = {
   adductor: 'Adducteurs',
 };
 
+// Equipment labels for display
+const EQUIPMENT_LABELS: Record<string, string> = {
+  barbell: 'Barre',
+  dumbbell: 'Haltères',
+  cable: 'Câble / Poulie',
+  machine: 'Machine',
+  bodyweight: 'Poids du corps',
+  band: 'Élastique',
+  kettlebell: 'Kettlebell',
+  medicine_ball: 'Medecine ball',
+  ez_bar: 'Barre EZ',
+  smith_machine: 'Smith machine',
+  bench: 'Banc',
+  pull_up_bar: 'Barre de traction',
+  dip_station: 'Barres à dips',
+  suspension: 'Sangles de suspension',
+  foam_roller: 'Rouleau',
+  stability_ball: 'Swiss ball',
+  other: 'Autre',
+};
+
+// Static lists for body view auto-selection
+const ANTERIOR_MUSCLES = ['chest', 'abs', 'obliques', 'quadriceps', 'biceps', 'forearm', 'front-deltoids', 'adductor'];
+const POSTERIOR_MUSCLES = ['upper-back', 'lower-back', 'trapezius', 'back-deltoids', 'triceps', 'hamstring', 'gluteal', 'calves'];
+
+// Convert our muscle names to react-body-highlighter format
+function getMappedMuscles(muscles: string[] | null): string[] {
+  if (!muscles) return [];
+  const mapped = new Set<string>();
+  muscles.forEach(muscle => {
+    const mappings = MUSCLE_MAPPING[muscle] || MUSCLE_MAPPING[muscle.toLowerCase()];
+    if (mappings) {
+      mappings.forEach(m => mapped.add(m));
+    }
+  });
+  return Array.from(mapped);
+}
+
 export type ExerciseDetail = {
   id: string;
   nameFr: string;
@@ -121,20 +159,27 @@ export default function ExerciseDetailModal({
 }: ExerciseDetailModalProps) {
   const [viewSide, setViewSide] = useState<'anterior' | 'posterior'>('anterior');
 
-  if (!exercise) return null;
+  // Auto-select the correct body view when exercise changes
+  useEffect(() => {
+    if (!exercise) return;
+    const primary = getMappedMuscles(exercise.primaryMuscles);
+    if (primary.length === 0) {
+      const groupMapping = MUSCLE_MAPPING[exercise.muscleGroup];
+      if (groupMapping) groupMapping.forEach(m => primary.push(m));
+    }
+    const secondary = getMappedMuscles(exercise.secondaryMuscles).filter(m => !primary.includes(m));
+    const all = [...primary, ...secondary];
+    const hasAnt = all.some(m => ANTERIOR_MUSCLES.includes(m));
+    const hasPost = all.some(m => POSTERIOR_MUSCLES.includes(m));
+    if (hasPost && !hasAnt) {
+      setViewSide('posterior');
+    } else {
+      setViewSide('anterior');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exercise?.id]);
 
-  // Convert our muscles to react-body-highlighter format
-  const getMappedMuscles = (muscles: string[] | null): string[] => {
-    if (!muscles) return [];
-    const mapped = new Set<string>();
-    muscles.forEach(muscle => {
-      const mappings = MUSCLE_MAPPING[muscle] || MUSCLE_MAPPING[muscle.toLowerCase()];
-      if (mappings) {
-        mappings.forEach(m => mapped.add(m));
-      }
-    });
-    return Array.from(mapped);
-  };
+  if (!exercise) return null;
 
   const primaryMusclesMapped = getMappedMuscles(exercise.primaryMuscles);
 
@@ -165,13 +210,9 @@ export default function ExerciseDetailModal({
     })),
   ];
 
-  // Check which view has muscles to show
-  const anteriorMuscles = ['chest', 'abs', 'obliques', 'quadriceps', 'biceps', 'forearm', 'front-deltoids', 'adductor'];
-  const posteriorMuscles = ['upper-back', 'lower-back', 'trapezius', 'back-deltoids', 'triceps', 'hamstring', 'gluteal', 'calves'];
-
   const allMuscles = [...primaryMusclesMapped, ...secondaryMusclesMapped];
-  const hasAnterior = allMuscles.some(m => anteriorMuscles.includes(m));
-  const hasPosterior = allMuscles.some(m => posteriorMuscles.includes(m));
+  const hasAnterior = allMuscles.some(m => ANTERIOR_MUSCLES.includes(m));
+  const hasPosterior = allMuscles.some(m => POSTERIOR_MUSCLES.includes(m));
 
   return (
     <Drawer
@@ -340,7 +381,7 @@ export default function ExerciseDetailModal({
               {exercise.equipment.map(eq => (
                 <Chip
                   key={eq}
-                  label={eq}
+                  label={EQUIPMENT_LABELS[eq] || eq}
                   size="small"
                   variant="outlined"
                   sx={{ fontSize: '0.75rem' }}
@@ -396,8 +437,14 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
   const [currentImage, setCurrentImage] = useState(0);
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [imagesLoaded, setImagesLoaded] = useState<boolean[]>([]);
-  const images = getExerciseImages(nameEn);
+  const images = useMemo(() => getExerciseImages(nameEn), [nameEn]);
+
+  // Reset state when exercise changes
+  useEffect(() => {
+    setCurrentImage(0);
+    setImageError(false);
+    setIsPlaying(true);
+  }, [nameEn]);
 
   // Auto-animate between images
   useEffect(() => {
@@ -405,29 +452,10 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
 
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % images.length);
-    }, 800); // Switch every 800ms for smooth animation effect
+    }, 800);
 
     return () => clearInterval(interval);
   }, [isPlaying, images.length, imageError]);
-
-  // Preload images
-  useEffect(() => {
-    if (images.length === 0) return;
-
-    const loadStates: boolean[] = new Array(images.length).fill(false);
-
-    images.forEach((src, index) => {
-      const img = new window.Image();
-      img.onload = () => {
-        loadStates[index] = true;
-        setImagesLoaded([...loadStates]);
-      };
-      img.onerror = () => {
-        setImageError(true);
-      };
-      img.src = src;
-    });
-  }, [images]);
 
   // No images available
   if (images.length === 0 || imageError) {
@@ -475,6 +503,8 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
             key={src}
             src={src}
             alt={`${nameEn || 'Exercise'} - position ${index + 1}`}
+            loading="lazy"
+            onError={() => setImageError(true)}
             style={{
               position: 'absolute',
               top: '50%',

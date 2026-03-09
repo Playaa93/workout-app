@@ -56,7 +56,7 @@ async function seedEnrichedExercises() {
   console.log('Starting enriched exercises seed...');
 
   // Read the enriched exercises JSON file
-  const dataPath = path.join(__dirname, '../../data/exercises-enriched.json');
+  const dataPath = path.join(__dirname, '../../data/exercises-merged.json');
   const rawData = fs.readFileSync(dataPath, 'utf-8');
   const data: ExerciseData = JSON.parse(rawData);
 

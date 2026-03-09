@@ -473,14 +473,14 @@ function SessionDetailContent() {
 
       <SessionExportDrawer open={exportOpen} onClose={() => setExportOpen(false)} data={data} />
 
-      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3, mx: 2 } }}>
         <DialogTitle>Supprimer la séance ?</DialogTitle>
         <DialogContent>
           <DialogContentText>
             Cette action est irréversible. Toutes les données de cette séance seront perdues.
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setDeleteOpen(false)} color="inherit">Annuler</Button>
           <Button onClick={handleDelete} color="error" variant="contained">Supprimer</Button>
         </DialogActions>

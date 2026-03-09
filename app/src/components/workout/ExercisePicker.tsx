@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import type { Exercise } from '@/app/workout/types';
 import type { MorphotypeResult } from '@/app/morphology/types';
 import {
@@ -70,6 +70,8 @@ function getExerciseSubcategory(primaryMuscles: string[] | null): string | null 
   return MUSCLE_TO_SUBCATEGORY[primaryMuscles[0]] || null;
 }
 
+const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 
 export function ExercisePicker({
   exercises,
@@ -83,12 +85,27 @@ export function ExercisePicker({
   onClose: () => void;
 }) {
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [sortByScore, setSortByScore] = useState(true);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
+  const [visibleCount, setVisibleCount] = useState(50);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const muscleGroups = [...new Set(exercises.map((e) => e.muscleGroup))].filter(g => g !== 'full_body');
+  const handleSearch = useCallback((value: string) => {
+    setSearch(value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(value);
+      setVisibleCount(50);
+    }, 200);
+  }, []);
+
+  const muscleGroups = useMemo(
+    () => [...new Set(exercises.map((e) => e.muscleGroup))].filter(g => g !== 'full_body'),
+    [exercises]
+  );
 
   // Dynamically generate subcategories from exercises in selected muscle group
   const subcategories = useMemo(() => {
@@ -114,17 +131,23 @@ export function ExercisePicker({
     });
   }, [exercises, morphotype]);
 
+  // Pre-compute normalized names once (not on every keystroke)
+  const normalizedExercises = useMemo(() => {
+    return exercisesWithScores.map((item) => ({
+      ...item,
+      normalizedName: normalize(item.exercise.nameFr),
+    }));
+  }, [exercisesWithScores]);
+
   const filteredExercises = useMemo(() => {
-    const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const normalizedSearch = normalize(search);
-    let filtered = exercisesWithScores.filter(({ exercise }) => {
-      const matchesSearch = normalize(exercise.nameFr).includes(normalizedSearch);
+    const normalizedSearch = normalize(debouncedSearch);
+    let filtered = normalizedExercises.filter(({ exercise, normalizedName }) => {
+      const matchesSearch = !normalizedSearch || normalizedName.includes(normalizedSearch);
       const matchesMuscle = !selectedMuscle || exercise.muscleGroup === selectedMuscle;
 
       let matchesSubcategory = true;
       if (selectedSubcategory) {
-        const exerciseSubcategory = getExerciseSubcategory(exercise.primaryMuscles);
-        matchesSubcategory = exerciseSubcategory === selectedSubcategory;
+        matchesSubcategory = getExerciseSubcategory(exercise.primaryMuscles) === selectedSubcategory;
       }
 
       return matchesSearch && matchesMuscle && matchesSubcategory;
@@ -135,12 +158,13 @@ export function ExercisePicker({
     }
 
     return filtered;
-  }, [exercisesWithScores, search, selectedMuscle, selectedSubcategory, sortByScore]);
+  }, [normalizedExercises, debouncedSearch, selectedMuscle, selectedSubcategory, sortByScore]);
 
   const handleMuscleSelect = (muscle: string | null) => {
     triggerHaptic('light');
     setSelectedMuscle(muscle);
     setSelectedSubcategory(null);
+    setVisibleCount(50);
   };
 
   return (
@@ -185,7 +209,7 @@ export function ExercisePicker({
             type="text"
             placeholder="Rechercher..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             autoFocus
             style={{
               flex: 1,
@@ -242,6 +266,7 @@ export function ExercisePicker({
               onClick={() => {
                 triggerHaptic('light');
                 setSelectedSubcategory(null);
+                setVisibleCount(50);
               }}
               sx={{
                 cursor: 'pointer',
@@ -259,6 +284,7 @@ export function ExercisePicker({
                 onClick={() => {
                   triggerHaptic('light');
                   setSelectedSubcategory(sub);
+                  setVisibleCount(50);
                 }}
                 sx={{
                   cursor: 'pointer',
@@ -303,7 +329,7 @@ export function ExercisePicker({
       {/* Exercise List */}
       <Box sx={{ flex: 1, overflow: 'auto', px: 2, py: 1 }}>
         <Stack spacing={1}>
-          {filteredExercises.map(({ exercise, score }) => (
+          {filteredExercises.slice(0, visibleCount).map(({ exercise, score }) => (
             <Box
               key={exercise.id}
               onClick={() => {
@@ -370,6 +396,22 @@ export function ExercisePicker({
               <ChevronRight sx={{ fontSize: 20, color: 'text.disabled', opacity: 0.5 }} />
             </Box>
           ))}
+          {filteredExercises.length > visibleCount && (
+            <Typography
+              onClick={() => setVisibleCount((c) => c + 50)}
+              sx={{
+                textAlign: 'center',
+                py: 1.5,
+                fontSize: '0.85rem',
+                fontWeight: 500,
+                color: 'primary.main',
+                cursor: 'pointer',
+                '&:active': { opacity: 0.5 },
+              }}
+            >
+              Voir plus ({filteredExercises.length - visibleCount} restants)
+            </Typography>
+          )}
         </Stack>
       </Box>
 

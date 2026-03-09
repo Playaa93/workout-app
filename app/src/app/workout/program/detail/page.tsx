@@ -7,6 +7,7 @@ import { useQuery } from '@powersync/react';
 import { useTemplateExercises } from '@/powersync/queries/workout-queries';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { parseJsonArray } from '@/powersync/helpers';
+import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
@@ -130,7 +131,7 @@ function ProgramDetailContent() {
           )}
           <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
             {template.targetMuscles.map((m) => (
-              <Chip key={m} label={m} size="small" sx={{ height: 24, fontSize: '0.7rem' }} />
+              <Chip key={m} label={MUSCLE_LABELS[m] || m} size="small" sx={{ height: 24, fontSize: '0.7rem' }} />
             ))}
           </Stack>
           {template.estimatedDuration && (
