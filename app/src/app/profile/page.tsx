@@ -483,7 +483,7 @@ function StatsTab({ stats, achievements, morphoProfile }: { stats: StatsData | n
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
           <StatCard icon="🏋️" label="Entraînements" value={stats.totalWorkouts} />
           <StatCard icon="🍎" label="Repas loggés" value={stats.totalFoodEntries} />
-          <StatCard icon="📏" label="Mensurations" value={stats.totalMeasurements} />
+          <StatCard icon="📏" label="Mensurations" value={stats.totalMeasurements} href="/measurements" />
           <StatCard icon="🏆" label="Records (PR)" value={stats.totalPRs} />
           <StatCard icon="🐉" label="Boss vaincus" value={stats.bossFightsWon} />
           <StatCard icon="⭐" label="Succès" value={`${unlockedCount}/${totalCount}`} />
@@ -524,16 +524,26 @@ function StatsTab({ stats, achievements, morphoProfile }: { stats: StatsData | n
   );
 }
 
-function StatCard({ icon, label, value }: { icon: string; label: string; value: number | string }) {
+function StatCard({ icon, label, value, href }: { icon: string; label: string; value: number | string; href?: string }) {
+  const content = (
+    <CardContent sx={{ py: 2 }}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+        <Typography fontSize="1.25rem">{icon}</Typography>
+        <Typography variant="caption" color="text.secondary">{label}</Typography>
+      </Stack>
+      <Typography variant="h4" fontWeight={700}>{value}</Typography>
+    </CardContent>
+  );
+
   return (
     <Card>
-      <CardContent sx={{ py: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-          <Typography fontSize="1.25rem">{icon}</Typography>
-          <Typography variant="caption" color="text.secondary">{label}</Typography>
-        </Stack>
-        <Typography variant="h4" fontWeight={700}>{value}</Typography>
-      </CardContent>
+      {href ? (
+        <CardActionArea component={Link} href={href}>
+          {content}
+        </CardActionArea>
+      ) : (
+        content
+      )}
     </Card>
   );
 }
