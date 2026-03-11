@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useCallback } from 'react';
+import { alpha } from '@mui/material/styles';
 import type { Exercise } from '@/app/workout/types';
 import type { MorphotypeResult } from '@/app/morphology/types';
 import {
@@ -12,13 +13,12 @@ import { MorphoScoreBadge } from '@/components/workout/MorphoTipsPanel';
 import ExerciseDetailModal from '@/components/workout/ExerciseDetailModal';
 import { triggerHaptic } from '@/lib/haptic';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
+import { GOLD, W, tc, card, surfaceBg } from '@/lib/design-tokens';
+import { useDark } from '@/hooks/useDark';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
-import Close from '@mui/icons-material/Close';
-import Search from '@mui/icons-material/Search';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import InfoOutlined from '@mui/icons-material/InfoOutlined';
+import { X, MagnifyingGlass, CaretRight, Info } from '@phosphor-icons/react';
 
 // Mapping primary muscles to simplified subcategory names
 const MUSCLE_TO_SUBCATEGORY: Record<string, string> = {
@@ -84,6 +84,8 @@ export function ExercisePicker({
   onSelect: (exercise: Exercise) => void;
   onClose: () => void;
 }) {
+  const d = useDark();
+
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
@@ -168,7 +170,7 @@ export function ExercisePicker({
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: surfaceBg(d) }}>
       {/* Header */}
       <Box sx={{ pt: 1.5, pb: 1, px: 2 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -179,13 +181,13 @@ export function ExercisePicker({
               p: 0.5,
               display: 'flex',
               alignItems: 'center',
-              color: 'text.secondary',
+              color: tc.m(d),
               '&:active': { opacity: 0.5 },
             }}
           >
-            <Close sx={{ fontSize: 24 }} />
+            <X size={24} weight={W} />
           </Box>
-          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(d) }}>
             Exercices
           </Typography>
           <Box sx={{ width: 32 }} />
@@ -198,13 +200,20 @@ export function ExercisePicker({
           sx={{
             display: 'flex',
             alignItems: 'center',
-            bgcolor: 'action.hover',
+            bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.04),
             borderRadius: 2,
             px: 1.5,
             py: 1,
+            border: '1.5px solid transparent',
+            transition: 'border-color 0.2s',
+            '&:focus-within': {
+              borderColor: GOLD,
+            },
           }}
         >
-          <Search sx={{ fontSize: 20, color: 'text.disabled', mr: 1 }} />
+          <Box sx={{ display: 'flex', mr: 1, color: tc.f(d) }}>
+            <MagnifyingGlass size={20} weight={W} />
+          </Box>
           <input
             type="text"
             placeholder="Rechercher..."
@@ -232,7 +241,7 @@ export function ExercisePicker({
               cursor: 'pointer',
               fontSize: '0.9rem',
               fontWeight: !selectedMuscle ? 600 : 400,
-              color: !selectedMuscle ? 'text.primary' : 'text.disabled',
+              color: !selectedMuscle ? tc.h(d) : tc.f(d),
               whiteSpace: 'nowrap',
               '&:active': { opacity: 0.5 },
             }}
@@ -247,7 +256,7 @@ export function ExercisePicker({
                 cursor: 'pointer',
                 fontSize: '0.9rem',
                 fontWeight: selectedMuscle === muscle ? 600 : 400,
-                color: selectedMuscle === muscle ? 'text.primary' : 'text.disabled',
+                color: selectedMuscle === muscle ? tc.h(d) : tc.f(d),
                 whiteSpace: 'nowrap',
                 '&:active': { opacity: 0.5 },
               }}
@@ -272,7 +281,7 @@ export function ExercisePicker({
                 cursor: 'pointer',
                 fontSize: '0.8rem',
                 fontWeight: !selectedSubcategory ? 600 : 400,
-                color: !selectedSubcategory ? 'primary.main' : 'text.disabled',
+                color: !selectedSubcategory ? GOLD : tc.f(d),
                 whiteSpace: 'nowrap',
               }}
             >
@@ -290,7 +299,7 @@ export function ExercisePicker({
                   cursor: 'pointer',
                   fontSize: '0.8rem',
                   fontWeight: selectedSubcategory === sub ? 600 : 400,
-                  color: selectedSubcategory === sub ? 'primary.main' : 'text.disabled',
+                  color: selectedSubcategory === sub ? GOLD : tc.f(d),
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -302,9 +311,9 @@ export function ExercisePicker({
       )}
 
       {/* Count + Sort */}
-      <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ px: 2, py: 1, borderBottom: '1px solid', borderColor: d ? alpha('#ffffff', 0.08) : alpha('#000000', 0.06) }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography variant="caption" color="text.disabled">
+          <Typography variant="caption" sx={{ color: tc.f(d) }}>
             {filteredExercises.length} exercices
           </Typography>
           {morphotype && (
@@ -316,7 +325,7 @@ export function ExercisePicker({
               sx={{
                 cursor: 'pointer',
                 fontSize: '0.75rem',
-                color: sortByScore ? 'primary.main' : 'text.disabled',
+                color: sortByScore ? GOLD : tc.f(d),
                 fontWeight: sortByScore ? 600 : 400,
               }}
             >
@@ -337,16 +346,15 @@ export function ExercisePicker({
                 onSelect(exercise);
               }}
               sx={{
+                ...card(d),
                 px: 2,
                 py: 1.5,
                 cursor: 'pointer',
-                borderRadius: 2,
-                bgcolor: 'background.paper',
                 display: 'flex',
                 alignItems: 'center',
                 transition: 'all 0.15s ease',
                 '&:active': {
-                  bgcolor: 'action.hover',
+                  bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.04),
                   transform: 'scale(0.98)',
                 },
               }}
@@ -358,6 +366,7 @@ export function ExercisePicker({
                   sx={{
                     fontWeight: 500,
                     fontSize: '0.95rem',
+                    color: tc.h(d),
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -368,7 +377,7 @@ export function ExercisePicker({
                 <Typography
                   sx={{
                     fontSize: '0.8rem',
-                    color: 'text.disabled',
+                    color: tc.f(d),
                     mt: 0.25,
                   }}
                 >
@@ -386,14 +395,16 @@ export function ExercisePicker({
                   p: 0.75,
                   mr: 0.5,
                   borderRadius: 1,
-                  color: 'text.disabled',
-                  '&:active': { bgcolor: 'action.hover' },
+                  color: tc.f(d),
+                  '&:active': { bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.05) },
                 }}
               >
-                <InfoOutlined sx={{ fontSize: 18 }} />
+                <Info size={18} weight={W} />
               </Box>
 
-              <ChevronRight sx={{ fontSize: 20, color: 'text.disabled', opacity: 0.5 }} />
+              <Box sx={{ color: tc.f(d), opacity: 0.5, display: 'flex' }}>
+                <CaretRight size={20} weight={W} />
+              </Box>
             </Box>
           ))}
           {filteredExercises.length > visibleCount && (
@@ -404,7 +415,7 @@ export function ExercisePicker({
                 py: 1.5,
                 fontSize: '0.85rem',
                 fontWeight: 500,
-                color: 'primary.main',
+                color: GOLD,
                 cursor: 'pointer',
                 '&:active': { opacity: 0.5 },
               }}

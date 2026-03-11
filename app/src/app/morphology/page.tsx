@@ -11,13 +11,14 @@ import { useMorphoProfile } from '@/powersync/queries/morphology-queries';
 import { parseJson, parseJsonArray } from '@/powersync/helpers';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
-import ArrowBack from '@mui/icons-material/ArrowBack';
+import { ArrowLeft } from '@phosphor-icons/react';
 import { triggerHaptic } from '@/lib/haptic';
 import BottomNav from '@/components/BottomNav';
+import { GOLD, GOLD_CONTRAST, W, tc, card, surfaceBg } from '@/lib/design-tokens';
+import { useDark } from '@/hooks/useDark';
+import FullScreenLoader from '@/components/FullScreenLoader';
 
 type ViewState = 'intro' | 'questionnaire' | 'results';
 
@@ -25,17 +26,14 @@ export default function MorphologyPage() {
   const { userId, loading: authLoading } = useAuth();
 
   if (authLoading || !userId) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
 
   return <MorphologyContent />;
 }
 
 function MorphologyContent() {
+  const d = useDark();
   const { data: profileRows, isLoading: profileLoading } = useMorphoProfile();
   const [view, setView] = useState<ViewState | null>(null);
   const [result, setResult] = useState<MorphotypeResult | null>(null);
@@ -115,7 +113,7 @@ function MorphologyContent() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
       {/* Header - minimal */}
       <Box sx={{ pt: 1.5, pb: 1, px: 2 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -127,14 +125,14 @@ function MorphologyContent() {
               p: 0.5,
               display: 'flex',
               alignItems: 'center',
-              color: 'text.secondary',
+              color: tc.m(d),
               textDecoration: 'none',
               '&:active': { opacity: 0.5 },
             }}
           >
-            <ArrowBack sx={{ fontSize: 24 }} />
+            <ArrowLeft size={24} weight={W} />
           </Box>
-          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(d) }}>
             Analyse Morphologique
           </Typography>
           <Box sx={{ width: 32 }} />
@@ -146,7 +144,7 @@ function MorphologyContent() {
         <Box sx={{ width: '100%', maxWidth: 480, mx: 'auto' }}>
         {activeView === null && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-            <CircularProgress />
+            <CircularProgress sx={{ color: GOLD }} />
           </Box>
         )}
 
@@ -169,14 +167,15 @@ function MorphologyContent() {
 }
 
 function IntroView({ onStart }: { onStart: () => void }) {
+  const d = useDark();
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', py: 4 }}>
       <Typography variant="h1" sx={{ mb: 3, fontSize: '4rem' }}>🧬</Typography>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Analyse Morpho-Anatomique</Typography>
-      <Typography color="text.secondary" sx={{ mb: 4, maxWidth: 360, lineHeight: 1.7 }}>
-        Basé sur les travaux de <strong style={{ color: 'inherit' }}>Delavier</strong>,{' '}
-        <strong style={{ color: 'inherit' }}>Gundill</strong> et{' '}
-        <strong style={{ color: 'inherit' }}>Rudy Coia</strong>, ce questionnaire analyse tes
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 2, color: tc.h(d) }}>Analyse Morpho-Anatomique</Typography>
+      <Typography sx={{ mb: 4, maxWidth: 360, lineHeight: 1.7, color: tc.m(d) }}>
+        Basé sur les travaux de <strong style={{ color: tc.h(d) }}>Delavier</strong>,{' '}
+        <strong style={{ color: tc.h(d) }}>Gundill</strong> et{' '}
+        <strong style={{ color: tc.h(d) }}>Rudy Coia</strong>, ce questionnaire analyse tes
         proportions et insertions musculaires pour des recommandations vraiment personnalisées.
       </Typography>
 
@@ -197,8 +196,8 @@ function IntroView({ onStart }: { onStart: () => void }) {
           width: '100%',
           py: 1.5,
           textAlign: 'center',
-          bgcolor: 'text.primary',
-          color: 'background.default',
+          bgcolor: GOLD,
+          color: GOLD_CONTRAST,
           borderRadius: 2,
           fontWeight: 600,
           cursor: 'pointer',
@@ -220,13 +219,12 @@ function InfoCard({
   title: string;
   description: string;
 }) {
+  const d = useDark();
   return (
-    <Card>
-      <CardContent sx={{ py: 2, '&:last-child': { pb: 2 }, textAlign: 'center' }}>
-        <Typography variant="h4" sx={{ mb: 0.5 }}>{emoji}</Typography>
-        <Typography variant="body1" fontWeight={600}>{title}</Typography>
-        <Typography variant="body2" color="text.secondary">{description}</Typography>
-      </CardContent>
-    </Card>
+    <Box sx={{ ...card(d), p: 2, textAlign: 'center' }}>
+      <Typography variant="h4" sx={{ mb: 0.5 }}>{emoji}</Typography>
+      <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(d) }}>{title}</Typography>
+      <Typography variant="body2" sx={{ color: tc.m(d) }}>{description}</Typography>
+    </Box>
   );
 }

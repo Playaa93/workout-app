@@ -2,11 +2,13 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDark } from '@/hooks/useDark';
+import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, goldBtnSx, goldOutlinedBtnSx } from '@/lib/design-tokens';
+import FullScreenLoader from '@/components/FullScreenLoader';
+import { alpha } from '@mui/material/styles';
+import { ArrowLeft, Check, Barbell } from '@phosphor-icons/react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -16,10 +18,6 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Slider from '@mui/material/Slider';
 import CircularProgress from '@mui/material/CircularProgress';
-import Divider from '@mui/material/Divider';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import Check from '@mui/icons-material/Check';
-import FitnessCenter from '@mui/icons-material/FitnessCenter';
 import {
   generateProgram,
   saveProgramAsTemplates,
@@ -43,6 +41,7 @@ const STEPS = ['Objectif', 'Approche', 'Split', 'Fréquence', 'Preview'];
 
 export default function ProgramGeneratorPage() {
   const router = useRouter();
+  const d = useDark();
   const [activeStep, setActiveStep] = useState(0);
   const [config, setConfig] = useState<ProgramConfig>({
     goal: 'hypertrophy',
@@ -95,20 +94,37 @@ export default function ProgramGeneratorPage() {
   const isNextDisabled = activeStep === 3 && config.daysPerWeek < SPLIT_MIN_DAYS[config.split];
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', pb: 12 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(d), pb: 12 }}>
       {/* Header */}
-      <Paper elevation={0} sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{
+        px: 2,
+        py: 1.5,
+        borderBottom: '1px solid',
+        borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+        bgcolor: panelBg(d),
+      }}>
         <Stack direction="row" alignItems="center" spacing={2}>
           <IconButton onClick={handleBack}>
-            <ArrowBack />
+            <ArrowLeft weight={W} size={22} color={tc.h(d)} />
           </IconButton>
-          <Typography variant="h6" fontWeight={600}>Générer un programme</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: tc.h(d) }}>Générer un programme</Typography>
         </Stack>
-      </Paper>
+      </Box>
 
       {/* Stepper */}
       <Box sx={{ px: 2, py: 3 }}>
-        <Stepper activeStep={activeStep} alternativeLabel>
+        <Stepper
+          activeStep={activeStep}
+          alternativeLabel
+          sx={{
+            '& .MuiStepIcon-root.Mui-active': { color: GOLD },
+            '& .MuiStepIcon-root.Mui-completed': { color: GOLD },
+            '& .MuiStepLabel-label': { color: tc.f(d), fontSize: '0.75rem' },
+            '& .MuiStepLabel-label.Mui-active': { color: GOLD },
+            '& .MuiStepLabel-label.Mui-completed': { color: tc.m(d) },
+            '& .MuiStepConnector-line': { borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.1) },
+          }}
+        >
           {STEPS.map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
@@ -149,20 +165,26 @@ export default function ProgramGeneratorPage() {
       </Box>
 
       {/* Navigation */}
-      <Paper
-        elevation={3}
+      <Box
         sx={{
           position: 'fixed',
           bottom: 0,
           left: 0,
           right: 0,
           p: 2,
-          borderTop: 1,
-          borderColor: 'divider',
+          borderTop: '1px solid',
+          borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+          bgcolor: panelBg(d),
+          zIndex: 10,
         }}
       >
         <Stack direction="row" spacing={2}>
-          <Button variant="outlined" fullWidth onClick={handleBack}>
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={handleBack}
+            sx={{ ...goldOutlinedBtnSx, color: tc.m(d) }}
+          >
             {activeStep === 0 ? 'Annuler' : 'Retour'}
           </Button>
           <Button
@@ -170,13 +192,10 @@ export default function ProgramGeneratorPage() {
             fullWidth
             onClick={handleNext}
             disabled={isNextDisabled || isGenerating || isSaving}
-            sx={{
-              background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
-              '&:hover': { background: 'linear-gradient(135deg, #7f67be 0%, #bb86fc 100%)' },
-            }}
+            sx={goldBtnSx}
           >
             {isGenerating ? (
-              <CircularProgress size={24} sx={{ color: 'white' }} />
+              <CircularProgress size={24} sx={{ color: GOLD_CONTRAST }} />
             ) : isSaving ? (
               'Sauvegarde...'
             ) : activeStep === STEPS.length - 1 ? (
@@ -188,13 +207,14 @@ export default function ProgramGeneratorPage() {
             )}
           </Button>
         </Stack>
-      </Paper>
+      </Box>
     </Box>
   );
 }
 
 // Step 1: Goal Selection
 function GoalStep({ selected, onSelect }: { selected: ProgramGoal; onSelect: (goal: ProgramGoal) => void }) {
+  const d = useDark();
   const goals: ProgramGoal[] = ['strength', 'hypertrophy', 'metabolic', 'powerbuilding', 'athletic', 'recomposition'];
   const icons: Record<ProgramGoal, string> = {
     strength: '🏋️',
@@ -207,35 +227,36 @@ function GoalStep({ selected, onSelect }: { selected: ProgramGoal; onSelect: (go
 
   return (
     <Stack spacing={1}>
-      <Typography variant="subtitle1" textAlign="center" fontWeight={600} sx={{ mb: 1 }}>
+      <Typography variant="subtitle1" textAlign="center" sx={{ fontWeight: 600, mb: 1, color: tc.h(d) }}>
         Objectif
       </Typography>
       {goals.map((goal) => (
-        <Card
+        <Box
           key={goal}
           onClick={() => onSelect(goal)}
           sx={{
+            ...card(d),
             cursor: 'pointer',
-            border: 2,
-            borderColor: selected === goal ? 'primary.main' : 'transparent',
+            border: '2px solid',
+            borderColor: selected === goal ? GOLD : (d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08)),
             transition: 'all 0.2s',
           }}
         >
-          <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+          <Box sx={{ py: 1, px: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1.5}>
               <Typography fontSize="1.2rem">{icons[goal]}</Typography>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="body1" fontWeight={500}>
+                <Typography variant="body1" sx={{ fontWeight: 500, color: tc.h(d) }}>
                   {GOAL_LABELS[goal]}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: tc.m(d) }}>
                   {GOAL_DESCRIPTIONS[goal]}
                 </Typography>
               </Box>
-              {selected === goal && <Check color="primary" fontSize="small" />}
+              {selected === goal && <Check weight="bold" size={18} color={GOLD} />}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </Box>
       ))}
     </Stack>
   );
@@ -243,6 +264,7 @@ function GoalStep({ selected, onSelect }: { selected: ProgramGoal; onSelect: (go
 
 // Step 2: Approach Selection
 function ApproachStep({ selected, onSelect }: { selected: ProgramApproach; onSelect: (approach: ProgramApproach) => void }) {
+  const d = useDark();
   const approaches: ProgramApproach[] = ['leverage_strengths', 'fix_weaknesses', 'balanced'];
   const icons: Record<ProgramApproach, string> = {
     leverage_strengths: '🚀',
@@ -252,35 +274,36 @@ function ApproachStep({ selected, onSelect }: { selected: ProgramApproach; onSel
 
   return (
     <Stack spacing={1}>
-      <Typography variant="subtitle1" textAlign="center" fontWeight={600} sx={{ mb: 1 }}>
+      <Typography variant="subtitle1" textAlign="center" sx={{ fontWeight: 600, mb: 1, color: tc.h(d) }}>
         Approche morpho
       </Typography>
       {approaches.map((approach) => (
-        <Card
+        <Box
           key={approach}
           onClick={() => onSelect(approach)}
           sx={{
+            ...card(d),
             cursor: 'pointer',
-            border: 2,
-            borderColor: selected === approach ? 'primary.main' : 'transparent',
+            border: '2px solid',
+            borderColor: selected === approach ? GOLD : (d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08)),
             transition: 'all 0.2s',
           }}
         >
-          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+          <Box sx={{ py: 1.5, px: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1.5}>
               <Typography fontSize="1.5rem">{icons[approach]}</Typography>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="body1" fontWeight={500}>
+                <Typography variant="body1" sx={{ fontWeight: 500, color: tc.h(d) }}>
                   {APPROACH_LABELS[approach]}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: tc.m(d) }}>
                   {APPROACH_DESCRIPTIONS[approach]}
                 </Typography>
               </Box>
-              {selected === approach && <Check color="primary" fontSize="small" />}
+              {selected === approach && <Check weight="bold" size={18} color={GOLD} />}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </Box>
       ))}
     </Stack>
   );
@@ -288,6 +311,7 @@ function ApproachStep({ selected, onSelect }: { selected: ProgramApproach; onSel
 
 // Step 3: Split Selection
 function SplitStep({ selected, onSelect }: { selected: ProgramSplit; onSelect: (split: ProgramSplit) => void }) {
+  const d = useDark();
   const splits: ProgramSplit[] = ['full_body', 'upper_lower', 'ppl', 'bro_split'];
   const icons: Record<ProgramSplit, string> = {
     full_body: '🔄',
@@ -298,35 +322,36 @@ function SplitStep({ selected, onSelect }: { selected: ProgramSplit; onSelect: (
 
   return (
     <Stack spacing={1}>
-      <Typography variant="subtitle1" textAlign="center" fontWeight={600} sx={{ mb: 1 }}>
+      <Typography variant="subtitle1" textAlign="center" sx={{ fontWeight: 600, mb: 1, color: tc.h(d) }}>
         Split
       </Typography>
       {splits.map((split) => (
-        <Card
+        <Box
           key={split}
           onClick={() => onSelect(split)}
           sx={{
+            ...card(d),
             cursor: 'pointer',
-            border: 2,
-            borderColor: selected === split ? 'primary.main' : 'transparent',
+            border: '2px solid',
+            borderColor: selected === split ? GOLD : (d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08)),
             transition: 'all 0.2s',
           }}
         >
-          <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+          <Box sx={{ py: 1, px: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1.5}>
               <Typography fontSize="1.2rem">{icons[split]}</Typography>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="body1" fontWeight={500}>
+                <Typography variant="body1" sx={{ fontWeight: 500, color: tc.h(d) }}>
                   {SPLIT_LABELS[split]}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: tc.m(d) }}>
                   min {SPLIT_MIN_DAYS[split]} jours
                 </Typography>
               </Box>
-              {selected === split && <Check color="primary" fontSize="small" />}
+              {selected === split && <Check weight="bold" size={18} color={GOLD} />}
             </Stack>
-          </CardContent>
-        </Card>
+          </Box>
+        </Box>
       ))}
     </Stack>
   );
@@ -340,96 +365,104 @@ function FrequencyStep({
   config: ProgramConfig;
   onChange: (days: number) => void;
 }) {
+  const d = useDark();
   const minDays = SPLIT_MIN_DAYS[config.split];
   const maxDays = 7;
 
   return (
     <Stack spacing={2}>
-      <Typography variant="subtitle1" textAlign="center" fontWeight={600}>
+      <Typography variant="subtitle1" textAlign="center" sx={{ fontWeight: 600, color: tc.h(d) }}>
         Fréquence
       </Typography>
 
-      <Card>
-        <CardContent>
-          <Typography variant="h2" textAlign="center" sx={{ mb: 1 }}>
-            {config.daysPerWeek}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mb: 2 }}>
-            jours / semaine
-          </Typography>
-          <Slider
-            value={config.daysPerWeek}
-            onChange={(_, value) => onChange(value as number)}
-            min={minDays}
-            max={maxDays}
-            step={1}
-            marks={Array.from(
-              { length: maxDays - minDays + 1 },
-              (_, i) => ({
-                value: minDays + i,
-                label: `${minDays + i}`,
-              })
-            )}
-            sx={{ px: 2 }}
-          />
-        </CardContent>
-      </Card>
+      <Box sx={card(d, { p: 3 })}>
+        <Typography variant="h2" textAlign="center" sx={{ mb: 1, color: GOLD }}>
+          {config.daysPerWeek}
+        </Typography>
+        <Typography variant="body2" textAlign="center" sx={{ mb: 2, color: tc.m(d) }}>
+          jours / semaine
+        </Typography>
+        <Slider
+          value={config.daysPerWeek}
+          onChange={(_, value) => onChange(value as number)}
+          min={minDays}
+          max={maxDays}
+          step={1}
+          marks={Array.from(
+            { length: maxDays - minDays + 1 },
+            (_, i) => ({
+              value: minDays + i,
+              label: `${minDays + i}`,
+            })
+          )}
+          sx={{
+            px: 2,
+            color: GOLD,
+            '& .MuiSlider-markLabel': { color: tc.f(d) },
+            '& .MuiSlider-thumb': { bgcolor: GOLD },
+            '& .MuiSlider-track': { bgcolor: GOLD },
+            '& .MuiSlider-rail': { bgcolor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12) },
+          }}
+        />
+      </Box>
     </Stack>
   );
 }
 
 // Step 5: Preview
 function PreviewStep({ program }: { program: GeneratedProgram }) {
+  const d = useDark();
+
   return (
     <Stack spacing={2}>
-      <Typography variant="h6" textAlign="center" sx={{ mb: 1 }}>
+      <Typography variant="h6" textAlign="center" sx={{ mb: 1, color: tc.h(d) }}>
         Ton programme personnalisé
       </Typography>
 
       <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap" sx={{ gap: 0.5 }}>
-        <Chip label={GOAL_LABELS[program.config.goal]} color="primary" variant="outlined" size="small" />
-        <Chip label={APPROACH_LABELS[program.config.approach]} color="secondary" variant="outlined" size="small" />
-        <Chip label={SPLIT_LABELS[program.config.split]} variant="outlined" size="small" />
-        <Chip label={`${program.config.daysPerWeek}j/sem`} variant="outlined" size="small" />
+        <Chip label={GOAL_LABELS[program.config.goal]} variant="outlined" size="small" sx={{ color: GOLD, borderColor: alpha(GOLD, 0.4) }} />
+        <Chip label={APPROACH_LABELS[program.config.approach]} variant="outlined" size="small" sx={{ color: tc.m(d), borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12) }} />
+        <Chip label={SPLIT_LABELS[program.config.split]} variant="outlined" size="small" sx={{ color: tc.m(d), borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12) }} />
+        <Chip label={`${program.config.daysPerWeek}j/sem`} variant="outlined" size="small" sx={{ color: tc.m(d), borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12) }} />
       </Stack>
 
       {program.workouts.map((workout, idx) => (
-        <Card key={idx}>
-          <CardContent>
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-              <FitnessCenter color="primary" />
-              <Typography variant="subtitle1" fontWeight={600}>
-                {workout.name}
-              </Typography>
-            </Stack>
+        <Box key={idx} sx={card(d, { p: 2 })}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+            <Barbell weight={W} size={22} color={GOLD} />
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(d) }}>
+              {workout.name}
+            </Typography>
+          </Stack>
 
-            <Stack spacing={1.5}>
-              {workout.exercises.map((ex, exIdx) => (
-                <Box key={exIdx}>
-                  <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    <Stack direction="row" alignItems="center" spacing={1.5}>
-                      <MorphoScoreBadge score={ex.morphoScore} size="small" />
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
-                          {ex.exerciseName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {ex.sets} × {ex.reps} • {ex.restSeconds}s repos
-                        </Typography>
-                      </Box>
-                    </Stack>
+          <Stack spacing={1.5}>
+            {workout.exercises.map((ex, exIdx) => (
+              <Box key={exIdx}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <MorphoScoreBadge score={ex.morphoScore} size="small" />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: tc.h(d) }}>
+                        {ex.exerciseName}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: tc.m(d) }}>
+                        {ex.sets} × {ex.reps} • {ex.restSeconds}s repos
+                      </Typography>
+                    </Box>
                   </Stack>
-                  {ex.notes.length > 0 && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 5, mt: 0.5, fontStyle: 'italic' }}>
-                      {ex.notes[0]}
-                    </Typography>
-                  )}
-                  {exIdx < workout.exercises.length - 1 && <Divider sx={{ mt: 1.5 }} />}
-                </Box>
-              ))}
-            </Stack>
-          </CardContent>
-        </Card>
+                </Stack>
+                {ex.notes.length > 0 && (
+                  <Typography variant="caption" sx={{ display: 'block', ml: 5, mt: 0.5, fontStyle: 'italic', color: tc.f(d) }}>
+                    {ex.notes[0]}
+                  </Typography>
+                )}
+                {exIdx < workout.exercises.length - 1 && (
+                  <Box sx={{ mt: 1.5, borderTop: '1px solid', borderColor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.06) }} />
+                )}
+              </Box>
+            ))}
+          </Stack>
+        </Box>
       ))}
     </Stack>
   );

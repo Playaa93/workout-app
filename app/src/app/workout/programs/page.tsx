@@ -2,17 +2,19 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDark } from '@/hooks/useDark';
 import Link from 'next/link';
 import type { WorkoutTemplate } from '../types';
 import { useAuth } from '@/powersync/auth-context';
 import { useTemplates, useAllTemplateExercises } from '@/powersync/queries/workout-queries';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { parseJsonArray } from '@/powersync/helpers';
+import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, goldBtnSx } from '@/lib/design-tokens';
+import FullScreenLoader from '@/components/FullScreenLoader';
+import { alpha } from '@mui/material/styles';
+import { ArrowLeft, Play, CaretDown, CaretUp, Trash, Plus } from '@phosphor-icons/react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -20,23 +22,12 @@ import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Skeleton from '@mui/material/Skeleton';
 import Collapse from '@mui/material/Collapse';
-import Divider from '@mui/material/Divider';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import PlayArrow from '@mui/icons-material/PlayArrow';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import Delete from '@mui/icons-material/Delete';
-import Add from '@mui/icons-material/Add';
 
 export default function ProgramsPage() {
   const { userId, loading: authLoading } = useAuth();
 
   if (authLoading || !userId) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
 
   return <ProgramsContent />;
@@ -44,6 +35,7 @@ export default function ProgramsPage() {
 
 function ProgramsContent() {
   const router = useRouter();
+  const d = useDark();
   const { data: templateRows, isLoading } = useTemplates();
   const { data: exerciseRows } = useAllTemplateExercises();
   const mutations = useWorkoutMutations();
@@ -99,25 +91,23 @@ function ProgramsContent() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
       {/* Header */}
-      <Paper
-        elevation={0}
+      <Box
         sx={{
           px: 2,
           py: 1.5,
-          borderBottom: 1,
-          borderColor: 'divider',
-          borderRadius: 0,
-          bgcolor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+          bgcolor: panelBg(d),
         }}
       >
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" alignItems="center" spacing={1.5}>
             <IconButton component={Link} href="/workout" size="small">
-              <ArrowBack />
+              <ArrowLeft weight={W} size={22} color={tc.h(d)} />
             </IconButton>
-            <Typography variant="subtitle1" fontWeight={600}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(d) }}>
               Programmes
             </Typography>
           </Stack>
@@ -125,42 +115,40 @@ function ProgramsContent() {
             component={Link}
             href="/workout/program"
             size="small"
-            color="primary"
-            sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', '&:hover': { bgcolor: 'primary.dark' } }}
+            sx={{ bgcolor: GOLD, color: GOLD_CONTRAST, '&:hover': { bgcolor: GOLD_LIGHT } }}
           >
-            <Add />
+            <Plus weight="bold" size={20} />
           </IconButton>
         </Stack>
-      </Paper>
+      </Box>
 
       {/* Content */}
       <Box sx={{ flex: 1, p: 2 }}>
         {isLoading ? (
           <Stack spacing={2}>
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} variant="rounded" height={180} sx={{ borderRadius: 2 }} />
+              <Skeleton key={i} variant="rounded" height={180} sx={{ borderRadius: '14px' }} />
             ))}
           </Stack>
         ) : templates.length === 0 ? (
-          <Card sx={{ textAlign: 'center', py: 8 }}>
-            <CardContent>
-              <Typography variant="h1" sx={{ mb: 2 }}>📋</Typography>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                Aucun programme
-              </Typography>
-              <Typography color="text.secondary" sx={{ mb: 3 }}>
-                Crée ton premier programme personnalisé basé sur ta morphologie
-              </Typography>
-              <Button
-                component={Link}
-                href="/workout/program"
-                variant="contained"
-                startIcon={<Add />}
-              >
-                Créer un programme
-              </Button>
-            </CardContent>
-          </Card>
+          <Box sx={{ ...card(d), textAlign: 'center', py: 8, px: 3 }}>
+            <Typography variant="h1" sx={{ mb: 2 }}>📋</Typography>
+            <Typography variant="h6" sx={{ mb: 1, color: tc.h(d) }}>
+              Aucun programme
+            </Typography>
+            <Typography sx={{ mb: 3, color: tc.m(d) }}>
+              Crée ton premier programme personnalisé basé sur ta morphologie
+            </Typography>
+            <Button
+              component={Link}
+              href="/workout/program"
+              variant="contained"
+              startIcon={<Plus weight="bold" size={18} />}
+              sx={goldBtnSx}
+            >
+              Créer un programme
+            </Button>
+          </Box>
         ) : (
           <Stack spacing={2}>
             {templates.map((template) => (
@@ -193,44 +181,66 @@ function ProgramCard({
   isStarting: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const d = useDark();
 
   const translateMuscle = (muscle: string) => MUSCLE_LABELS[muscle.toLowerCase()] || muscle;
 
   return (
-    <Card>
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+    <Box sx={card(d)}>
+      <Box sx={{ p: 2 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="subtitle1" fontWeight={600} noWrap>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(d) }} noWrap>
               {template.name}
             </Typography>
             {template.description && (
-              <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+              <Typography variant="caption" sx={{ color: tc.m(d), display: 'block' }} noWrap>
                 {template.description}
               </Typography>
             )}
           </Box>
-          <IconButton size="small" onClick={onDelete} sx={{ color: 'text.secondary', ml: 1 }}>
-            <Delete fontSize="small" />
+          <IconButton size="small" onClick={onDelete} sx={{ color: tc.f(d), ml: 1 }}>
+            <Trash weight={W} size={18} />
           </IconButton>
         </Stack>
 
         {/* Stats + Muscles inline */}
         <Stack direction="row" spacing={2} sx={{ mt: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{ color: tc.m(d) }}>
             {template.exercises.length} exos
           </Typography>
           {template.estimatedDuration && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: tc.m(d) }}>
               ~{template.estimatedDuration} min
             </Typography>
           )}
           <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
             {template.targetMuscles.slice(0, 3).map((muscle) => (
-              <Chip key={muscle} label={translateMuscle(muscle)} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+              <Chip
+                key={muscle}
+                label={translateMuscle(muscle)}
+                size="small"
+                variant="outlined"
+                sx={{
+                  height: 20,
+                  fontSize: '0.7rem',
+                  color: tc.m(d),
+                  borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12),
+                }}
+              />
             ))}
             {template.targetMuscles.length > 3 && (
-              <Chip label={`+${template.targetMuscles.length - 3}`} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+              <Chip
+                label={`+${template.targetMuscles.length - 3}`}
+                size="small"
+                variant="outlined"
+                sx={{
+                  height: 20,
+                  fontSize: '0.7rem',
+                  color: tc.m(d),
+                  borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12),
+                }}
+              />
             )}
           </Stack>
         </Stack>
@@ -240,26 +250,30 @@ function ProgramCard({
           <Button
             variant="contained"
             size="small"
-            startIcon={isStarting ? <CircularProgress size={14} color="inherit" /> : <PlayArrow fontSize="small" />}
+            startIcon={isStarting ? <CircularProgress size={14} color="inherit" /> : <Play weight="fill" size={16} />}
             onClick={onStart}
             disabled={isStarting}
-            sx={{ flex: 1, fontSize: '0.8rem' }}
+            sx={{
+              ...goldBtnSx,
+              flex: 1,
+              fontSize: '0.8rem',
+            }}
           >
             {isStarting ? '...' : 'Démarrer'}
           </Button>
           <IconButton
             size="small"
             onClick={() => setExpanded(!expanded)}
-            sx={{ border: 1, borderColor: 'divider' }}
+            sx={{ border: '1px solid', borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }}
           >
-            {expanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+            {expanded ? <CaretUp weight={W} size={18} color={tc.m(d)} /> : <CaretDown weight={W} size={18} color={tc.m(d)} />}
           </IconButton>
         </Stack>
-      </CardContent>
+      </Box>
 
       <Collapse in={expanded}>
-        <Divider />
-        <Box sx={{ px: 2, py: 1.5, bgcolor: 'action.hover' }}>
+        <Box sx={{ mx: 2, mb: 2, borderTop: '1px solid', borderColor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.06) }} />
+        <Box sx={{ px: 2, pb: 1.5, bgcolor: d ? alpha('#ffffff', 0.03) : alpha('#000000', 0.02), borderRadius: '0 0 14px 14px' }}>
           <Stack spacing={0.75}>
             {template.exercises.map((ex, i) => (
               <Stack key={i} direction="row" justifyContent="space-between" alignItems="center">
@@ -270,8 +284,8 @@ function ProgramCard({
                       width: 18,
                       height: 18,
                       borderRadius: '50%',
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
+                      bgcolor: GOLD,
+                      color: GOLD_CONTRAST,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -282,20 +296,26 @@ function ProgramCard({
                   >
                     {i + 1}
                   </Typography>
-                  <Typography variant="body2" noWrap sx={{ flex: 1 }}>
+                  <Typography variant="body2" noWrap sx={{ flex: 1, color: tc.h(d) }}>
                     {ex.exerciseName}
                   </Typography>
                 </Stack>
                 <Chip
                   label={`${ex.targetSets} × ${ex.targetReps}`}
                   size="small"
-                  sx={{ height: 18, fontSize: '0.65rem', ml: 1 }}
+                  sx={{
+                    height: 18,
+                    fontSize: '0.65rem',
+                    ml: 1,
+                    color: tc.m(d),
+                    bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
+                  }}
                 />
               </Stack>
             ))}
           </Stack>
         </Box>
       </Collapse>
-    </Card>
+    </Box>
   );
 }

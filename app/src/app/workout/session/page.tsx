@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useDark } from '@/hooks/useDark';
+import { alpha } from '@mui/material/styles';
 import type { ActiveSession, WorkoutSet, Exercise, MachineSettingEntry } from '../types';
 import { useAuth } from '@/powersync/auth-context';
 import { useSessionDetail, useSessionSets, useExercises, useExerciseNote, useMachineSetupById } from '@/powersync/queries/workout-queries';
@@ -9,15 +11,25 @@ import { parseJsonArray } from '@/powersync/helpers';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
 import type { CardioActivity } from '@/db/schema';
+import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, dialogPaperSx } from '@/lib/design-tokens';
+import FullScreenLoader from '@/components/FullScreenLoader';
+import {
+  ArrowLeft,
+  Trash,
+  DotsThreeVertical,
+  Trophy,
+  Barbell,
+  NoteBlank,
+  GearSix,
+  DownloadSimple,
+  FileXls,
+  BracketsCurly,
+  FilePdf,
+} from '@phosphor-icons/react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
-import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
-import CircularProgress from '@mui/material/CircularProgress';
-import Divider from '@mui/material/Divider';
 import TextField from '@mui/material/TextField';
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -29,19 +41,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import Delete from '@mui/icons-material/Delete';
-import MoreVert from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import EmojiEvents from '@mui/icons-material/EmojiEvents';
-import FitnessCenter from '@mui/icons-material/FitnessCenter';
-import EditNote from '@mui/icons-material/EditNote';
-import Settings from '@mui/icons-material/Settings';
-import FileDownload from '@mui/icons-material/FileDownload';
-import Description from '@mui/icons-material/Description';
-import DataObject from '@mui/icons-material/DataObject';
-import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import { downloadFile, fmtDateFR, fmtTimeFR, formatDuration, escapeHtml, writeExcelFile, openPrintableHtml } from '@/lib/export-utils';
 
 function formatRestTime(seconds: number): string {
@@ -49,6 +50,7 @@ function formatRestTime(seconds: number): string {
 }
 
 function SessionExportDrawer({ open, onClose, data }: { open: boolean; onClose: () => void; data: ActiveSession }) {
+  const d = useDark();
   const { session, sets } = data;
   const dateStr = fmtDateFR(session.startedAt);
   const slug = dateStr.replace(/\//g, '-');
@@ -136,11 +138,11 @@ function SessionExportDrawer({ open, onClose, data }: { open: boolean; onClose: 
   .stats { display: flex; gap: 24px; margin-bottom: 20px; }
   .stat { font-size: 13px; }
   .stat strong { font-size: 18px; display: block; }
-  h2 { font-size: 15px; margin: 16px 0 6px; border-bottom: 2px solid #6750a4; padding-bottom: 4px; }
+  h2 { font-size: 15px; margin: 16px 0 6px; border-bottom: 2px solid ${GOLD}; padding-bottom: 4px; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
   th { background: #f3f0ff; padding: 6px 8px; text-align: left; font-weight: 600; }
   td { padding: 5px 8px; border-bottom: 1px solid #e0e0e0; }
-  .pr { color: #ff9800; font-weight: 600; }
+  .pr { color: ${GOLD}; font-weight: 600; }
   .footer { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
   @media print { body { padding: 16px; } }
 </style>
@@ -179,26 +181,26 @@ ${session.notes ? `<p style="margin-top:12px;font-size:13px;"><strong>Notes :</s
       onClose={onClose}
       onOpen={() => {}}
       disableSwipeToOpen
-      PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}
+      PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(d) } }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
-        <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: 'action.disabled' }} />
+        <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12) }} />
       </Box>
       <Box sx={{ px: 1, pb: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1 }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1, color: tc.h(d) }}>
           Exporter cette séance
         </Typography>
         <ListItemButton onClick={exportExcel} sx={{ borderRadius: 2 }}>
-          <ListItemIcon sx={{ minWidth: 40 }}><Description sx={{ color: '#4caf50' }} /></ListItemIcon>
-          <ListItemText primary="Excel (.xlsx)" secondary="Fichier Excel avec colonnes formatées" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }} secondaryTypographyProps={{ fontSize: '0.75rem' }} />
+          <ListItemIcon sx={{ minWidth: 40 }}><FileXls size={22} weight={W} color="#4caf50" /></ListItemIcon>
+          <ListItemText primary="Excel (.xlsx)" secondary="Fichier Excel avec colonnes formatées" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }} secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }} />
         </ListItemButton>
         <ListItemButton onClick={exportJSON} sx={{ borderRadius: 2 }}>
-          <ListItemIcon sx={{ minWidth: 40 }}><DataObject sx={{ color: '#ff9800' }} /></ListItemIcon>
-          <ListItemText primary="JSON" secondary="Format brut pour traitement de données" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }} secondaryTypographyProps={{ fontSize: '0.75rem' }} />
+          <ListItemIcon sx={{ minWidth: 40 }}><BracketsCurly size={22} weight={W} color="#ff9800" /></ListItemIcon>
+          <ListItemText primary="JSON" secondary="Format brut pour traitement de données" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }} secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }} />
         </ListItemButton>
         <ListItemButton onClick={exportPDF} sx={{ borderRadius: 2 }}>
-          <ListItemIcon sx={{ minWidth: 40 }}><PictureAsPdf sx={{ color: '#f44336' }} /></ListItemIcon>
-          <ListItemText primary="PDF" secondary="Fiche détaillée imprimable" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }} secondaryTypographyProps={{ fontSize: '0.75rem' }} />
+          <ListItemIcon sx={{ minWidth: 40 }}><FilePdf size={22} weight={W} color="#f44336" /></ListItemIcon>
+          <ListItemText primary="PDF" secondary="Fiche détaillée imprimable" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }} secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }} />
         </ListItemButton>
       </Box>
     </SwipeableDrawer>
@@ -208,6 +210,7 @@ ${session.notes ? `<p style="margin-top:12px;font-size:13px;"><strong>Notes :</s
 function SessionDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const d = useDark();
   const sessionId = searchParams.get('id') ?? '';
   const mutations = useWorkoutMutations();
   const [exportOpen, setExportOpen] = useState(false);
@@ -280,17 +283,13 @@ function SessionDetailContent() {
   const loading = sessionLoading || setsLoading || exLoading;
 
   if (loading) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
 
   if (!data) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <Typography color="text.secondary">Séance introuvable</Typography>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(d) }}>
+        <Typography sx={{ color: tc.m(d) }}>Séance introuvable</Typography>
       </Box>
     );
   }
@@ -313,30 +312,43 @@ function SessionDetailContent() {
     else setsByExercise.set(set.exerciseId, [set]);
   });
 
+  const pillSx = (bg: string) => ({
+    display: 'inline-block',
+    bgcolor: alpha(bg, 0.15),
+    color: bg,
+    px: 1.5,
+    py: 0.5,
+    borderRadius: '4px',
+    fontWeight: 900,
+    fontSize: '0.75rem',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1,
+  });
+
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(d) }}>
       {/* Header */}
       <Box sx={{ px: 2, pt: 2, pb: 1 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
-            <IconButton onClick={() => router.back()} size="small">
-              <ArrowBack />
+            <IconButton onClick={() => router.back()} size="small" sx={{ color: tc.h(d) }}>
+              <ArrowLeft size={22} weight={W} />
             </IconButton>
             <Box>
-              <Typography variant="h6" fontWeight={700}>
+              <Typography variant="h6" fontWeight={700} sx={{ color: tc.h(d) }}>
                 {isCardio && activityInfo
                   ? `${activityInfo.emoji} ${activityInfo.label}`
                   : date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
                 }
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: tc.m(d) }}>
                 {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 {mins > 0 && ` · ${formatDuration(mins)}`}
               </Typography>
             </Box>
           </Stack>
-          <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} size="small">
-            <MoreVert />
+          <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} size="small" sx={{ color: tc.m(d) }}>
+            <DotsThreeVertical size={22} weight={W} />
           </IconButton>
           <Menu
             anchorEl={menuAnchor}
@@ -344,39 +356,57 @@ function SessionDetailContent() {
             onClose={() => setMenuAnchor(null)}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 180 } } }}
+            slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 180, bgcolor: panelBg(d) } } }}
           >
-            <MenuItem onClick={() => { setMenuAnchor(null); setExportOpen(true); }}>
-              <FileDownload sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
+            <MenuItem onClick={() => { setMenuAnchor(null); setExportOpen(true); }} sx={{ color: tc.h(d) }}>
+              <DownloadSimple size={18} weight={W} style={{ marginRight: 12, color: tc.m(d) }} />
               Exporter
             </MenuItem>
-            <MenuItem onClick={() => { setMenuAnchor(null); setDeleteOpen(true); }} sx={{ color: 'error.main' }}>
-              <Delete sx={{ fontSize: 18, mr: 1.5 }} />
+            <MenuItem onClick={() => { setMenuAnchor(null); setDeleteOpen(true); }} sx={{ color: '#ef5350' }}>
+              <Trash size={18} weight={W} style={{ marginRight: 12 }} />
               Supprimer
             </MenuItem>
           </Menu>
         </Stack>
 
-        {/* Stats bar */}
-        <Card sx={{ mb: 2 }}>
-          <Stack direction="row" divider={<Divider orientation="vertical" flexItem />}>
+        {/* Stats pills bar */}
+        <Box sx={card(d, { p: 2, mb: 2 })}>
+          <Stack direction="row" spacing={1.5} justifyContent="center">
             {isCardio ? (
               <>
-                <StatBox label="Distance" value={distanceM > 0 ? formatDistance(distanceM) : '—'} />
-                <StatBox label="Allure" value={session.avgPaceSecondsPerKm ? formatPace(session.avgPaceSecondsPerKm) : '—'} />
-                <StatBox label="kcal" value={session.caloriesBurned != null ? String(session.caloriesBurned) : '—'} />
+                <Box sx={{ textAlign: 'center' }}>
+                  <Box sx={pillSx(GOLD)}>{distanceM > 0 ? formatDistance(distanceM) : '—'}</Box>
+                  <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Distance</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Box sx={pillSx(GOLD_LIGHT)}>{session.avgPaceSecondsPerKm ? formatPace(session.avgPaceSecondsPerKm) : '—'}</Box>
+                  <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Allure</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Box sx={pillSx('#ff9800')}>{session.caloriesBurned != null ? String(session.caloriesBurned) : '—'}</Box>
+                  <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>kcal</Typography>
+                </Box>
               </>
             ) : (
               <>
-                <StatBox label="Volume" value={volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`} />
-                <StatBox label="Séries" value={String(sets.filter(s => !s.isWarmup).length)} />
+                <Box sx={{ textAlign: 'center' }}>
+                  <Box sx={pillSx(GOLD)}>{volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`}</Box>
+                  <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Volume</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Box sx={pillSx(GOLD_LIGHT)}>{String(sets.filter(s => !s.isWarmup).length)}</Box>
+                  <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Séries</Typography>
+                </Box>
                 {session.caloriesBurned != null && session.caloriesBurned > 0 && (
-                  <StatBox label="kcal" value={String(session.caloriesBurned)} />
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Box sx={pillSx('#ff9800')}>{String(session.caloriesBurned)}</Box>
+                    <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>kcal</Typography>
+                  </Box>
                 )}
               </>
             )}
           </Stack>
-        </Card>
+        </Box>
       </Box>
 
       {/* Exercise details */}
@@ -388,82 +418,82 @@ function SessionDetailContent() {
             const exVolume = workingSets.reduce((sum, s) => sum + (s.reps || 0) * parseFloat(s.weight || '0'), 0);
 
             return (
-              <Card key={exerciseId}>
-                <CardContent sx={{ pb: '12px !important' }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <FitnessCenter sx={{ fontSize: 18, color: 'text.disabled' }} />
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {exercise?.nameFr || exSets[0]?.exerciseName || 'Exercice'}
-                      </Typography>
-                    </Stack>
-                    <Typography variant="caption" color="text.secondary">
-                      {exVolume > 0 && `${exVolume.toLocaleString()}kg`}
+              <Box key={exerciseId} sx={card(d, { p: 2 })}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Barbell size={18} weight={W} color={tc.f(d)} />
+                    <Typography variant="subtitle2" fontWeight={600} sx={{ color: tc.h(d) }}>
+                      {exercise?.nameFr || exSets[0]?.exerciseName || 'Exercice'}
                     </Typography>
                   </Stack>
-                  <ExerciseNoteReadonly exerciseId={exerciseId} />
-                  {/* Show machine setup from first set that has one */}
-                  {(() => {
-                    const machineId = exSets.find(s => s.machineSetupId)?.machineSetupId;
-                    return machineId ? <MachineSetupReadonly machineSetupId={machineId} /> : null;
-                  })()}
+                  <Typography variant="caption" sx={{ color: tc.m(d) }}>
+                    {exVolume > 0 && `${exVolume.toLocaleString()}kg`}
+                  </Typography>
+                </Stack>
+                <ExerciseNoteReadonly exerciseId={exerciseId} />
+                {/* Show machine setup from first set that has one */}
+                {(() => {
+                  const machineId = exSets.find(s => s.machineSetupId)?.machineSetupId;
+                  return machineId ? <MachineSetupReadonly machineSetupId={machineId} /> : null;
+                })()}
 
-                  {exSets.map((set) => (
-                    <Box key={set.id} sx={{ py: 0.75, borderBottom: 1, borderColor: 'divider', '&:last-child': { borderBottom: 0 } }}>
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                      >
-                        <Stack direction="row" alignItems="center" spacing={1.5}>
-                          <Box
-                            sx={{
-                              width: 26, height: 26, borderRadius: '50%',
-                              bgcolor: 'action.hover',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: '0.75rem', fontWeight: 500,
-                            }}
-                          >
-                            {set.isWarmup ? 'W' : set.setNumber}
-                          </Box>
-                          <Typography variant="body2">
-                            <Typography component="span" fontWeight={500}>{set.reps}</Typography>
-                            <Typography component="span" color="text.secondary" sx={{ mx: 0.5 }}>×</Typography>
-                            <Typography component="span" fontWeight={500}>{set.weight}kg</Typography>
-                          </Typography>
-                          {set.rpe && (
-                            <Typography variant="caption" color="text.secondary">RPE {set.rpe}</Typography>
-                          )}
-                        </Stack>
-                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                          {set.restTaken && (
-                            <Typography variant="caption" color="text.disabled">
-                              {formatRestTime(set.restTaken)}
-                            </Typography>
-                          )}
-                          {set.isPr && (
-                            <Chip
-                              icon={<EmojiEvents sx={{ fontSize: 14 }} />}
-                              label="PR"
-                              size="small"
-                              color="warning"
-                              sx={{ height: 22, fontWeight: 600, fontSize: '0.65rem' }}
-                            />
-                          )}
-                        </Stack>
+                {exSets.map((set) => (
+                  <Box key={set.id} sx={{ py: 0.75, borderBottom: 1, borderColor: d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06), '&:last-child': { borderBottom: 0 } }}>
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                    >
+                      <Stack direction="row" alignItems="center" spacing={1.5}>
+                        <Box
+                          sx={{
+                            width: 26, height: 26, borderRadius: '50%',
+                            bgcolor: d ? alpha('#ffffff', 0.08) : alpha('#000000', 0.05),
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '0.75rem', fontWeight: 500, color: tc.m(d),
+                          }}
+                        >
+                          {set.isWarmup ? 'W' : set.setNumber}
+                        </Box>
+                        <Typography variant="body2">
+                          <Typography component="span" fontWeight={500} sx={{ color: tc.h(d) }}>{set.reps}</Typography>
+                          <Typography component="span" sx={{ mx: 0.5, color: tc.f(d) }}>x</Typography>
+                          <Typography component="span" fontWeight={500} sx={{ color: tc.h(d) }}>{set.weight}kg</Typography>
+                        </Typography>
+                        {set.rpe && (
+                          <Typography variant="caption" sx={{ color: tc.m(d) }}>RPE {set.rpe}</Typography>
+                        )}
                       </Stack>
-                      {set.notes && (
-                        <Stack direction="row" alignItems="center" spacing={0.5} sx={{ pl: 5, mt: 0.25 }}>
-                          <EditNote sx={{ fontSize: 12, color: 'text.disabled' }} />
-                          <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic', lineHeight: 1.3 }}>
-                            {set.notes}
+                      <Stack direction="row" alignItems="center" spacing={0.5}>
+                        {set.restTaken && (
+                          <Typography variant="caption" sx={{ color: tc.f(d) }}>
+                            {formatRestTime(set.restTaken)}
                           </Typography>
-                        </Stack>
-                      )}
-                    </Box>
-                  ))}
-                </CardContent>
-              </Card>
+                        )}
+                        {set.isPr && (
+                          <Box sx={{
+                            display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                            bgcolor: alpha(GOLD, 0.15), color: GOLD,
+                            px: 1, py: 0.25, borderRadius: '6px',
+                            fontSize: '0.65rem', fontWeight: 700,
+                          }}>
+                            <Trophy size={14} weight={W} />
+                            PR
+                          </Box>
+                        )}
+                      </Stack>
+                    </Stack>
+                    {set.notes && (
+                      <Stack direction="row" alignItems="center" spacing={0.5} sx={{ pl: 5, mt: 0.25 }}>
+                        <NoteBlank size={12} weight={W} color={tc.f(d)} />
+                        <Typography variant="caption" sx={{ fontStyle: 'italic', lineHeight: 1.3, color: tc.f(d) }}>
+                          {set.notes}
+                        </Typography>
+                      </Stack>
+                    )}
+                  </Box>
+                ))}
+              </Box>
             );
           })}
         </Stack>
@@ -473,15 +503,15 @@ function SessionDetailContent() {
 
       <SessionExportDrawer open={exportOpen} onClose={() => setExportOpen(false)} data={data} />
 
-      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3, mx: 2 } }}>
-        <DialogTitle>Supprimer la séance ?</DialogTitle>
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { ...dialogPaperSx(d), mx: 2 } }}>
+        <DialogTitle sx={{ color: tc.h(d) }}>Supprimer la séance ?</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ color: tc.m(d) }}>
             Cette action est irréversible. Toutes les données de cette séance seront perdues.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDeleteOpen(false)} color="inherit">Annuler</Button>
+          <Button onClick={() => setDeleteOpen(false)} sx={{ color: tc.m(d) }}>Annuler</Button>
           <Button onClick={handleDelete} color="error" variant="contained">Supprimer</Button>
         </DialogActions>
       </Dialog>
@@ -489,20 +519,8 @@ function SessionDetailContent() {
   );
 }
 
-function StatBox({ label, value }: { label: string; value: string }) {
-  return (
-    <Box sx={{ flex: 1, py: 1.5, textAlign: 'center' }}>
-      <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums' }}>
-        {value}
-      </Typography>
-      <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
-        {label}
-      </Typography>
-    </Box>
-  );
-}
-
 function MachineSetupReadonly({ machineSetupId }: { machineSetupId: string }) {
+  const d = useDark();
   const { data: rows } = useMachineSetupById(machineSetupId);
   const setup = rows?.[0];
   if (!setup) return null;
@@ -517,8 +535,8 @@ function MachineSetupReadonly({ machineSetupId }: { machineSetupId: string }) {
       spacing={0.75}
       sx={{
         mb: 0.75, py: 0.5, px: 1,
-        borderLeft: 2, borderColor: 'info.main',
-        borderRadius: '0 4px 4px 0', bgcolor: 'action.hover',
+        borderLeft: 2, borderColor: GOLD,
+        borderRadius: '0 4px 4px 0', bgcolor: d ? alpha('#ffffff', 0.04) : alpha('#000000', 0.03),
       }}
     >
       {setup.photo_base64 && (
@@ -529,13 +547,13 @@ function MachineSetupReadonly({ machineSetupId }: { machineSetupId: string }) {
           sx={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 0.5, flexShrink: 0 }}
         />
       )}
-      <Settings sx={{ fontSize: 12, color: 'info.main', flexShrink: 0 }} />
+      <GearSix size={12} weight={W} color={GOLD} style={{ flexShrink: 0 }} />
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography variant="caption" fontWeight={600} sx={{ lineHeight: 1.2, display: 'block', fontSize: '0.65rem' }} noWrap>
+        <Typography variant="caption" fontWeight={600} sx={{ lineHeight: 1.2, display: 'block', fontSize: '0.65rem', color: tc.h(d) }} noWrap>
           {setup.machine_label}
         </Typography>
         {filledSettings.length > 0 && (
-          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.55rem', lineHeight: 1.2 }}>
+          <Typography variant="caption" sx={{ fontSize: '0.55rem', lineHeight: 1.2, color: tc.f(d) }}>
             {filledSettings.map(s => `${s.key}: ${s.value}`).join(' · ')}
           </Typography>
         )}
@@ -545,6 +563,7 @@ function MachineSetupReadonly({ machineSetupId }: { machineSetupId: string }) {
 }
 
 function ExerciseNoteReadonly({ exerciseId }: { exerciseId: string }) {
+  const d = useDark();
   const { data: noteRows } = useExerciseNote(exerciseId);
   const note = noteRows?.[0]?.notes;
   if (!note) return null;
@@ -555,12 +574,12 @@ function ExerciseNoteReadonly({ exerciseId }: { exerciseId: string }) {
       spacing={0.75}
       sx={{
         mb: 1, py: 0.5, px: 1,
-        borderLeft: 2, borderColor: 'primary.main',
-        borderRadius: '0 4px 4px 0', bgcolor: 'action.hover',
+        borderLeft: 2, borderColor: GOLD,
+        borderRadius: '0 4px 4px 0', bgcolor: d ? alpha('#ffffff', 0.04) : alpha('#000000', 0.03),
       }}
     >
-      <EditNote sx={{ fontSize: 14, color: 'primary.main', mt: 0.125, flexShrink: 0 }} />
-      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.4 }}>
+      <NoteBlank size={14} weight={W} color={GOLD} style={{ marginTop: 1, flexShrink: 0 }} />
+      <Typography variant="caption" sx={{ fontStyle: 'italic', lineHeight: 1.4, color: tc.m(d) }}>
         {note}
       </Typography>
     </Stack>
@@ -568,6 +587,7 @@ function ExerciseNoteReadonly({ exerciseId }: { exerciseId: string }) {
 }
 
 function SessionNotesEditor({ sessionId, initialNotes }: { sessionId: string; initialNotes: string }) {
+  const d = useDark();
   const mutations = useWorkoutMutations();
   const [notes, setNotes] = useState(initialNotes);
   const [editing, setEditing] = useState(false);
@@ -585,62 +605,57 @@ function SessionNotesEditor({ sessionId, initialNotes }: { sessionId: string; in
 
   if (!editing && !notes.trim()) {
     return (
-      <Card
-        variant="outlined"
+      <Box
         onClick={() => setEditing(true)}
-        sx={{
+        sx={card(d, {
           mt: 2, cursor: 'pointer', py: 1.5,
-          borderStyle: 'dashed', borderColor: 'divider',
+          borderStyle: 'dashed',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75,
-          '&:active': { bgcolor: 'action.hover' },
-        }}
+          '&:active': { bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.04) },
+        })}
       >
-        <EditNote sx={{ fontSize: 18, color: 'text.disabled' }} />
-        <Typography variant="caption" color="text.disabled">
+        <NoteBlank size={18} weight={W} color={tc.f(d)} />
+        <Typography variant="caption" sx={{ color: tc.f(d) }}>
           Ajouter une note de séance
         </Typography>
-      </Card>
+      </Box>
     );
   }
 
   if (!editing) {
     return (
-      <Card sx={{ mt: 2, cursor: 'pointer' }} onClick={() => setEditing(true)}>
-        <CardContent>
-          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
-            <EditNote sx={{ fontSize: 16, color: 'text.disabled' }} />
-            <Typography variant="caption" color="text.secondary" fontWeight={500}>Note de séance</Typography>
-          </Stack>
-          <Typography variant="body2" sx={{ pl: 3 }}>{notes}</Typography>
-        </CardContent>
-      </Card>
+      <Box sx={card(d, { mt: 2, cursor: 'pointer', p: 2 })} onClick={() => setEditing(true)}>
+        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
+          <NoteBlank size={16} weight={W} color={tc.f(d)} />
+          <Typography variant="caption" fontWeight={500} sx={{ color: tc.m(d) }}>Note de séance</Typography>
+        </Stack>
+        <Typography variant="body2" sx={{ pl: 3, color: tc.h(d) }}>{notes}</Typography>
+      </Box>
     );
   }
 
   return (
-    <Card sx={{ mt: 2 }}>
-      <CardContent>
-        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
-          <EditNote sx={{ fontSize: 16, color: 'text.disabled' }} />
-          <Typography variant="caption" color="text.secondary" fontWeight={500}>Note de séance</Typography>
-        </Stack>
-        <TextField
-          fullWidth
-          multiline
-          minRows={2}
-          maxRows={6}
-          size="small"
-          autoFocus
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          onBlur={handleSave}
-          sx={{
-            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
-            '& .MuiInputBase-input': { fontSize: '0.85rem' },
-          }}
-        />
-      </CardContent>
-    </Card>
+    <Box sx={card(d, { mt: 2, p: 2 })}>
+      <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
+        <NoteBlank size={16} weight={W} color={tc.f(d)} />
+        <Typography variant="caption" fontWeight={500} sx={{ color: tc.m(d) }}>Note de séance</Typography>
+      </Stack>
+      <TextField
+        fullWidth
+        multiline
+        minRows={2}
+        maxRows={6}
+        size="small"
+        autoFocus
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        onBlur={handleSave}
+        sx={{
+          '& .MuiOutlinedInput-notchedOutline': { borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) },
+          '& .MuiInputBase-input': { fontSize: '0.85rem', color: tc.h(d) },
+        }}
+      />
+    </Box>
   );
 }
 
@@ -648,21 +663,11 @@ export default function SessionDetailPage() {
   const { userId, loading: authLoading } = useAuth();
 
   if (authLoading || !userId) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
 
   return (
-    <Suspense
-      fallback={
-        <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
+    <Suspense fallback={<FullScreenLoader />}>
       <SessionDetailContent />
     </Suspense>
   );

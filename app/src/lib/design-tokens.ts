@@ -3,6 +3,10 @@ import { alpha } from '@mui/material/styles'
 // Brand colors — Black & Gold
 export const GOLD = '#d4af37'
 export const GOLD_LIGHT = '#e8c860'
+export const GOLD_CONTRAST = '#1a1715'
+
+// Phosphor Icons weight
+export const W = 'light' as const
 
 // Explicit text color tokens (independent of MUI theme)
 export const tc = {
@@ -44,3 +48,44 @@ export const panelBg = (isDark: boolean) => isDark ? '#1c1a14' : '#ffffff'
 export const meshBg = (isDark: boolean) => isDark
   ? `radial-gradient(ellipse at 30% 20%, ${alpha(GOLD, 0.1)} 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, ${alpha(GOLD, 0.06)} 0%, transparent 50%), #0a0a0a`
   : `radial-gradient(ellipse at 30% 20%, ${alpha(GOLD, 0.08)} 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, ${alpha(GOLD, 0.05)} 0%, transparent 50%), #f5f3ef`
+
+// Gold-themed TextField focus styling
+export const goldFieldSx = (isDark: boolean) => ({
+  '& .MuiOutlinedInput-root': {
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: GOLD },
+  },
+  '& .MuiInputLabel-root.Mui-focused': { color: GOLD },
+  '& .MuiInputLabel-root': { color: tc.m(isDark) },
+  '& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
+    borderColor: isDark ? alpha('#ffffff', 0.12) : alpha('#000000', 0.15),
+  },
+  '& .MuiInputBase-input': { color: tc.h(isDark) },
+})
+
+// Gold primary button sx
+export const goldBtnSx = {
+  bgcolor: GOLD,
+  color: GOLD_CONTRAST,
+  fontWeight: 600,
+  borderRadius: '14px',
+  textTransform: 'none' as const,
+  '&:hover': { bgcolor: GOLD_LIGHT },
+  '&.Mui-disabled': { bgcolor: alpha('#ffffff', 0.1), color: '#6b655c' },
+}
+
+// Gold outlined button sx
+export const goldOutlinedBtnSx = {
+  border: '1px solid',
+  borderColor: alpha(GOLD, 0.3),
+  color: GOLD,
+  borderRadius: '14px',
+  fontWeight: 500,
+  textTransform: 'none' as const,
+  '&:hover': { borderColor: GOLD, bgcolor: alpha(GOLD, 0.05) },
+}
+
+// Dialog PaperProps sx
+export const dialogPaperSx = (isDark: boolean) => ({
+  bgcolor: panelBg(isDark),
+  borderRadius: '14px',
+})

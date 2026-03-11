@@ -2,11 +2,16 @@
 
 import { useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useDark } from '@/hooks/useDark';
 import { useAuth } from '@/powersync/auth-context';
 import { useQuery } from '@powersync/react';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { parseJsonArray } from '@/powersync/helpers';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
+import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, goldBtnSx, goldOutlinedBtnSx, dialogPaperSx } from '@/lib/design-tokens';
+import FullScreenLoader from '@/components/FullScreenLoader';
+import { alpha } from '@mui/material/styles';
+import { ArrowLeft, Play, Trash, PencilSimple, Info, Timer } from '@phosphor-icons/react';
 import ExerciseDetailModal, { type ExerciseDetail } from '@/components/workout/ExerciseDetailModal';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -14,20 +19,12 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
-import Paper from '@mui/material/Paper';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import PlayArrow from '@mui/icons-material/PlayArrow';
-import Delete from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import InfoOutlined from '@mui/icons-material/InfoOutlined';
-import Timer from '@mui/icons-material/Timer';
 
 function formatRestTime(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
@@ -67,6 +64,7 @@ function ProgramDetailContent() {
   const searchParams = useSearchParams();
   const templateId = searchParams.get('id') ?? '';
   const mutations = useWorkoutMutations();
+  const d = useDark();
 
   const { data: templateRows, isLoading } = useQuery(
     templateId
@@ -120,65 +118,77 @@ function ProgramDetailContent() {
 
   if (!templateId) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <Typography color="text.secondary">ID manquant</Typography>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(d) }}>
+        <Typography sx={{ color: tc.m(d) }}>ID manquant</Typography>
       </Box>
     );
   }
 
   if (isLoading) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
 
   if (!template) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <Typography color="text.secondary">Programme introuvable</Typography>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(d) }}>
+        <Typography sx={{ color: tc.m(d) }}>Programme introuvable</Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(d) }}>
       {/* Header */}
-      <Paper
-        elevation={0}
-        sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', borderRadius: 0, position: 'sticky', top: 0, zIndex: 10, bgcolor: 'background.paper' }}
+      <Box
+        sx={{
+          px: 2, py: 1.5,
+          borderBottom: '1px solid',
+          borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+          borderRadius: 0,
+          position: 'sticky', top: 0, zIndex: 10,
+          bgcolor: panelBg(d),
+        }}
       >
         <Stack direction="row" alignItems="center" spacing={1}>
           <IconButton onClick={() => router.back()} edge="start">
-            <ArrowBack />
+            <ArrowLeft weight={W} size={22} color={tc.h(d)} />
           </IconButton>
-          <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }} noWrap>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, flex: 1, color: tc.h(d) }} noWrap>
             {template.name}
           </Typography>
           <IconButton onClick={() => router.push(`/workout/program/manual?id=${templateId}`)} size="small">
-            <EditIcon sx={{ fontSize: 20 }} />
+            <PencilSimple weight={W} size={20} color={tc.m(d)} />
           </IconButton>
         </Stack>
-      </Paper>
+      </Box>
 
       <Box sx={{ p: 2 }}>
         {/* Info */}
         <Box sx={{ mb: 3 }}>
           {template.description && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            <Typography variant="body2" sx={{ mb: 1.5, color: tc.m(d) }}>
               {template.description}
             </Typography>
           )}
           <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
             {template.targetMuscles.map((m) => (
-              <Chip key={m} label={MUSCLE_LABELS[m] || m} size="small" sx={{ height: 24, fontSize: '0.7rem' }} />
+              <Chip
+                key={m}
+                label={MUSCLE_LABELS[m] || m}
+                size="small"
+                sx={{
+                  height: 24,
+                  fontSize: '0.7rem',
+                  color: tc.m(d),
+                  bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
+                }}
+              />
             ))}
           </Stack>
           {template.estimatedDuration && (
             <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1 }}>
-              <Timer sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="caption" color="text.secondary">
+              <Timer weight={W} size={16} color={tc.m(d)} />
+              <Typography variant="caption" sx={{ color: tc.m(d) }}>
                 ~{template.estimatedDuration} min
               </Typography>
             </Stack>
@@ -186,36 +196,35 @@ function ProgramDetailContent() {
         </Box>
 
         {/* Exercises */}
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1.5, color: tc.m(d) }}>
           {exerciseRows.length} exercice{exerciseRows.length > 1 ? 's' : ''}
         </Typography>
 
         <Stack spacing={1}>
           {exerciseRows.map((ex, i) => (
-            <Paper
+            <Box
               key={ex.id}
-              variant="outlined"
-              sx={{ px: 2, py: 1.5, borderRadius: 2 }}
+              sx={card(d, { px: 2, py: 1.5 })}
             >
               <Stack direction="row" alignItems="center" spacing={1.5}>
                 <Box sx={{
                   width: 28, height: 28, borderRadius: '50%',
-                  bgcolor: 'action.hover',
+                  bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.8rem', fontWeight: 600, color: 'text.secondary', flexShrink: 0,
+                  fontSize: '0.8rem', fontWeight: 600, color: tc.m(d), flexShrink: 0,
                 }}>
                   {i + 1}
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" fontWeight={600} noWrap>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: tc.h(d) }} noWrap>
                     {ex.exercise_name}
                   </Typography>
                   <Stack direction="row" spacing={1.5} sx={{ mt: 0.25 }}>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: tc.m(d) }}>
                       {ex.target_sets} × {ex.target_reps}
                     </Typography>
                     {(ex.rest_seconds ?? 0) > 0 && (
-                      <Typography variant="caption" color="text.disabled">
+                      <Typography variant="caption" sx={{ color: tc.f(d) }}>
                         repos {formatRestTime(ex.rest_seconds!)}
                       </Typography>
                     )}
@@ -224,21 +233,21 @@ function ProgramDetailContent() {
                 <IconButton
                   size="small"
                   onClick={() => setDetailExercise(toExerciseDetail(ex))}
-                  sx={{ color: 'text.disabled', flexShrink: 0 }}
+                  sx={{ color: tc.f(d), flexShrink: 0 }}
                 >
-                  <InfoOutlined sx={{ fontSize: 18 }} />
+                  <Info weight={W} size={18} />
                 </IconButton>
               </Stack>
               {ex.notes && (
-                <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: 'block', pl: 5.5, fontStyle: 'italic' }}>
+                <Typography variant="caption" sx={{ mt: 0.5, display: 'block', pl: 5.5, fontStyle: 'italic', color: tc.f(d) }}>
                   {ex.notes}
                 </Typography>
               )}
-            </Paper>
+            </Box>
           ))}
         </Stack>
 
-        <Divider sx={{ my: 3 }} />
+        <Box sx={{ my: 3 }} />
 
         {/* Actions */}
         <Stack spacing={1.5} sx={{ pb: 4 }}>
@@ -246,23 +255,18 @@ function ProgramDetailContent() {
             variant="contained"
             fullWidth
             size="large"
-            startIcon={starting ? <CircularProgress size={20} sx={{ color: 'white' }} /> : <PlayArrow />}
+            startIcon={starting ? <CircularProgress size={20} sx={{ color: GOLD_CONTRAST }} /> : <Play weight="fill" size={20} />}
             onClick={handleStart}
             disabled={starting}
-            sx={{
-              py: 1.5,
-              background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
-              fontWeight: 600,
-            }}
+            sx={{ ...goldBtnSx, py: 1.5 }}
           >
             Démarrer la séance
           </Button>
           <Button
             fullWidth
-            color="error"
-            startIcon={<Delete sx={{ fontSize: 18 }} />}
+            startIcon={<Trash weight={W} size={18} />}
             onClick={() => setConfirmDelete(true)}
-            sx={{ opacity: 0.5, fontSize: '0.8rem' }}
+            sx={{ opacity: 0.5, fontSize: '0.8rem', color: tc.f(d) }}
           >
             Supprimer ce programme
           </Button>
@@ -276,15 +280,27 @@ function ProgramDetailContent() {
       />
 
       {/* Delete confirmation */}
-      <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Supprimer ce programme ?</DialogTitle>
+      <Dialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: dialogPaperSx(d) }}
+      >
+        <DialogTitle sx={{ color: tc.h(d) }}>Supprimer ce programme ?</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ color: tc.m(d) }}>
             Les séances déjà effectuées ne seront pas affectées.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setConfirmDelete(false)} variant="outlined">Annuler</Button>
+          <Button
+            onClick={() => setConfirmDelete(false)}
+            variant="outlined"
+            sx={{ ...goldOutlinedBtnSx, color: tc.m(d) }}
+          >
+            Annuler
+          </Button>
           <Button color="error" variant="contained" onClick={handleDelete}>Supprimer</Button>
         </DialogActions>
       </Dialog>
@@ -294,19 +310,12 @@ function ProgramDetailContent() {
 
 export default function ProgramDetailPage() {
   const { userId, loading } = useAuth();
+
   if (loading || !userId) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
   return (
-    <Suspense fallback={
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    }>
+    <Suspense fallback={<FullScreenLoader />}>
       <ProgramDetailContent />
     </Suspense>
   );

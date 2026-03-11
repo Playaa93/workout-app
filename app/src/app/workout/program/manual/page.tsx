@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useDark } from '@/hooks/useDark';
 import type { Exercise } from '../../types';
 import { useAuth } from '@/powersync/auth-context';
 import { useExercises, useTemplateExercises } from '@/powersync/queries/workout-queries';
@@ -11,10 +12,13 @@ import { useQuery } from '@powersync/react';
 import { ExercisePicker } from '@/components/workout/ExercisePicker';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import { triggerHaptic } from '@/lib/haptic';
+import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, goldBtnSx, goldOutlinedBtnSx, goldFieldSx } from '@/lib/design-tokens';
+import FullScreenLoader from '@/components/FullScreenLoader';
+import { alpha } from '@mui/material/styles';
+import { ArrowLeft, Plus, X, CaretUp, CaretDown, CaretDown as CaretDownIcon } from '@phosphor-icons/react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
-import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
@@ -22,12 +26,6 @@ import Chip from '@mui/material/Chip';
 import Drawer from '@mui/material/Drawer';
 import Collapse from '@mui/material/Collapse';
 import CircularProgress from '@mui/material/CircularProgress';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import Add from '@mui/icons-material/Add';
-import Close from '@mui/icons-material/Close';
-import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import ExpandMore from '@mui/icons-material/ExpandMore';
 
 type ManualExercise = {
   exerciseId: string;
@@ -42,19 +40,11 @@ export default function ManualProgramPage() {
   const { userId, loading: authLoading } = useAuth();
 
   if (authLoading || !userId) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
 
   return (
-    <Suspense fallback={
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    }>
+    <Suspense fallback={<FullScreenLoader />}>
       <ManualProgramContent />
     </Suspense>
   );
@@ -66,6 +56,7 @@ function ManualProgramContent() {
   const editId = searchParams.get('id');
   const mutations = useWorkoutMutations();
   const { data: exerciseRows } = useExercises();
+  const d = useDark();
 
   // Load existing template if editing
   const { data: templateRows } = useQuery(
@@ -185,33 +176,29 @@ function ManualProgramContent() {
   };
 
   if (editId && !initialized) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(d), display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <Paper
-        elevation={0}
+      <Box
         sx={{
           position: 'sticky', top: 0, zIndex: 10,
-          borderBottom: 1, borderColor: 'divider',
-          bgcolor: 'background.default',
+          borderBottom: '1px solid',
+          borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+          bgcolor: panelBg(d),
         }}
       >
         <Stack direction="row" alignItems="center" sx={{ px: 2, py: 1.5 }}>
           <IconButton onClick={() => router.back()} size="small" sx={{ mr: 1 }}>
-            <ArrowBack />
+            <ArrowLeft weight={W} size={22} color={tc.h(d)} />
           </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(d) }}>
             {isEdit ? 'Modifier le programme' : 'Nouveau programme'}
           </Typography>
         </Stack>
-      </Paper>
+      </Box>
 
       {/* Content */}
       <Box sx={{ flex: 1, overflow: 'auto', px: 2, py: 2, pb: 12 }}>
@@ -225,6 +212,7 @@ function ManualProgramContent() {
             required
             size="small"
             placeholder="Ex: Push Day, Full Body..."
+            sx={goldFieldSx(d)}
           />
 
           {/* Description */}
@@ -238,23 +226,24 @@ function ManualProgramContent() {
             maxRows={4}
             size="small"
             placeholder="Notes sur ce programme..."
+            sx={goldFieldSx(d)}
           />
 
           {/* Exercise List */}
           <Box>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, color: tc.m(d) }}>
               Exercices ({selectedExercises.length})
             </Typography>
 
             {selectedExercises.length === 0 ? (
               <Box sx={{
                 border: '1px dashed',
-                borderColor: 'divider',
-                borderRadius: 2,
+                borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12),
+                borderRadius: '14px',
                 py: 4,
                 textAlign: 'center',
               }}>
-                <Typography variant="body2" color="text.disabled">
+                <Typography variant="body2" sx={{ color: tc.f(d) }}>
                   Aucun exercice ajouté
                 </Typography>
               </Box>
@@ -263,11 +252,7 @@ function ManualProgramContent() {
                 {selectedExercises.map((ex, index) => (
                   <Box
                     key={`${ex.exerciseId}-${index}`}
-                    sx={{
-                      bgcolor: 'background.paper',
-                      borderRadius: 2,
-                      overflow: 'hidden',
-                    }}
+                    sx={card(d, { overflow: 'hidden' })}
                   >
                     {/* Exercise header row */}
                     <Box
@@ -280,7 +265,7 @@ function ManualProgramContent() {
                         display: 'flex',
                         alignItems: 'center',
                         cursor: 'pointer',
-                        '&:active': { bgcolor: 'action.hover' },
+                        '&:active': { bgcolor: d ? alpha('#ffffff', 0.03) : alpha('#000000', 0.02) },
                       }}
                     >
                       {/* Order controls */}
@@ -291,7 +276,7 @@ function ManualProgramContent() {
                           onClick={(e) => { e.stopPropagation(); handleMoveExercise(index, 'up'); }}
                           sx={{ p: 0 }}
                         >
-                          <KeyboardArrowUp sx={{ fontSize: 18 }} />
+                          <CaretUp weight={W} size={18} color={index === 0 ? tc.f(d) : tc.m(d)} />
                         </IconButton>
                         <IconButton
                           size="small"
@@ -299,43 +284,51 @@ function ManualProgramContent() {
                           onClick={(e) => { e.stopPropagation(); handleMoveExercise(index, 'down'); }}
                           sx={{ p: 0 }}
                         >
-                          <KeyboardArrowDown sx={{ fontSize: 18 }} />
+                          <CaretDown weight={W} size={18} color={index === selectedExercises.length - 1 ? tc.f(d) : tc.m(d)} />
                         </IconButton>
                       </Stack>
 
                       {/* Exercise info */}
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 500, fontSize: '0.95rem' }} noWrap>
+                        <Typography sx={{ fontWeight: 500, fontSize: '0.95rem', color: tc.h(d) }} noWrap>
                           {ex.exerciseName}
                         </Typography>
                         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.25 }}>
                           <Chip
                             label={MUSCLE_LABELS[ex.muscleGroup] || ex.muscleGroup}
                             size="small"
-                            sx={{ height: 18, fontSize: '0.65rem' }}
+                            sx={{
+                              height: 18,
+                              fontSize: '0.65rem',
+                              color: tc.m(d),
+                              bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
+                            }}
                           />
-                          <Typography variant="caption" color="text.disabled">
+                          <Typography variant="caption" sx={{ color: tc.f(d) }}>
                             {ex.targetSets}x{ex.targetReps} · {ex.restSeconds}s
                           </Typography>
                         </Stack>
                       </Box>
 
                       {/* Expand icon */}
-                      <ExpandMore sx={{
-                        fontSize: 20,
-                        color: 'text.disabled',
-                        transition: 'transform 0.2s',
-                        transform: expandedIndex === index ? 'rotate(180deg)' : 'rotate(0deg)',
-                        mr: 0.5,
-                      }} />
+                      <CaretDownIcon
+                        weight={W}
+                        size={20}
+                        color={tc.f(d)}
+                        style={{
+                          transition: 'transform 0.2s',
+                          transform: expandedIndex === index ? 'rotate(180deg)' : 'rotate(0deg)',
+                          marginRight: 4,
+                        }}
+                      />
 
                       {/* Remove button */}
                       <IconButton
                         size="small"
                         onClick={(e) => { e.stopPropagation(); handleRemoveExercise(index); }}
-                        sx={{ color: 'text.disabled' }}
+                        sx={{ color: tc.f(d) }}
                       >
-                        <Close sx={{ fontSize: 18 }} />
+                        <X weight={W} size={18} />
                       </IconButton>
                     </Box>
 
@@ -350,7 +343,7 @@ function ManualProgramContent() {
                             value={ex.targetSets}
                             onChange={(e) => handleUpdateExercise(index, 'targetSets', Math.max(1, parseInt(e.target.value) || 1))}
                             slotProps={{ htmlInput: { min: 1, max: 20 } }}
-                            sx={{ width: 80 }}
+                            sx={{ width: 80, ...goldFieldSx(d) }}
                           />
                           <TextField
                             label="Reps"
@@ -358,7 +351,7 @@ function ManualProgramContent() {
                             value={ex.targetReps}
                             onChange={(e) => handleUpdateExercise(index, 'targetReps', e.target.value)}
                             placeholder="8-12"
-                            sx={{ width: 90 }}
+                            sx={{ width: 90, ...goldFieldSx(d) }}
                           />
                           <TextField
                             label="Repos (s)"
@@ -367,7 +360,7 @@ function ManualProgramContent() {
                             value={ex.restSeconds}
                             onChange={(e) => handleUpdateExercise(index, 'restSeconds', Math.max(0, parseInt(e.target.value) || 0))}
                             slotProps={{ htmlInput: { min: 0, max: 600, step: 15 } }}
-                            sx={{ width: 100 }}
+                            sx={{ width: 100, ...goldFieldSx(d) }}
                           />
                         </Stack>
                       </Box>
@@ -381,14 +374,9 @@ function ManualProgramContent() {
             <Button
               fullWidth
               variant="outlined"
-              startIcon={<Add />}
+              startIcon={<Plus weight="bold" size={18} />}
               onClick={() => setShowPicker(true)}
-              sx={{
-                mt: 1.5,
-                borderStyle: 'dashed',
-                textTransform: 'none',
-                fontWeight: 500,
-              }}
+              sx={{ ...goldOutlinedBtnSx, mt: 1.5, borderStyle: 'dashed' }}
             >
               Ajouter un exercice
             </Button>
@@ -397,13 +385,13 @@ function ManualProgramContent() {
       </Box>
 
       {/* Bottom save bar */}
-      <Paper
-        elevation={8}
+      <Box
         sx={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
           p: 2, pb: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-          borderTop: 1, borderColor: 'divider',
-          bgcolor: 'background.default',
+          borderTop: '1px solid',
+          borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+          bgcolor: panelBg(d),
           zIndex: 10,
         }}
       >
@@ -412,20 +400,11 @@ function ManualProgramContent() {
           variant="contained"
           disabled={!canSave}
           onClick={handleSave}
-          sx={{
-            py: 1.5,
-            fontWeight: 700,
-            fontSize: '1rem',
-            borderRadius: 3,
-            background: canSave
-              ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)'
-              : undefined,
-            textTransform: 'none',
-          }}
+          sx={{ ...goldBtnSx, py: 1.5, fontSize: '1rem' }}
         >
-          {saving ? <CircularProgress size={24} color="inherit" /> : (isEdit ? 'Enregistrer' : 'Sauvegarder')}
+          {saving ? <CircularProgress size={24} sx={{ color: GOLD_CONTRAST }} /> : (isEdit ? 'Enregistrer' : 'Sauvegarder')}
         </Button>
-      </Paper>
+      </Box>
 
       {/* Exercise Picker Drawer */}
       <Drawer
@@ -433,7 +412,7 @@ function ManualProgramContent() {
         open={showPicker}
         onClose={() => setShowPicker(false)}
         PaperProps={{
-          sx: { height: '90vh', borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.default' },
+          sx: { height: '90vh', borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: surfaceBg(d) },
         }}
       >
         <ExercisePicker

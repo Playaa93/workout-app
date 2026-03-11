@@ -27,7 +27,21 @@ import { MorphoTipsPanel, MorphoScoreBadge } from '@/components/workout/MorphoTi
 import ExerciseDetailModal from '@/components/workout/ExerciseDetailModal';
 import { ExercisePicker } from '@/components/workout/ExercisePicker';
 import MachineSetupSheet from '@/components/workout/MachineSetupSheet';
-import Settings from '@mui/icons-material/Settings';
+import {
+  GearSix,
+  DotsThreeVertical,
+  Plus,
+  X,
+  Trash,
+  Trophy,
+  ArrowsLeftRight,
+  SpeakerHigh,
+  SpeakerSlash,
+  DeviceMobile,
+  Info,
+  CaretDown,
+  NotePencil,
+} from '@phosphor-icons/react';
 import {
   scoreExercise,
   getCategoryDefault,
@@ -35,17 +49,17 @@ import {
 } from '@/lib/morpho-exercise-scoring';
 import { triggerHaptic } from '@/lib/haptic';
 import { useSetRestTimer } from '@/hooks/useSetRestTimer';
+import { useDark } from '@/hooks/useDark';
+import { alpha } from '@mui/material/styles';
+import { GOLD, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, goldBtnSx, goldOutlinedBtnSx, dialogPaperSx } from '@/lib/design-tokens';
+import FullScreenLoader from '@/components/FullScreenLoader';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
 import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -58,25 +72,9 @@ import ListItemText from '@mui/material/ListItemText';
 import InputAdornment from '@mui/material/InputAdornment';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import Divider from '@mui/material/Divider';
 import Collapse from '@mui/material/Collapse';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import MoreVert from '@mui/icons-material/MoreVert';
-import Add from '@mui/icons-material/Add';
-import Close from '@mui/icons-material/Close';
-import Delete from '@mui/icons-material/Delete';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import Timer from '@mui/icons-material/Timer';
-import EmojiEvents from '@mui/icons-material/EmojiEvents';
-import SwapHoriz from '@mui/icons-material/SwapHoriz';
-import VolumeUp from '@mui/icons-material/VolumeUp';
-import VolumeOff from '@mui/icons-material/VolumeOff';
-import Vibration from '@mui/icons-material/Vibration';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import InfoOutlined from '@mui/icons-material/InfoOutlined';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import EditNote from '@mui/icons-material/EditNote';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toWorkoutSet(s: any): WorkoutSet {
@@ -118,6 +116,7 @@ function ActiveWorkoutContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('id');
   const mutations = useWorkoutMutations();
+  const d = useDark();
 
   // PowerSync reactive hooks
   const { data: sessionRows, isLoading: sessionLoading } = useActiveSession(sessionId);
@@ -323,18 +322,14 @@ function ActiveWorkoutContent() {
 
   if (!sessionId) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <Typography color="text.secondary">Session invalide</Typography>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(d) }}>
+        <Typography sx={{ color: tc.m(d) }}>Session invalide</Typography>
       </Box>
     );
   }
 
   if (isLoading) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
 
   const formatTime = formatRestTime;
@@ -353,38 +348,35 @@ function ActiveWorkoutContent() {
     : 90;
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', pb: 16, bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', pb: 16, bgcolor: surfaceBg(d) }}>
       {/* Header with timer */}
-      <Paper
-        elevation={0}
+      <Box
         sx={{
           px: 2,
           py: 1.5,
-          borderBottom: 1,
-          borderColor: 'divider',
+          borderBottom: '1px solid',
+          borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
           borderRadius: 0,
           position: 'sticky',
           top: 0,
           zIndex: 10,
-          bgcolor: 'background.paper',
+          bgcolor: panelBg(d),
         }}
       >
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Box>
-            <Typography variant="subtitle1" fontWeight={600}>Séance en cours</Typography>
-            <Typography variant="body2" color="text.secondary">{formatTime(elapsedSeconds)}</Typography>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(d) }}>Séance en cours</Typography>
+            <Typography variant="body2" sx={{ color: tc.m(d) }}>{formatTime(elapsedSeconds)}</Typography>
           </Box>
           <Button
-            variant="contained"
-            color="error"
             size="small"
             onClick={() => setShowEndConfirm(true)}
-            sx={{ bgcolor: 'rgba(244,67,54,0.2)', color: 'error.light', '&:hover': { bgcolor: 'rgba(244,67,54,0.3)' } }}
+            sx={{ bgcolor: 'rgba(244,67,54,0.2)', color: 'error.light', borderRadius: '14px', '&:hover': { bgcolor: 'rgba(244,67,54,0.3)' } }}
           >
             Terminer
           </Button>
         </Stack>
-      </Paper>
+      </Box>
 
       {/* Rest Timer (sticky) - Apple-style minimal */}
       {(timer.isRunning || timer.remaining > 0) && (
@@ -394,9 +386,9 @@ function ActiveWorkoutContent() {
             top: 56,
             zIndex: 10,
             py: 2,
-            bgcolor: 'background.default',
-            borderBottom: 1,
-            borderColor: 'divider',
+            bgcolor: surfaceBg(d),
+            borderBottom: '1px solid',
+            borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
           }}
         >
           {/* Timer display - hero element */}
@@ -407,7 +399,7 @@ function ActiveWorkoutContent() {
               fontWeight: 200,
               fontFamily: 'system-ui, -apple-system, sans-serif',
               letterSpacing: '-0.02em',
-              color: timer.remaining <= 10 ? 'error.main' : 'text.primary',
+              color: timer.remaining <= 10 ? 'error.main' : tc.h(d),
               transition: 'color 0.3s ease',
             }}
           >
@@ -422,7 +414,7 @@ function ActiveWorkoutContent() {
                 cursor: 'pointer',
                 fontSize: '0.9rem',
                 fontWeight: 500,
-                color: 'text.secondary',
+                color: tc.m(d),
                 opacity: 0.6,
                 '&:active': { opacity: 1 },
               }}
@@ -436,7 +428,7 @@ function ActiveWorkoutContent() {
                 cursor: 'pointer',
                 fontSize: '0.9rem',
                 fontWeight: 500,
-                color: 'text.secondary',
+                color: tc.m(d),
                 opacity: 0.6,
                 '&:active': { opacity: 1 },
               }}
@@ -450,7 +442,7 @@ function ActiveWorkoutContent() {
                 cursor: 'pointer',
                 fontSize: '0.9rem',
                 fontWeight: 500,
-                color: 'text.disabled',
+                color: tc.f(d),
                 '&:active': { color: 'error.main' },
               }}
             >
@@ -469,13 +461,13 @@ function ActiveWorkoutContent() {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                color: timer.sound ? 'text.secondary' : 'text.disabled',
+                color: timer.sound ? tc.m(d) : tc.f(d),
                 opacity: timer.sound ? 0.7 : 0.3,
                 transition: 'all 0.2s ease',
                 '&:active': { opacity: 1 },
               }}
             >
-              {timer.sound ? <VolumeUp sx={{ fontSize: 20 }} /> : <VolumeOff sx={{ fontSize: 20 }} />}
+              {timer.sound ? <SpeakerHigh size={20} weight={W} /> : <SpeakerSlash size={20} weight={W} />}
             </Box>
             <Box
               onClick={() => {
@@ -486,13 +478,13 @@ function ActiveWorkoutContent() {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                color: timer.vibration ? 'text.secondary' : 'text.disabled',
+                color: timer.vibration ? tc.m(d) : tc.f(d),
                 opacity: timer.vibration ? 0.7 : 0.3,
                 transition: 'all 0.2s ease',
                 '&:active': { opacity: 1 },
               }}
             >
-              <Vibration sx={{ fontSize: 20 }} />
+              <DeviceMobile size={20} weight={W} />
             </Box>
           </Stack>
         </Box>
@@ -512,38 +504,36 @@ function ActiveWorkoutContent() {
                 const isComplete = completedSets >= targetSets;
 
                 return (
-                  <Card
+                  <Box
                     key={templateEx.exerciseId}
-                    sx={{
-                      border: isComplete ? 2 : 1,
-                      borderColor: isComplete ? 'success.main' : 'divider',
+                    sx={card(d, {
+                      p: 2,
+                      border: isComplete ? '2px solid' : '1px solid',
+                      borderColor: isComplete ? 'success.main' : (d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08)),
                       opacity: isComplete ? 0.7 : 1,
-                    }}
+                    })}
                   >
-                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                         <Box sx={{ flex: 1 }}>
                           <Stack direction="row" spacing={1} alignItems="center">
                             <Chip
                               label={index + 1}
                               size="small"
-                              color={isComplete ? 'success' : 'primary'}
-                              sx={{ width: 24, height: 24, fontSize: '0.75rem' }}
+                              sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: isComplete ? 'success.main' : GOLD, color: isComplete ? '#fff' : GOLD_CONTRAST }}
                             />
                             <Typography
                               variant="subtitle2"
-                              fontWeight={600}
+                              sx={{ fontWeight: 600, color: tc.h(d), cursor: 'pointer', textDecoration: 'underline', textDecorationColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08), textUnderlineOffset: 3 }}
                               onClick={() => { if (exercise) setInfoExercise(exercise); }}
-                              sx={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'divider', textUnderlineOffset: 3 }}
                             >
                               {templateEx.exerciseName}
                             </Typography>
                           </Stack>
                           <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{ color: tc.m(d) }}>
                               Objectif: {targetSets} × {templateEx.targetReps}
                             </Typography>
-                            <Typography variant="caption" color={isComplete ? 'success.main' : 'text.secondary'}>
+                            <Typography variant="caption" sx={{ color: isComplete ? 'success.main' : tc.m(d) }}>
                               Fait: {completedSets}/{targetSets} séries
                             </Typography>
                           </Stack>
@@ -557,19 +547,22 @@ function ActiveWorkoutContent() {
                           <IconButton
                             size="small"
                             onClick={() => handleOpenSwap(templateEx.exerciseId)}
-                            sx={{ border: 1, borderColor: 'divider' }}
+                            sx={{ border: '1px solid', borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }}
                           >
-                            <SwapHoriz fontSize="small" />
+                            <ArrowsLeftRight size={18} weight={W} />
                           </IconButton>
                           <Button
                             size="small"
-                            variant={isComplete ? 'outlined' : 'contained'}
                             onClick={() => {
                               if (exercise) {
                                 setSelectedExercise(exercise);
                               }
                             }}
                             disabled={!exercise}
+                            sx={isComplete
+                              ? { ...goldOutlinedBtnSx }
+                              : { ...goldBtnSx }
+                            }
                           >
                             {isComplete ? '+ série' : 'Ajouter'}
                           </Button>
@@ -586,7 +579,7 @@ function ActiveWorkoutContent() {
                                 <Stack direction="row" alignItems="center" spacing={0.5}>
                                   <span>{set.reps} × {set.weight}kg</span>
                                   {set.restTaken && (
-                                    <Typography component="span" sx={{ fontSize: '0.6rem', opacity: 0.6 }}>
+                                    <Typography component="span" sx={{ fontSize: '0.6rem', opacity: 0.6, color: tc.f(d) }}>
                                       {formatRestTime(set.restTaken)}
                                     </Typography>
                                   )}
@@ -603,8 +596,7 @@ function ActiveWorkoutContent() {
                           ))}
                         </Stack>
                       )}
-                    </CardContent>
-                  </Card>
+                  </Box>
                 );
               })}
             </>
@@ -635,17 +627,15 @@ function ActiveWorkoutContent() {
 
           {/* Add Exercise Button */}
           <Button
-            variant="outlined"
             fullWidth
             onClick={() => setShowExercisePicker(true)}
             sx={{
+              ...goldOutlinedBtnSx,
               py: 2,
-              borderStyle: 'dashed',
-              borderColor: 'divider',
-              color: 'text.secondary',
-              '&:hover': { borderColor: 'text.secondary', bgcolor: 'action.hover' },
+              border: '1px dashed',
+              borderColor: alpha(GOLD, 0.3),
             }}
-            startIcon={<Add />}
+            startIcon={<Plus size={20} weight={W} />}
           >
             Ajouter un exercice
           </Button>
@@ -661,7 +651,7 @@ function ActiveWorkoutContent() {
         open={!!selectedExercise}
         onClose={() => setSelectedExercise(null)}
         PaperProps={{
-          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.paper' },
+          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: panelBg(d) },
         }}
       >
         {selectedExercise && (
@@ -685,7 +675,7 @@ function ActiveWorkoutContent() {
         open={showExercisePicker}
         onClose={() => setShowExercisePicker(false)}
         PaperProps={{
-          sx: { height: '90vh', borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.default' },
+          sx: { height: '90vh', borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: surfaceBg(d) },
         }}
       >
         <ExercisePicker
@@ -697,24 +687,21 @@ function ActiveWorkoutContent() {
       </Drawer>
 
       {/* End Workout Confirmation */}
-      <Dialog open={showEndConfirm} onClose={() => setShowEndConfirm(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Terminer la séance ?</DialogTitle>
+      <Dialog open={showEndConfirm} onClose={() => setShowEndConfirm(false)} maxWidth="xs" fullWidth PaperProps={{ sx: dialogPaperSx(d) }}>
+        <DialogTitle sx={{ color: tc.h(d) }}>Terminer la séance ?</DialogTitle>
         <DialogContent>
-          <Typography color="text.secondary">
+          <Typography sx={{ color: tc.m(d) }}>
             Tu as fait {session?.sets.filter(s => !s.isWarmup).length || 0} séries.
             Tu peux toujours reprendre plus tard.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setShowEndConfirm(false)} variant="outlined">
+          <Button onClick={() => setShowEndConfirm(false)} sx={{ ...goldOutlinedBtnSx }}>
             Continuer
           </Button>
           <Button
             onClick={handleEndWorkout}
-            variant="contained"
-            sx={{
-              background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
-            }}
+            sx={{ ...goldBtnSx }}
           >
             Terminer
           </Button>
@@ -730,28 +717,28 @@ function ActiveWorkoutContent() {
           setSimilarExercises([]);
         }}
         PaperProps={{
-          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: 'background.paper', maxHeight: '70vh' },
+          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: panelBg(d), maxHeight: '70vh' },
         }}
       >
         <Box sx={{ p: 2 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-            <Typography variant="h6" fontWeight={600}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: tc.h(d) }}>
               Remplacer l'exercice
             </Typography>
             <IconButton onClick={() => {
               setSwapExerciseId(null);
               setSimilarExercises([]);
             }}>
-              <Close />
+              <X size={24} weight={W} />
             </IconButton>
           </Stack>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography variant="body2" sx={{ color: tc.m(d), mb: 2 }}>
             Exercices ciblant le même groupe musculaire :
           </Typography>
 
           {similarExercises.length === 0 ? (
-            <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+            <Typography sx={{ color: tc.m(d), textAlign: 'center', py: 4 }}>
               Aucun exercice similaire trouvé
             </Typography>
           ) : (
@@ -768,10 +755,10 @@ function ActiveWorkoutContent() {
                     key={ex.id}
                     onClick={() => handleSwapExercise(ex.id)}
                     sx={{
-                      borderRadius: 2,
+                      borderRadius: '14px',
                       mb: 0.5,
-                      border: 1,
-                      borderColor: ex.score >= 75 ? 'success.main' : ex.score >= 50 ? 'divider' : 'warning.main',
+                      border: '1px solid',
+                      borderColor: ex.score >= 75 ? 'success.main' : ex.score >= 50 ? (d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08)) : 'warning.main',
                       bgcolor: ex.score >= 75 ? 'rgba(16,185,129,0.05)' : 'transparent',
                     }}
                   >
@@ -816,25 +803,20 @@ function ActiveWorkoutContent() {
         <Fab
           onClick={() => setShowExercisePicker(true)}
           sx={{
+            ...goldBtnSx,
             position: 'fixed',
             bottom: 24,
             right: 24,
             width: 56,
             height: 56,
-            bgcolor: 'background.paper',
-            color: 'text.primary',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-            border: 1,
-            borderColor: 'divider',
-            '&:hover': {
-              bgcolor: 'background.paper',
-            },
+            boxShadow: `0 4px 20px ${alpha(GOLD, 0.4)}`,
+            border: 'none',
             '&:active': {
               transform: 'scale(0.95)',
             },
           }}
         >
-          <Add sx={{ fontSize: 28 }} />
+          <Plus size={28} weight={W} />
         </Fab>
       )}
     </Box>
@@ -844,20 +826,10 @@ function ActiveWorkoutContent() {
 export default function ActiveWorkoutPage() {
   const { userId, loading: authLoading } = useAuth();
   if (authLoading || !userId) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
   return (
-    <Suspense
-      fallback={
-        <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
+    <Suspense fallback={<FullScreenLoader />}>
       <ActiveWorkoutContent />
     </Suspense>
   );
@@ -882,6 +854,7 @@ function MachineSetupInline({
   onSheetClose: () => void;
 }) {
   const mutations = useWorkoutMutations();
+  const d = useDark();
   const { data: setupRows } = useMachineSetups(exerciseId);
   const [editingSetup, setEditingSetup] = useState<MachineSetup | null>(null);
 
@@ -936,7 +909,7 @@ function MachineSetupInline({
             />
           ))}
           <Chip
-            icon={<Add sx={{ fontSize: 12 }} />}
+            icon={<Plus size={12} weight={W} />}
             label="Nouvelle"
             size="small"
             variant="outlined"
@@ -955,8 +928,8 @@ function MachineSetupInline({
           onClick={(e) => { e.stopPropagation(); setEditingSetup(selectedSetup); onSheetOpen(); }}
           sx={{
             my: 0.75, py: 0.5, px: 1, cursor: 'pointer',
-            borderLeft: 2, borderColor: 'info.main',
-            borderRadius: '0 4px 4px 0', bgcolor: 'action.hover',
+            borderLeft: 2, borderColor: GOLD,
+            borderRadius: '0 4px 4px 0', bgcolor: alpha(GOLD, 0.05),
           }}
         >
           {selectedSetup.photoBase64 && (
@@ -974,14 +947,14 @@ function MachineSetupInline({
             {filledSettings.length > 0 && (
               <Stack direction="row" spacing={0.5} sx={{ mt: 0.25, flexWrap: 'wrap', gap: 0.25 }}>
                 {filledSettings.slice(0, 3).map((s, i) => (
-                  <Typography key={i} variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
+                  <Typography key={i} variant="caption" sx={{ color: tc.f(d), fontSize: '0.6rem' }}>
                     {s.key}: {s.value}
                   </Typography>
                 ))}
               </Stack>
             )}
           </Box>
-          <Settings sx={{ fontSize: 14, color: 'text.disabled', flexShrink: 0 }} />
+          <GearSix size={14} weight={W} style={{ color: tc.f(d), flexShrink: 0 }} />
         </Stack>
       )}
 
@@ -1024,6 +997,7 @@ function ExerciseCard({
   onShowInfo: (exercise: Exercise) => void;
 }) {
   const mutations = useWorkoutMutations();
+  const d = useDark();
   const [showAddSet, setShowAddSet] = useState(false);
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(!isLastExercise && sets.length > 0);
@@ -1056,10 +1030,10 @@ function ExerciseCard({
   const totalVolume = workingSets.reduce((sum, s) => sum + (s.reps || 0) * parseFloat(s.weight || '0'), 0);
 
   return (
-    <Card>
+    <Box sx={card(d)}>
       {/* Exercise Header — tap to collapse/expand */}
-      <CardContent
-        sx={{ pb: collapsed ? undefined : 0, cursor: 'pointer', '&:last-child': collapsed ? { pb: 2 } : undefined }}
+      <Box
+        sx={{ p: 2, pb: collapsed ? 2 : 0, cursor: 'pointer' }}
         onClick={() => { triggerHaptic('light'); setCollapsed(!collapsed); }}
       >
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -1067,26 +1041,24 @@ function ExerciseCard({
             <Stack direction="row" alignItems="center" spacing={1}>
               <Typography
                 variant="subtitle1"
-                fontWeight={600}
+                sx={{ fontWeight: 600, color: tc.h(d), cursor: 'pointer', textDecoration: 'underline', textDecorationColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08), textUnderlineOffset: 3 }}
                 onClick={(e) => { e.stopPropagation(); onShowInfo(exercise); }}
-                sx={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'divider', textUnderlineOffset: 3 }}
               >
                 {exercise.nameFr}
               </Typography>
-              <ExpandMore sx={{
-                fontSize: 20,
-                color: 'text.disabled',
+              <CaretDown size={20} weight={W} style={{
+                color: tc.f(d),
                 transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
                 transition: 'transform 0.2s',
               }} />
             </Stack>
             {collapsed ? (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: tc.m(d) }}>
                 {workingSets.length} série{workingSets.length !== 1 ? 's' : ''}
                 {totalVolume > 0 && <> · {totalVolume.toLocaleString()}kg</>}
               </Typography>
             ) : (
-              <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+              <Typography variant="body2" sx={{ color: tc.m(d), textTransform: 'capitalize' }}>
                 {exercise.muscleGroup}
               </Typography>
             )}
@@ -1094,8 +1066,8 @@ function ExerciseCard({
           <Stack direction="row" alignItems="center" spacing={0.5} onClick={(e) => e.stopPropagation()}>
             {!collapsed && previousSets.length > 0 && (
               <Box sx={{ textAlign: 'right' }}>
-                <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
-                <Typography variant="body2" color="text.primary">
+                <Typography variant="caption" sx={{ color: tc.m(d) }}>Dernière fois</Typography>
+                <Typography variant="body2" sx={{ color: tc.h(d) }}>
                   {previousSets[0].reps} × {previousSets[0].weight}kg
                 </Typography>
               </Box>
@@ -1104,27 +1076,27 @@ function ExerciseCard({
               size="small"
               onClick={(e) => setMenuAnchor(e.currentTarget)}
             >
-              <MoreVert sx={{ fontSize: 18, color: 'text.disabled' }} />
+              <DotsThreeVertical size={18} weight={W} style={{ color: tc.f(d) }} />
             </IconButton>
           </Stack>
         </Stack>
-      </CardContent>
+      </Box>
       <Menu
         anchorEl={menuAnchor}
         open={!!menuAnchor}
         onClose={() => setMenuAnchor(null)}
-        slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 180 } } }}
+        slotProps={{ paper: { sx: { borderRadius: '14px', minWidth: 180, bgcolor: panelBg(d) } } }}
       >
         <MenuItem onClick={() => { setMenuAnchor(null); setCollapsed(false); setMachineSheetOpen(true); }}>
-          <Settings sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
+          <GearSix size={18} weight={W} style={{ marginRight: 12, color: tc.m(d) }} />
           Configurer machine
         </MenuItem>
         <MenuItem onClick={() => { setMenuAnchor(null); setCollapsed(false); setForceEditNote(true); }}>
-          <EditNote sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
+          <NotePencil size={18} weight={W} style={{ marginRight: 12, color: tc.m(d) }} />
           Note exercice
         </MenuItem>
         <MenuItem onClick={() => { setMenuAnchor(null); onShowInfo(exercise); }}>
-          <InfoOutlined sx={{ fontSize: 18, mr: 1.5, color: 'text.secondary' }} />
+          <Info size={18} weight={W} style={{ marginRight: 12, color: tc.m(d) }} />
           Info exercice
         </MenuItem>
         {sets.length > 0 && (
@@ -1135,25 +1107,24 @@ function ExerciseCard({
             }}
             sx={{ color: 'error.main' }}
           >
-            <Delete sx={{ fontSize: 18, mr: 1.5 }} />
+            <Trash size={18} weight={W} style={{ marginRight: 12 }} />
             Supprimer dernière série
           </MenuItem>
         )}
       </Menu>
 
-      <Dialog open={confirmDeleteLast} onClose={() => setConfirmDeleteLast(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Supprimer la dernière série ?</DialogTitle>
+      <Dialog open={confirmDeleteLast} onClose={() => setConfirmDeleteLast(false)} maxWidth="xs" fullWidth PaperProps={{ sx: dialogPaperSx(d) }}>
+        <DialogTitle sx={{ color: tc.h(d) }}>Supprimer la dernière série ?</DialogTitle>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setConfirmDeleteLast(false)} variant="outlined">Annuler</Button>
+          <Button onClick={() => setConfirmDeleteLast(false)} sx={{ ...goldOutlinedBtnSx }}>Annuler</Button>
           <Button
-            color="error"
-            variant="contained"
             onClick={async () => {
               setConfirmDeleteLast(false);
               triggerHaptic('heavy');
               const lastSetToDelete = sets[sets.length - 1];
               await mutations.deleteSet(lastSetToDelete.id);
             }}
+            sx={{ bgcolor: 'error.main', color: '#fff', borderRadius: '14px', '&:hover': { bgcolor: 'error.dark' } }}
           >
             Supprimer
           </Button>
@@ -1195,11 +1166,11 @@ function ExerciseCard({
               onClick={() => setEditingSetId(set.id)}
               sx={{
                 py: 1.5,
-                borderBottom: 1,
-                borderColor: 'divider',
+                borderBottom: '1px solid',
+                borderColor: d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06),
                 cursor: 'pointer',
-                '&:active': { bgcolor: 'action.selected' },
-                ...(set.isWarmup && { bgcolor: 'action.hover', mx: -2, px: 2 }),
+                '&:active': { bgcolor: alpha(GOLD, 0.05) },
+                ...(set.isWarmup && { bgcolor: d ? alpha('#ffffff', 0.03) : alpha('#000000', 0.02), mx: -2, px: 2 }),
               }}
             >
               <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -1209,23 +1180,24 @@ function ExerciseCard({
                       width: 32,
                       height: 32,
                       borderRadius: '50%',
-                      bgcolor: 'action.hover',
+                      bgcolor: d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.04),
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '0.875rem',
                       fontWeight: 500,
+                      color: tc.h(d),
                     }}
                   >
                     {set.isWarmup ? 'W' : set.setNumber}
                   </Box>
                   <Box>
-                    <Typography component="span" fontWeight={500}>{set.reps}</Typography>
-                    <Typography component="span" color="text.secondary" sx={{ mx: 1 }}>×</Typography>
-                    <Typography component="span" fontWeight={500}>{set.weight}kg</Typography>
-                    {set.rpe && <Typography component="span" color="text.secondary" sx={{ ml: 1 }}>RPE {set.rpe}</Typography>}
+                    <Typography component="span" sx={{ fontWeight: 500, color: tc.h(d) }}>{set.reps}</Typography>
+                    <Typography component="span" sx={{ mx: 1, color: tc.m(d) }}>×</Typography>
+                    <Typography component="span" sx={{ fontWeight: 500, color: tc.h(d) }}>{set.weight}kg</Typography>
+                    {set.rpe && <Typography component="span" sx={{ ml: 1, color: tc.m(d) }}>RPE {set.rpe}</Typography>}
                     {set.restTaken && (
-                      <Typography component="span" color="text.disabled" sx={{ ml: 1, fontSize: '0.75rem' }}>
+                      <Typography component="span" sx={{ ml: 1, fontSize: '0.75rem', color: tc.f(d) }}>
                         {formatRestTime(set.restTaken)}
                       </Typography>
                     )}
@@ -1233,18 +1205,17 @@ function ExerciseCard({
                 </Stack>
                 {set.isPr && (
                   <Chip
-                    icon={<EmojiEvents sx={{ fontSize: 16 }} />}
+                    icon={<Trophy size={16} weight={W} />}
                     label="PR!"
                     size="small"
-                    color="warning"
-                    sx={{ fontWeight: 600 }}
+                    sx={{ fontWeight: 600, bgcolor: alpha(GOLD, 0.15), color: GOLD, border: `1px solid ${alpha(GOLD, 0.3)}` }}
                   />
                 )}
               </Stack>
               {set.notes && (
                 <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.25, pl: 6 }}>
-                  <EditNote sx={{ fontSize: 12, color: 'text.disabled' }} />
-                  <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic', lineHeight: 1.3 }}>
+                  <NotePencil size={12} weight={W} style={{ color: tc.f(d) }} />
+                  <Typography variant="caption" sx={{ fontStyle: 'italic', lineHeight: 1.3, color: tc.f(d) }}>
                     {set.notes}
                   </Typography>
                 </Stack>
@@ -1259,7 +1230,7 @@ function ExerciseCard({
           <Button
             fullWidth
             onClick={() => setShowAddSet(true)}
-            sx={{ color: 'primary.main', py: 1.5 }}
+            sx={{ color: GOLD, py: 1.5 }}
           >
             + Ajouter une série
           </Button>
@@ -1280,7 +1251,7 @@ function ExerciseCard({
           />
         )}
       </Collapse>
-    </Card>
+    </Box>
   );
 }
 
@@ -1302,6 +1273,7 @@ function SetForm({
   onCancel: () => void;
   children?: React.ReactNode;
 }) {
+  const d = useDark();
   const [weight, setWeight] = useState(initialWeight);
   const [reps, setReps] = useState(initialReps);
   const [notes, setNotes] = useState(initialNotes);
@@ -1337,13 +1309,13 @@ function SetForm({
           slotProps={{
             input: {
               sx: { fontSize: '0.85rem' },
-              startAdornment: <EditNote sx={{ fontSize: 16, color: 'text.disabled', mr: 0.75 }} />,
+              startAdornment: <NotePencil size={16} weight={W} style={{ color: tc.f(d), marginRight: 6 }} />,
             },
           }}
         />
       ) : (
         <Chip
-          icon={<EditNote sx={{ fontSize: 14 }} />}
+          icon={<NotePencil size={14} weight={W} />}
           label="Note"
           size="small"
           variant="outlined"
@@ -1356,7 +1328,7 @@ function SetForm({
         <Button
           fullWidth
           onClick={onCancel}
-          sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { bgcolor: 'action.hover' } }}
+          sx={{ color: tc.m(d), fontWeight: 500, borderRadius: '14px', '&:hover': { bgcolor: alpha(GOLD, 0.05) } }}
         >
           Annuler
         </Button>
@@ -1365,11 +1337,8 @@ function SetForm({
           onClick={handleSubmit}
           disabled={weight == null || !reps || isSubmitting}
           sx={{
-            bgcolor: 'text.primary',
-            color: 'background.default',
-            fontWeight: 600,
-            '&:hover': { bgcolor: 'text.primary', opacity: 0.9 },
-            '&:disabled': { bgcolor: 'action.disabled', color: 'text.disabled' },
+            ...goldBtnSx,
+            '&:disabled': { bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08), color: tc.f(d) },
           }}
         >
           {isSubmitting ? '...' : submitLabel}
@@ -1392,31 +1361,32 @@ function EditSetInline({
   onCancel: () => void;
 }) {
   const mutations = useWorkoutMutations();
+  const d = useDark();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
-    <Box sx={{ py: 2, borderBottom: 1, borderColor: 'divider' }}>
+    <Box sx={{ py: 2, borderBottom: '1px solid', borderColor: d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06) }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
         <Stack direction="row" alignItems="center" spacing={2}>
           <Box
             sx={{
               width: 32, height: 32, borderRadius: '50%',
-              bgcolor: 'primary.main', color: 'primary.contrastText',
+              bgcolor: GOLD, color: GOLD_CONTRAST,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '0.875rem', fontWeight: 500,
             }}
           >
             {set.isWarmup ? 'W' : set.setNumber}
           </Box>
-          <Typography variant="body2" color="text.secondary">Modifier la série</Typography>
+          <Typography variant="body2" sx={{ color: tc.m(d) }}>Modifier la série</Typography>
         </Stack>
         {!confirmDelete ? (
           <IconButton
             size="small"
             onClick={() => { triggerHaptic('light'); setConfirmDelete(true); }}
-            sx={{ color: 'text.disabled' }}
+            sx={{ color: tc.f(d) }}
           >
-            <Delete fontSize="small" />
+            <Trash size={18} weight={W} />
           </IconButton>
         ) : (
           <Button
@@ -1502,6 +1472,7 @@ function QuickSetInput({
 // Rest Time Picker (Ultra minimal - presets + fine-tune)
 function ExerciseNoteInline({ exerciseId, forceEdit, onForceEditDone }: { exerciseId: string; forceEdit?: boolean; onForceEditDone?: () => void }) {
   const mutations = useWorkoutMutations();
+  const d = useDark();
   const { data: noteRows } = useExerciseNote(exerciseId);
   const currentNote = noteRows?.[0]?.notes || '';
   const [editing, setEditing] = useState(false);
@@ -1527,7 +1498,7 @@ function ExerciseNoteInline({ exerciseId, forceEdit, onForceEditDone }: { exerci
   if (editing) {
     return (
       <Stack direction="row" alignItems="flex-start" spacing={0.75} sx={{ my: 1 }}>
-        <EditNote sx={{ fontSize: 16, color: 'text.disabled', mt: 0.75 }} />
+        <NotePencil size={16} weight={W} style={{ color: tc.f(d), marginTop: 6 }} />
         <TextField
           fullWidth
           size="small"
@@ -1553,12 +1524,12 @@ function ExerciseNoteInline({ exerciseId, forceEdit, onForceEditDone }: { exerci
       onClick={(e) => { e.stopPropagation(); setEditing(true); }}
       sx={{
         my: 1, cursor: 'pointer', py: 0.5, px: 1,
-        borderLeft: 2, borderColor: 'primary.main',
-        borderRadius: '0 4px 4px 0', bgcolor: 'action.hover',
+        borderLeft: 2, borderColor: GOLD,
+        borderRadius: '0 4px 4px 0', bgcolor: alpha(GOLD, 0.05),
       }}
     >
-      <EditNote sx={{ fontSize: 14, color: 'primary.main', mt: 0.125, flexShrink: 0 }} />
-      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.4 }}>
+      <NotePencil size={14} weight={W} style={{ color: GOLD, marginTop: 1, flexShrink: 0 }} />
+      <Typography variant="caption" sx={{ fontStyle: 'italic', lineHeight: 1.4, color: tc.m(d) }}>
         {currentNote}
       </Typography>
     </Stack>
@@ -1567,6 +1538,7 @@ function ExerciseNoteInline({ exerciseId, forceEdit, onForceEditDone }: { exerci
 
 function SessionNotesInput({ sessionId, initialNotes }: { sessionId: string; initialNotes: string }) {
   const mutations = useWorkoutMutations();
+  const d = useDark();
   const [notes, setNotes] = useState(initialNotes);
   const [expanded, setExpanded] = useState(!!initialNotes);
   const stateRef = useRef({ notes, initialNotes, sessionId, mutations });
@@ -1595,29 +1567,28 @@ function SessionNotesInput({ sessionId, initialNotes }: { sessionId: string; ini
 
   if (!expanded) {
     return (
-      <Card
-        variant="outlined"
+      <Box
         onClick={() => setExpanded(true)}
-        sx={{
+        sx={card(d, {
           cursor: 'pointer', py: 1.5,
-          borderStyle: 'dashed', borderColor: 'divider',
+          borderStyle: 'dashed', borderColor: alpha(GOLD, 0.2),
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75,
-          '&:active': { bgcolor: 'action.hover' },
-        }}
+          '&:active': { bgcolor: alpha(GOLD, 0.05) },
+        })}
       >
-        <EditNote sx={{ fontSize: 18, color: 'text.disabled' }} />
-        <Typography variant="caption" color="text.disabled">
+        <NotePencil size={18} weight={W} style={{ color: tc.f(d) }} />
+        <Typography variant="caption" sx={{ color: tc.f(d) }}>
           Note de séance
         </Typography>
-      </Card>
+      </Box>
     );
   }
 
   return (
-    <Card variant="outlined" sx={{ overflow: 'visible' }}>
+    <Box sx={card(d, { overflow: 'visible' })}>
       <Stack direction="row" alignItems="center" spacing={0.75} sx={{ px: 2, pt: 1.5 }}>
-        <EditNote sx={{ fontSize: 16, color: 'text.disabled' }} />
-        <Typography variant="caption" color="text.disabled" fontWeight={500}>Note de séance</Typography>
+        <NotePencil size={16} weight={W} style={{ color: tc.f(d) }} />
+        <Typography variant="caption" sx={{ color: tc.f(d), fontWeight: 500 }}>Note de séance</Typography>
       </Stack>
       <TextField
         fullWidth
@@ -1635,7 +1606,7 @@ function SessionNotesInput({ sessionId, initialNotes }: { sessionId: string; ini
           '& .MuiInputBase-input': { fontSize: '0.85rem' },
         }}
       />
-    </Card>
+    </Box>
   );
 }
 
@@ -1646,6 +1617,7 @@ function RestTimePicker({
   value: number;
   onChange: (seconds: number) => void;
 }) {
+  const d = useDark();
   const presets = [60, 90, 120, 180, 300];
 
   const formatTime = (t: number) =>
@@ -1678,7 +1650,7 @@ function RestTimePicker({
                 cursor: 'pointer',
                 fontSize: isSelected ? '1.1rem' : '0.85rem',
                 fontWeight: isSelected ? 600 : 400,
-                color: isSelected ? 'text.primary' : 'text.disabled',
+                color: isSelected ? tc.h(d) : tc.f(d),
                 opacity: isSelected ? 1 : 0.5,
                 transition: 'all 0.15s ease',
                 '&:active': { opacity: 0.7 },
@@ -1711,7 +1683,7 @@ function RestTimePicker({
             sx={{
               fontSize: '0.9rem',
               fontWeight: 600,
-              color: 'primary.main',
+              color: GOLD,
               minWidth: 40,
               textAlign: 'center',
             }}
@@ -1756,6 +1728,7 @@ function StepperInput({
   max?: number;
   unit?: string;
 }) {
+  const d = useDark();
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
@@ -1786,7 +1759,7 @@ function StepperInput({
       <Typography
         variant="caption"
         sx={{
-          color: 'text.disabled',
+          color: tc.f(d),
           fontSize: '0.65rem',
           textTransform: 'uppercase',
           letterSpacing: '0.05em',
@@ -1842,7 +1815,7 @@ function StepperInput({
               fontSize: '2rem',
               fontWeight: 600,
               minWidth: 48,
-              color: 'text.primary',
+              color: tc.h(d),
               cursor: 'pointer',
               '&:active': { opacity: 0.7 },
             }}
@@ -1890,6 +1863,7 @@ function SetInputSheet({
   onSetAdded: (setId: string, restDuration: number) => void;
 }) {
   const mutations = useWorkoutMutations();
+  const d = useDark();
   const { data: prevSetRows } = useLastSetsForExerciseOrMachine(exercise.id, machineSetupId || null, 5);
 
   const previousSets = useMemo<WorkoutSet[]>(() => {
@@ -1959,12 +1933,12 @@ function SetInputSheet({
   return (
     <Box sx={{ p: 3, maxHeight: '90vh', overflow: 'auto' }}>
       {/* Handle */}
-      <Box sx={{ width: 48, height: 4, bgcolor: 'action.hover', borderRadius: 2, mx: 'auto', mb: 2 }} />
+      <Box sx={{ width: 48, height: 4, bgcolor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.1), borderRadius: 2, mx: 'auto', mb: 2 }} />
 
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Box>
-          <Typography variant="subtitle1" fontWeight={600}>{exercise.nameFr}</Typography>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(d) }}>{exercise.nameFr}</Typography>
           <Stack direction="row" spacing={1} alignItems="center">
             <Chip
               label={isWarmup ? 'Échauffement' : `Série ${setNumber}`}
@@ -1985,7 +1959,7 @@ function SetInputSheet({
           </Stack>
         </Box>
         <IconButton onClick={onClose} size="small">
-          <Close />
+          <X size={24} weight={W} />
         </IconButton>
       </Stack>
 
@@ -1996,32 +1970,32 @@ function SetInputSheet({
       {previousSets.length > 0 && (
         <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
           <Button
-            variant="outlined"
             size="small"
             onClick={handleUsePrevious}
             sx={{
               flex: 1,
               py: 1,
               borderStyle: 'dashed',
+              border: '1px dashed',
+              borderColor: alpha(GOLD, 0.3),
+              borderRadius: '14px',
               textTransform: 'none',
             }}
           >
             <Stack alignItems="center" spacing={0.25}>
-              <Typography variant="caption" color="text.secondary">Dernière fois</Typography>
-              <Typography variant="body2" fontWeight={600}>
+              <Typography variant="caption" sx={{ color: tc.m(d) }}>Dernière fois</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: tc.h(d) }}>
                 {previousSets[0].reps} × {previousSets[0].weight}kg
               </Typography>
             </Stack>
           </Button>
           <Button
-            variant="contained"
             size="small"
             onClick={handleProgressiveOverload}
             sx={{
               flex: 1,
+              ...goldBtnSx,
               py: 1,
-              textTransform: 'none',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
             }}
           >
             <Stack alignItems="center" spacing={0.25}>
@@ -2066,7 +2040,7 @@ function SetInputSheet({
             display: 'block',
             textAlign: 'center',
             mb: 1,
-            color: 'text.disabled',
+            color: tc.f(d),
             fontSize: '0.65rem',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
@@ -2114,13 +2088,13 @@ function SetInputSheet({
           slotProps={{
             input: {
               sx: { fontSize: '0.85rem' },
-              startAdornment: <EditNote sx={{ fontSize: 16, color: 'text.disabled', mr: 0.75 }} />,
+              startAdornment: <NotePencil size={16} weight={W} style={{ color: tc.f(d), marginRight: 6 }} />,
             },
           }}
         />
       ) : (
         <Chip
-          icon={<EditNote sx={{ fontSize: 14 }} />}
+          icon={<NotePencil size={14} weight={W} />}
           label="Note"
           size="small"
           variant="outlined"
@@ -2131,16 +2105,15 @@ function SetInputSheet({
 
       {/* Morpho Tips (collapsible) */}
       {morphotype && (
-        <Card
-          sx={{
+        <Box
+          sx={card(d, {
             mb: 2,
-            bgcolor: 'action.hover',
+            p: 1.5,
             cursor: 'pointer',
             transition: 'all 0.2s',
-          }}
+          })}
           onClick={() => setShowMorphoTips(!showMorphoTips)}
         >
-          <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
             {showMorphoTips ? (
               <MorphoTipsPanel
                 exerciseName={exercise.nameFr}
@@ -2151,37 +2124,32 @@ function SetInputSheet({
               />
             ) : (
               <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: tc.m(d) }}>
                   💡 Conseils morpho
                 </Typography>
               </Stack>
             )}
-          </CardContent>
-        </Card>
+        </Box>
       )}
 
       {/* Submit Button */}
       <Button
         fullWidth
-        variant="contained"
         size="large"
         onClick={handleSubmit}
         disabled={weight == null || !reps || isSubmitting}
         sx={{
+          ...goldBtnSx,
           py: 2,
           fontSize: '1rem',
           fontWeight: 700,
-          borderRadius: 3,
-          background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
-          boxShadow: '0 4px 20px rgba(103, 80, 164, 0.4)',
-          '&:hover': {
-            background: 'linear-gradient(135deg, #7f67be 0%, #bb86fc 100%)',
-          },
+          boxShadow: `0 4px 20px ${alpha(GOLD, 0.4)}`,
           '&:active': {
             transform: 'scale(0.98)',
           },
           '&:disabled': {
-            background: 'rgba(255,255,255,0.1)',
+            bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+            color: tc.f(d),
           },
         }}
       >

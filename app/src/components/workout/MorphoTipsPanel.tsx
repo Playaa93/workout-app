@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
@@ -16,6 +17,8 @@ import {
   type MorphoRecommendation,
   type ExerciseScore,
 } from '@/lib/morpho-exercise-scoring';
+import { GOLD, tc } from '@/lib/design-tokens';
+import { useDark } from '@/hooks/useDark';
 
 type Props = {
   exerciseName: string;
@@ -34,6 +37,8 @@ export function MorphoTipsPanel({
   expanded = false,
   compact = false,
 }: Props) {
+  const d = useDark();
+
   const score = useMemo<ExerciseScore | null>(() => {
     if (!morphotype) return null;
 
@@ -62,10 +67,10 @@ export function MorphoTipsPanel({
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: expanded ? 1.5 : 0 }}>
         <MorphoScoreBadge score={score.score} />
         <Box sx={{ flex: 1 }}>
-          <Typography variant="body2" fontWeight={600}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: tc.h(d) }}>
             Compatibilité morpho
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{ color: tc.m(d) }}>
             {scoreLabel}
           </Typography>
         </Box>
@@ -79,11 +84,13 @@ export function MorphoTipsPanel({
             <LinearProgress
               variant="determinate"
               value={score.score}
-              color={scoreColor}
               sx={{
                 height: 8,
                 borderRadius: 4,
-                bgcolor: 'action.hover',
+                bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.06),
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: scoreColor === 'success' ? '#10b981' : scoreColor === 'warning' ? '#f59e0b' : '#ef4444',
+                },
               }}
             />
           </Box>
@@ -91,8 +98,8 @@ export function MorphoTipsPanel({
           {/* Advantages */}
           {score.advantages.length > 0 && (
             <Box>
-              <Typography variant="caption" color="success.main" fontWeight={600} sx={{ display: 'block', mb: 0.5 }}>
-                ✓ Avantages pour toi
+              <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5, color: '#10b981' }}>
+                Avantages pour toi
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={0.5}>
                 {score.advantages.map((adv, i) => (
@@ -102,7 +109,7 @@ export function MorphoTipsPanel({
                     size="small"
                     sx={{
                       bgcolor: 'rgba(16,185,129,0.15)',
-                      color: 'success.main',
+                      color: '#10b981',
                       fontSize: '0.7rem',
                       height: 24,
                     }}
@@ -115,8 +122,8 @@ export function MorphoTipsPanel({
           {/* Disadvantages */}
           {score.disadvantages.length > 0 && (
             <Box>
-              <Typography variant="caption" color="warning.main" fontWeight={600} sx={{ display: 'block', mb: 0.5 }}>
-                ⚠ Points d'attention
+              <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5, color: '#f59e0b' }}>
+                Points d'attention
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={0.5}>
                 {score.disadvantages.map((dis, i) => (
@@ -126,7 +133,7 @@ export function MorphoTipsPanel({
                     size="small"
                     sx={{
                       bgcolor: 'rgba(249,115,22,0.15)',
-                      color: 'warning.main',
+                      color: '#f59e0b',
                       fontSize: '0.7rem',
                       height: 24,
                     }}
@@ -139,13 +146,13 @@ export function MorphoTipsPanel({
           {/* Modifications */}
           {score.modifications.length > 0 && (
             <Box>
-              <Typography variant="caption" color="info.main" fontWeight={600} sx={{ display: 'block', mb: 0.5 }}>
-                🔧 Adaptations recommandées
+              <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5, color: GOLD }}>
+                Adaptations recommandées
               </Typography>
               <Stack spacing={0.25}>
                 {score.modifications.map((mod, i) => (
-                  <Typography key={i} variant="caption" color="text.secondary">
-                    • {mod}
+                  <Typography key={i} variant="caption" sx={{ color: tc.m(d) }}>
+                    - {mod}
                   </Typography>
                 ))}
               </Stack>
@@ -155,13 +162,13 @@ export function MorphoTipsPanel({
           {/* Cues */}
           {score.cues.length > 0 && (
             <Box>
-              <Typography variant="caption" color="primary.main" fontWeight={600} sx={{ display: 'block', mb: 0.5 }}>
-                💡 Conseils de placement
+              <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5, color: GOLD }}>
+                Conseils de placement
               </Typography>
               <Stack spacing={0.25}>
                 {score.cues.map((cue, i) => (
-                  <Typography key={i} variant="caption" color="text.secondary">
-                    • {cue}
+                  <Typography key={i} variant="caption" sx={{ color: tc.m(d) }}>
+                    - {cue}
                   </Typography>
                 ))}
               </Stack>

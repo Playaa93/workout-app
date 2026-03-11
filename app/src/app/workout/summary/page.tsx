@@ -5,22 +5,25 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
-import CircularProgress from '@mui/material/CircularProgress';
-import Chip from '@mui/material/Chip';
 import Grow from '@mui/material/Grow';
-import History from '@mui/icons-material/History';
-import Home from '@mui/icons-material/Home';
-import EmojiEvents from '@mui/icons-material/EmojiEvents';
-import FitnessCenter from '@mui/icons-material/FitnessCenter';
+import {
+  ClockCounterClockwise,
+  House,
+  Trophy,
+  Barbell,
+} from '@phosphor-icons/react';
+import { GOLD, GOLD_CONTRAST, GOLD_LIGHT, W, tc, card, surfaceBg } from '@/lib/design-tokens';
+import { alpha } from '@mui/material/styles';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
 import type { CardioActivity } from '@/db/schema';
+import { useDark } from '@/hooks/useDark';
+import FullScreenLoader from '@/components/FullScreenLoader';
 
 function SummaryContent() {
   const searchParams = useSearchParams();
+  const d = useDark();
 
   const type = searchParams.get('type') || 'strength';
   const xp = parseInt(searchParams.get('xp') || '0');
@@ -51,7 +54,7 @@ function SummaryContent() {
         alignItems: 'center',
         justifyContent: 'center',
         p: 3,
-        bgcolor: 'background.default',
+        bgcolor: surfaceBg(d),
         textAlign: 'center',
       }}
     >
@@ -63,10 +66,10 @@ function SummaryContent() {
               <Typography variant="h1" sx={{ mb: 2, fontSize: '4.5rem' }}>
                 💤
               </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
+              <Typography variant="h4" fontWeight={700} sx={{ mb: 1, color: tc.h(d) }}>
                 Séance annulée
               </Typography>
-              <Typography color="text.secondary">
+              <Typography sx={{ color: tc.m(d) }}>
                 Aucun exercice effectué, pas d&apos;XP cette fois
               </Typography>
             </>
@@ -75,10 +78,10 @@ function SummaryContent() {
               <Typography variant="h1" sx={{ mb: 2, fontSize: '4.5rem' }}>
                 🤏
               </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
+              <Typography variant="h4" fontWeight={700} sx={{ mb: 1, color: tc.h(d) }}>
                 Séance trop courte
               </Typography>
-              <Typography color="text.secondary">
+              <Typography sx={{ color: tc.m(d) }}>
                 Ajoute des exercices la prochaine fois pour gagner de l&apos;XP
               </Typography>
             </>
@@ -87,10 +90,10 @@ function SummaryContent() {
               <Typography variant="h1" sx={{ mb: 2, fontSize: '4.5rem' }}>
                 {isCardio && activityInfo ? activityInfo.emoji : '🎉'}
               </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
+              <Typography variant="h4" fontWeight={700} sx={{ mb: 1, color: tc.h(d) }}>
                 {isCardio ? 'Séance cardio terminée !' : 'Séance terminée !'}
               </Typography>
-              <Typography color="text.secondary">
+              <Typography sx={{ color: tc.m(d) }}>
                 Bravo, continue comme ça
               </Typography>
             </>
@@ -101,39 +104,37 @@ function SummaryContent() {
       {noXpEarned ? (
         /* Empty/minimal session: motivational tips */
         <Grow in timeout={700}>
-          <Card
+          <Box
             sx={{
+              ...card(d),
               mb: 3,
               width: '100%',
               maxWidth: 360,
-              background: (theme) => theme.palette.mode === 'dark'
-                ? 'rgba(255,255,255,0.05)'
-                : 'rgba(0,0,0,0.03)',
             }}
           >
-            <CardContent sx={{ py: 3 }}>
+            <Box sx={{ py: 3, px: 2.5 }}>
               <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 2 }}>
-                <FitnessCenter sx={{ color: 'primary.main' }} />
-                <Typography variant="body1" fontWeight={600}>
+                <Barbell weight={W} size={22} color={GOLD} />
+                <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(d) }}>
                   Pour gagner de l&apos;XP :
                 </Typography>
               </Stack>
               <Stack spacing={1.5} sx={{ textAlign: 'left' }}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: tc.m(d) }}>
                   &#x2022; Ajoute au moins 1 exercice et fais une série
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: tc.m(d) }}>
                   &#x2022; +50 XP de base par séance complétée
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: tc.m(d) }}>
                   &#x2022; +10 XP par tonne de volume soulevé
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: tc.m(d) }}>
                   &#x2022; +25 XP par record personnel battu
                 </Typography>
               </Stack>
-            </CardContent>
-          </Card>
+            </Box>
+          </Box>
         </Grow>
       ) : (
         <>
@@ -171,55 +172,57 @@ function SummaryContent() {
           {/* XP Card (only if XP earned) */}
           {xp > 0 && (
             <Grow in timeout={900}>
-              <Card
+              <Box
                 sx={{
+                  ...card(d, {
+                    background: d
+                      ? `linear-gradient(135deg, ${alpha(GOLD, 0.18)} 0%, ${alpha(GOLD, 0.08)} 100%)`
+                      : `linear-gradient(135deg, ${alpha(GOLD, 0.15)} 0%, ${alpha(GOLD, 0.06)} 100%)`,
+                    borderColor: alpha(GOLD, 0.35),
+                  }),
                   mb: 3,
                   width: '100%',
                   maxWidth: 360,
-                  background: (theme) => theme.palette.mode === 'dark'
-                    ? 'linear-gradient(135deg, rgba(187,134,252,0.2) 0%, rgba(103,80,164,0.15) 100%)'
-                    : 'linear-gradient(135deg, rgba(103,80,164,0.15) 0%, rgba(187,134,252,0.1) 100%)',
-                  border: 1,
-                  borderColor: 'primary.main',
                 }}
               >
-                <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                  <Typography variant="body2" color="primary.main" sx={{ mb: 0.5 }}>
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Typography variant="body2" sx={{ mb: 0.5, color: GOLD }}>
                     Expérience gagnée
                   </Typography>
-                  <Typography variant="h3" fontWeight={700} color="primary.main">
+                  <Typography variant="h3" fontWeight={700} sx={{ color: GOLD }}>
                     +{xp} XP
                   </Typography>
-                </CardContent>
-              </Card>
+                </Box>
+              </Box>
             </Grow>
           )}
 
           {/* PR Celebration (strength only) */}
           {!isCardio && prs > 0 && (
             <Grow in timeout={1100}>
-              <Card
+              <Box
                 sx={{
+                  ...card(d, {
+                    background: d
+                      ? `linear-gradient(135deg, ${alpha(GOLD_LIGHT, 0.2)} 0%, ${alpha(GOLD, 0.12)} 100%)`
+                      : `linear-gradient(135deg, ${alpha(GOLD_LIGHT, 0.25)} 0%, ${alpha(GOLD, 0.15)} 100%)`,
+                    borderColor: alpha(GOLD, 0.4),
+                  }),
                   mb: 3,
                   width: '100%',
                   maxWidth: 360,
-                  background: (theme) => theme.palette.mode === 'dark'
-                    ? 'linear-gradient(135deg, rgba(255,183,77,0.2) 0%, rgba(255,152,0,0.15) 100%)'
-                    : 'linear-gradient(135deg, rgba(255,183,77,0.25) 0%, rgba(255,152,0,0.2) 100%)',
-                  border: 1,
-                  borderColor: 'warning.main',
                 }}
               >
-                <CardContent sx={{ textAlign: 'center', py: 2.5 }}>
+                <Box sx={{ textAlign: 'center', py: 2.5, px: 2 }}>
                   <Stack direction="row" justifyContent="center" alignItems="center" spacing={1}>
-                    <EmojiEvents sx={{ color: 'warning.main' }} />
-                    <Typography variant="body1" fontWeight={600} color="warning.main">
+                    <Trophy weight={W} size={22} color={GOLD} />
+                    <Typography variant="body1" fontWeight={600} sx={{ color: GOLD }}>
                       {prs === 1 ? 'Nouveau record personnel !' : `${prs} nouveaux records !`}
                     </Typography>
                   </Stack>
                   <Typography variant="h4" sx={{ mt: 1 }}>🏆🔥</Typography>
-                </CardContent>
-              </Card>
+                </Box>
+              </Box>
             </Grow>
           )}
         </>
@@ -233,12 +236,14 @@ function SummaryContent() {
             href="/workout"
             variant="contained"
             size="large"
-            startIcon={noXpEarned ? <FitnessCenter /> : <History />}
+            startIcon={noXpEarned ? <Barbell weight={W} size={20} /> : <ClockCounterClockwise weight={W} size={20} />}
             sx={{
               py: 1.5,
-              background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
+              background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_LIGHT} 100%)`,
+              color: GOLD_CONTRAST,
+              fontWeight: 600,
               '&:hover': {
-                background: 'linear-gradient(135deg, #7f67be 0%, #bb86fc 100%)',
+                background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
               },
             }}
           >
@@ -249,8 +254,16 @@ function SummaryContent() {
             href="/"
             variant="outlined"
             size="large"
-            startIcon={<Home />}
-            sx={{ py: 1.5 }}
+            startIcon={<House weight={W} size={20} />}
+            sx={{
+              py: 1.5,
+              borderColor: alpha(GOLD, 0.4),
+              color: tc.h(d),
+              '&:hover': {
+                borderColor: GOLD,
+                bgcolor: alpha(GOLD, 0.06),
+              },
+            }}
           >
             Retour à l&apos;accueil
           </Button>
@@ -263,19 +276,7 @@ function SummaryContent() {
 export default function SummaryPage() {
   return (
     <Suspense
-      fallback={
-        <Box
-          sx={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            bgcolor: 'background.default',
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      }
+      fallback={<FullScreenLoader />}
     >
       <SummaryContent />
     </Suspense>
@@ -293,29 +294,29 @@ function StatCard({
   value: string;
   highlight?: boolean;
 }) {
+  const dark = useDark();
   return (
-    <Card
+    <Box
       sx={{
-        ...(highlight && {
-          background: (theme) => theme.palette.mode === 'dark'
-            ? 'rgba(187,134,252,0.15)'
-            : 'rgba(103,80,164,0.1)',
-          border: 1,
-          borderColor: 'primary.main',
-        }),
+        ...card(dark, highlight ? {
+          background: dark
+            ? `${alpha(GOLD, 0.12)}`
+            : `${alpha(GOLD, 0.08)}`,
+          borderColor: alpha(GOLD, 0.3),
+        } : undefined),
       }}
     >
-      <CardContent sx={{ textAlign: 'center', py: 2 }}>
+      <Box sx={{ textAlign: 'center', py: 2 }}>
         <Typography variant="h5" sx={{ mb: 1 }}>{icon}</Typography>
-        <Typography variant="caption" color="text.secondary">{label}</Typography>
+        <Typography variant="caption" sx={{ color: tc.m(dark) }}>{label}</Typography>
         <Typography
           variant="h5"
           fontWeight={700}
-          color={highlight ? 'primary.main' : 'text.primary'}
+          sx={{ color: highlight ? GOLD : tc.h(dark) }}
         >
           {value}
         </Typography>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 }

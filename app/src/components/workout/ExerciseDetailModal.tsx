@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { alpha } from '@mui/material/styles';
 import Model, { type Muscle, type IExerciseData } from 'react-body-highlighter';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -8,10 +9,10 @@ import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
 import Drawer from '@mui/material/Drawer';
-import Close from '@mui/icons-material/Close';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import { X, ArrowLeft, Barbell } from '@phosphor-icons/react';
 import { getExerciseImages } from '@/lib/exercise-images';
+import { GOLD, GOLD_CONTRAST, W, tc, card, panelBg, goldBtnSx } from '@/lib/design-tokens';
+import { useDark } from '@/hooks/useDark';
 
 // Mapping from our muscle names to react-body-highlighter muscle names
 const MUSCLE_MAPPING: Record<string, string[]> = {
@@ -61,7 +62,7 @@ const MUSCLE_MAPPING: Record<string, string[]> = {
   calves_gastrocnemius: ['calves'],
   calves_soleus: ['calves'],
   hip_flexors: ['quadriceps'], // Inclut le rectus femoris
-  tensor_fasciae_latae: ['gluteal'], // TFL - côté de la hanche
+  tensor_fasciae_latae: ['gluteal'], // TFL - cote de la hanche
   adductors: ['adductor'],
   legs: ['quadriceps', 'hamstring', 'gluteal', 'calves'],
 
@@ -71,7 +72,7 @@ const MUSCLE_MAPPING: Record<string, string[]> = {
   obliques_external: ['obliques'],
   obliques_internal: ['obliques'],
   transverse_abdominis: ['abs'],
-  serratus_anterior: ['obliques'], // Dentelé - côté du torse
+  serratus_anterior: ['obliques'], // Dentele - cote du torse
   core: ['abs', 'obliques'],
 };
 
@@ -104,7 +105,7 @@ const EQUIPMENT_LABELS: Record<string, string> = {
   bodyweight: 'Poids du corps',
   band: 'Élastique',
   kettlebell: 'Kettlebell',
-  medicine_ball: 'Medecine ball',
+  medicine_ball: 'Médecine ball',
   ez_bar: 'Barre EZ',
   smith_machine: 'Smith machine',
   bench: 'Banc',
@@ -157,6 +158,8 @@ export default function ExerciseDetailModal({
   onClose,
   onSelect,
 }: ExerciseDetailModalProps) {
+  const d = useDark();
+
   const [viewSide, setViewSide] = useState<'anterior' | 'posterior'>('anterior');
 
   // Auto-select the correct body view when exercise changes
@@ -223,7 +226,7 @@ export default function ExerciseDetailModal({
         sx: {
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
-          bgcolor: 'background.default',
+          bgcolor: panelBg(d),
           maxHeight: '90vh',
         },
       }}
@@ -232,9 +235,9 @@ export default function ExerciseDetailModal({
         {/* Handle */}
         <Box
           sx={{
-            width: 48,
+            width: 40,
             height: 4,
-            bgcolor: 'action.hover',
+            bgcolor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12),
             borderRadius: 2,
             mx: 'auto',
             mb: 2,
@@ -248,18 +251,19 @@ export default function ExerciseDetailModal({
               onClick={onClose}
               size="small"
               sx={{
-                bgcolor: 'action.hover',
-                '&:hover': { bgcolor: 'action.selected' },
+                bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
+                color: tc.m(d),
+                '&:hover': { bgcolor: d ? alpha('#ffffff', 0.12) : alpha('#000000', 0.08) },
               }}
             >
-              <ArrowBack sx={{ fontSize: 20 }} />
+              <ArrowLeft size={20} weight={W} />
             </IconButton>
-            <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(d) }}>
               {exercise.nameFr}
             </Typography>
           </Stack>
-          <IconButton onClick={onClose} size="small" sx={{ color: 'text.disabled' }}>
-            <Close sx={{ fontSize: 20 }} />
+          <IconButton onClick={onClose} size="small" sx={{ color: tc.f(d) }}>
+            <X size={20} weight={W} />
           </IconButton>
         </Stack>
 
@@ -268,7 +272,7 @@ export default function ExerciseDetailModal({
 
         {/* Muscle Tags */}
         <Box sx={{ mb: 2 }}>
-          <Typography variant="caption" color="text.disabled" sx={{ mb: 1, display: 'block' }}>
+          <Typography variant="caption" sx={{ mb: 1, display: 'block', color: tc.f(d) }}>
             Muscles ciblés
           </Typography>
           <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
@@ -304,8 +308,7 @@ export default function ExerciseDetailModal({
         {/* Body Model */}
         <Box
           sx={{
-            bgcolor: 'background.paper',
-            borderRadius: 3,
+            ...card(d),
             p: 2,
             mb: 2,
           }}
@@ -318,7 +321,7 @@ export default function ExerciseDetailModal({
                 cursor: 'pointer',
                 fontSize: '0.85rem',
                 fontWeight: viewSide === 'anterior' ? 600 : 400,
-                color: viewSide === 'anterior' ? 'text.primary' : 'text.disabled',
+                color: viewSide === 'anterior' ? tc.h(d) : tc.f(d),
                 opacity: hasAnterior ? 1 : 0.3,
               }}
             >
@@ -330,7 +333,7 @@ export default function ExerciseDetailModal({
                 cursor: 'pointer',
                 fontSize: '0.85rem',
                 fontWeight: viewSide === 'posterior' ? 600 : 400,
-                color: viewSide === 'posterior' ? 'text.primary' : 'text.disabled',
+                color: viewSide === 'posterior' ? tc.h(d) : tc.f(d),
                 opacity: hasPosterior ? 1 : 0.3,
               }}
             >
@@ -362,11 +365,11 @@ export default function ExerciseDetailModal({
           <Stack direction="row" justifyContent="center" spacing={3} sx={{ mt: 1 }}>
             <Stack direction="row" alignItems="center" spacing={0.5}>
               <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#ef4444' }} />
-              <Typography variant="caption" color="text.secondary">Principal</Typography>
+              <Typography variant="caption" sx={{ color: tc.m(d) }}>Principal</Typography>
             </Stack>
             <Stack direction="row" alignItems="center" spacing={0.5}>
               <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#f97316' }} />
-              <Typography variant="caption" color="text.secondary">Secondaire</Typography>
+              <Typography variant="caption" sx={{ color: tc.m(d) }}>Secondaire</Typography>
             </Stack>
           </Stack>
         </Box>
@@ -374,7 +377,7 @@ export default function ExerciseDetailModal({
         {/* Equipment */}
         {exercise.equipment && exercise.equipment.length > 0 && (
           <Box sx={{ mb: 2 }}>
-            <Typography variant="caption" color="text.disabled" sx={{ mb: 1, display: 'block' }}>
+            <Typography variant="caption" sx={{ mb: 1, display: 'block', color: tc.f(d) }}>
               Équipement
             </Typography>
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
@@ -384,7 +387,7 @@ export default function ExerciseDetailModal({
                   label={EQUIPMENT_LABELS[eq] || eq}
                   size="small"
                   variant="outlined"
-                  sx={{ fontSize: '0.75rem' }}
+                  sx={{ fontSize: '0.75rem', borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12), color: tc.m(d) }}
                 />
               ))}
             </Stack>
@@ -394,13 +397,13 @@ export default function ExerciseDetailModal({
         {/* Difficulty */}
         {exercise.difficulty && (
           <Box sx={{ mb: 3 }}>
-            <Typography variant="caption" color="text.disabled" sx={{ mb: 1, display: 'block' }}>
+            <Typography variant="caption" sx={{ mb: 1, display: 'block', color: tc.f(d) }}>
               Difficulté
             </Typography>
-            <Typography sx={{ fontSize: '0.9rem', textTransform: 'capitalize' }}>
-              {exercise.difficulty === 'beginner' && '🟢 Débutant'}
-              {exercise.difficulty === 'intermediate' && '🟡 Intermédiaire'}
-              {exercise.difficulty === 'expert' && '🔴 Expert'}
+            <Typography sx={{ fontSize: '0.9rem', textTransform: 'capitalize', color: tc.h(d) }}>
+              {exercise.difficulty === 'beginner' && 'Débutant'}
+              {exercise.difficulty === 'intermediate' && 'Intermédiaire'}
+              {exercise.difficulty === 'expert' && 'Expert'}
               {!['beginner', 'intermediate', 'expert'].includes(exercise.difficulty) && exercise.difficulty}
             </Typography>
           </Box>
@@ -414,12 +417,9 @@ export default function ExerciseDetailModal({
               onClose();
             }}
             sx={{
+              ...goldBtnSx,
               py: 1.5,
               textAlign: 'center',
-              bgcolor: 'text.primary',
-              color: 'background.default',
-              borderRadius: 2,
-              fontWeight: 600,
               cursor: 'pointer',
               '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
             }}
@@ -434,6 +434,8 @@ export default function ExerciseDetailModal({
 
 // Animated image component for exercise demonstration
 function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
+  const d = useDark();
+
   const [currentImage, setCurrentImage] = useState(0);
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -463,7 +465,7 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
       <Box
         sx={{
           height: 180,
-          bgcolor: 'action.hover',
+          bgcolor: d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.04),
           borderRadius: 3,
           display: 'flex',
           alignItems: 'center',
@@ -473,8 +475,10 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
         }}
       >
         <Stack alignItems="center" spacing={1}>
-          <FitnessCenterIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
-          <Typography variant="caption" color="text.disabled">
+          <Box sx={{ color: tc.f(d) }}>
+            <Barbell size={48} weight={W} />
+          </Box>
+          <Typography variant="caption" sx={{ color: tc.f(d) }}>
             Image non disponible
           </Typography>
         </Stack>
@@ -489,7 +493,7 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
         onClick={() => setIsPlaying(!isPlaying)}
         sx={{
           height: 220,
-          bgcolor: '#1a1a1a',
+          bgcolor: GOLD_CONTRAST,
           borderRadius: 3,
           overflow: 'hidden',
           position: 'relative',
@@ -532,7 +536,7 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
           }}
         >
           <Typography sx={{ fontSize: '0.65rem', color: 'white', opacity: 0.8 }}>
-            {isPlaying ? '❚❚' : '▶'}
+            {isPlaying ? '||' : '>'}
           </Typography>
         </Box>
 
@@ -551,7 +555,7 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
             <Box
               sx={{
                 height: '100%',
-                bgcolor: 'primary.main',
+                bgcolor: GOLD,
                 width: `${((currentImage + 1) / images.length) * 100}%`,
                 transition: 'width 0.3s ease',
               }}
@@ -563,15 +567,15 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
       {/* Label */}
       <Typography
         variant="caption"
-        color="text.disabled"
         sx={{
           display: 'block',
           textAlign: 'center',
           mt: 1,
           fontSize: '0.7rem',
+          color: tc.f(d),
         }}
       >
-        Tap pour {isPlaying ? 'pause' : 'play'} • Position {currentImage + 1}/{images.length}
+        Tap pour {isPlaying ? 'pause' : 'play'} - Position {currentImage + 1}/{images.length}
       </Typography>
     </Box>
   );
