@@ -20,46 +20,55 @@ import {
   useUserStats,
 } from '@/powersync/queries/profile-queries';
 import { useMorphoProfile } from '@/powersync/queries/morphology-queries';
+import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardActionArea from '@mui/material/CardActionArea';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import LinearProgress from '@mui/material/LinearProgress';
-import Divider from '@mui/material/Divider';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import LocalFireDepartment from '@mui/icons-material/LocalFireDepartment';
-import EmojiEvents from '@mui/icons-material/EmojiEvents';
-import TrendingUp from '@mui/icons-material/TrendingUp';
-import Lock from '@mui/icons-material/Lock';
-import LightMode from '@mui/icons-material/LightMode';
-import DarkMode from '@mui/icons-material/DarkMode';
-import SettingsBrightness from '@mui/icons-material/SettingsBrightness';
-import Check from '@mui/icons-material/Check';
-import Logout from '@mui/icons-material/Logout';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import InputAdornment from '@mui/material/InputAdornment';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import Key from '@mui/icons-material/Key';
-import Watch from '@mui/icons-material/Watch';
-import Sync from '@mui/icons-material/Sync';
-import LinkOff from '@mui/icons-material/LinkOff';
-import Link2 from '@mui/icons-material/Link';
+import {
+  Barbell,
+  BowlSteam,
+  Ruler,
+  PersonArmsSpread,
+  Flame,
+  Trophy,
+  ShieldCheck,
+  Star,
+  Lightning,
+  GearSix,
+  CaretRight,
+  TrendUp,
+  Lock,
+  Sun,
+  Moon,
+  Monitor,
+  Check,
+  SignOut,
+  Key,
+  Watch,
+  ArrowsClockwise,
+  LinkBreak,
+  LinkSimple,
+  Eye,
+  EyeSlash,
+} from '@phosphor-icons/react';
 import { logout } from '@/lib/auth-actions';
 import { triggerHaptic } from '@/lib/haptic';
 import { calculateLevel } from '@/lib/xp-utils';
 import { parseJson, parseJsonArray } from '@/powersync/helpers';
+import { GOLD, GOLD_LIGHT, tc, card, surfaceBg } from '@/lib/design-tokens';
 import BottomNav from '@/components/BottomNav';
+
+const W = 'light' as const; // Phosphor weight
 
 type MorphoProfileData = {
   primaryMorphotype: string;
@@ -110,8 +119,8 @@ export default function ProfilePage() {
 
   if (authLoading || !userId) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0a0a09' }}>
+        <CircularProgress sx={{ color: GOLD }} />
       </Box>
     );
   }
@@ -119,10 +128,23 @@ export default function ProfilePage() {
   return <ProfileContent />;
 }
 
+const morphotypeInfo: Record<string, { abbr: string; title: string }> = {
+  longiligne: { abbr: 'Lo', title: 'Longiligne' },
+  breviline: { abbr: 'Br', title: 'Bréviligne' },
+  normo: { abbr: 'No', title: 'Normoligne' },
+  ectomorph: { abbr: 'Ec', title: 'Ectomorphe' },
+  mesomorph: { abbr: 'Me', title: 'Mésomorphe' },
+  endomorph: { abbr: 'En', title: 'Endomorphe' },
+  ecto_meso: { abbr: 'EM', title: 'Ecto-Méso' },
+  meso_endo: { abbr: 'ME', title: 'Méso-Endo' },
+  ecto_endo: { abbr: 'EE', title: 'Ecto-Endo' },
+};
+
 function ProfileContent() {
   const [tab, setTab] = useState(0);
+  const { resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
 
-  // PowerSync reactive hooks
   const { data: profileRows, isLoading: profileLoading } = useUserProfile();
   const { data: gamificationRows, isLoading: gamLoading } = useGamification();
   const { data: achievementRows, isLoading: achLoading } = useAchievementsWithStatus();
@@ -132,14 +154,12 @@ function ProfileContent() {
 
   const isLoading = profileLoading || gamLoading || achLoading || xpLoading || statsLoading;
 
-  // Map profile
   const profile = useMemo(() => {
     if (profileRows.length === 0) return null;
     const r = profileRows[0];
     return { id: r.id as string, displayName: r.display_name as string | null, email: r.email as string };
   }, [profileRows]);
 
-  // Map gamification
   const gamification = useMemo<GamificationData | null>(() => {
     if (gamificationRows.length === 0) return null;
     const r = gamificationRows[0];
@@ -156,45 +176,30 @@ function ProfileContent() {
     };
   }, [gamificationRows]);
 
-  // Map achievements
   const achievements = useMemo<AchievementData[]>(() => {
     return achievementRows.map((a: any) => ({
-      id: a.id,
-      key: a.key,
-      nameFr: a.name_fr,
-      descriptionFr: a.description_fr,
-      icon: a.icon,
-      xpReward: a.xp_reward || 0,
-      category: a.category,
-      isSecret: !!a.is_secret,
-      unlockedAt: a.unlocked_at || null,
+      id: a.id, key: a.key, nameFr: a.name_fr, descriptionFr: a.description_fr,
+      icon: a.icon, xpReward: a.xp_reward || 0, category: a.category,
+      isSecret: !!a.is_secret, unlockedAt: a.unlocked_at || null,
     }));
   }, [achievementRows]);
 
-  // Map XP transactions
   const recentXp = useMemo<XpTransactionData[]>(() => {
     return xpRows.map((t: any) => ({
-      id: t.id,
-      amount: t.amount,
-      reason: t.reason,
-      createdAt: t.created_at,
+      id: t.id, amount: t.amount, reason: t.reason, createdAt: t.created_at,
     }));
   }, [xpRows]);
 
-  // Map stats
   const stats = useMemo<StatsData | null>(() => {
     if (statsRows.length === 0) return null;
     const r = statsRows[0] as any;
     return {
-      totalWorkouts: r.total_workouts || 0,
-      totalFoodEntries: r.total_food_entries || 0,
-      totalMeasurements: r.total_measurements || 0,
-      totalPRs: r.total_prs || 0,
+      totalWorkouts: r.total_workouts || 0, totalFoodEntries: r.total_food_entries || 0,
+      totalMeasurements: r.total_measurements || 0, totalPRs: r.total_prs || 0,
       bossFightsWon: r.boss_fights_won || 0,
     };
   }, [statsRows]);
 
-  // Map morpho profile
   const morphoProfile = useMemo<MorphoProfileData>(() => {
     if (morphoRows.length === 0) return null;
     const r = morphoRows[0] as any;
@@ -208,11 +213,14 @@ function ProfileContent() {
 
   if (isLoading) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress />
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(d) }}>
+        <CircularProgress sx={{ color: GOLD }} />
       </Box>
     );
   }
+
+  const morphoKey = morphoProfile?.morphotypeScore?.globalType || morphoProfile?.primaryMorphotype || '';
+  const morphoInfo = morphotypeInfo[morphoKey] || morphotypeInfo.longiligne;
 
   const handleTabChange = (newTab: number) => {
     triggerHaptic('light');
@@ -220,404 +228,330 @@ function ProfileContent() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      {/* Header - minimal */}
-      <Box sx={{ pt: 1.5, pb: 1, px: 2 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Box
-            component={Link}
-            href="/"
-            sx={{
-              cursor: 'pointer',
-              p: 0.5,
-              display: 'flex',
-              alignItems: 'center',
-              color: 'text.secondary',
-              textDecoration: 'none',
-              '&:active': { opacity: 0.5 },
-            }}
-          >
-            <ArrowBack sx={{ fontSize: 24 }} />
-          </Box>
-          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-            Mon Profil
-          </Typography>
-          <Box sx={{ width: 32 }} />
-        </Stack>
-      </Box>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
 
-      {/* Profile Header */}
+      {/* ── Header compact ── */}
       {gamification && profile && (
-        <Box
-          sx={{
-            p: 3,
-            background: (theme) => theme.palette.mode === 'dark'
-              ? 'linear-gradient(135deg, rgba(103,80,164,0.3) 0%, rgba(154,103,234,0.2) 100%)'
-              : 'linear-gradient(135deg, rgba(103,80,164,0.15) 0%, rgba(154,103,234,0.1) 100%)',
-            borderBottom: 1,
-            borderColor: 'divider',
-          }}
-        >
-          <Stack direction="row" spacing={2.5} alignItems="center">
-            {/* Avatar */}
-            <Box sx={{ position: 'relative' }}>
-              <Avatar
-                sx={{
-                  width: 72,
-                  height: 72,
-                  background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
-                  fontSize: '2rem',
-                }}
-              >
-                {getAvatarEmoji(gamification.avatarStage)}
-              </Avatar>
-              <Chip
-                label={`Niv. ${gamification.currentLevel}`}
-                size="small"
-                sx={{
-                  position: 'absolute',
-                  bottom: -4,
-                  right: -8,
-                  bgcolor: 'warning.main',
-                  color: 'warning.contrastText',
-                  fontWeight: 700,
-                  fontSize: '0.7rem',
-                }}
-              />
-            </Box>
-
-            {/* Info */}
+        <Box sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Avatar sx={{
+              width: 52, height: 52,
+              bgcolor: d ? '#1e1c16' : '#f0ece4',
+              color: GOLD, fontSize: '1.2rem', fontWeight: 700,
+              border: `2px solid ${GOLD}`,
+              boxShadow: `0 0 20px ${alpha(GOLD, 0.2)}`,
+            }}>
+              {(profile.displayName || 'G')[0].toUpperCase()}
+            </Avatar>
             <Box sx={{ flex: 1 }}>
-              <Typography variant="h5" fontWeight={700}>
+              <Typography sx={{ fontSize: '1.05rem', fontWeight: 700, color: tc.h(d) }}>
                 {profile.displayName || 'Guerrier'}
               </Typography>
-              <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.5 }}>
-                <TrendingUp sx={{ fontSize: 16, color: 'warning.main' }} />
-                <Typography variant="body2" color="text.secondary">
-                  {gamification.totalXp.toLocaleString()} XP
-                </Typography>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Chip label={`Niv. ${gamification.currentLevel}`} size="small" sx={{
+                  bgcolor: GOLD, color: '#1a1a1a', fontWeight: 700, fontSize: '0.6rem', height: 20,
+                }} />
+                <Stack direction="row" alignItems="center" spacing={0.3}>
+                  <Lightning size={14} weight={W} color={GOLD} />
+                  <Typography sx={{ fontSize: '0.7rem', color: tc.m(d) }}>
+                    {gamification.totalXp.toLocaleString()} XP
+                  </Typography>
+                </Stack>
               </Stack>
-              {/* XP Progress */}
-              <Box sx={{ mt: 1.5 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={gamification.xpProgress}
-                  sx={{
-                    height: 6,
-                    borderRadius: 3,
-                    bgcolor: 'action.hover',
-                    '& .MuiLinearProgress-bar': {
-                      background: 'linear-gradient(90deg, #ffb74d 0%, #ff9800 100%)',
-                      borderRadius: 3,
-                    },
-                  }}
-                />
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                  {gamification.xpProgress}% vers niveau {gamification.currentLevel + 1}
-                </Typography>
-              </Box>
+            </Box>
+            <Box
+              onClick={() => handleTabChange(3)}
+              sx={{ cursor: 'pointer', p: 0.5, color: tc.f(d), display: 'flex', '&:active': { opacity: 0.5 } }}
+            >
+              <GearSix size={22} weight={W} />
             </Box>
           </Stack>
 
-          {/* Streak */}
-          <Card sx={{ mt: 2.5, bgcolor: 'rgba(0,0,0,0.2)' }}>
-            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-              <Stack direction="row" justifyContent="space-around" alignItems="center" divider={<Divider orientation="vertical" flexItem />}>
-                <Stack alignItems="center">
-                  <Stack direction="row" alignItems="center" spacing={0.5}>
-                    <LocalFireDepartment sx={{ fontSize: 20, color: 'warning.main' }} />
-                    <Typography variant="h4" fontWeight={700}>
-                      {gamification.currentStreak}
-                    </Typography>
-                  </Stack>
-                  <Typography variant="caption" color="text.secondary">jours streak</Typography>
-                </Stack>
-                <Stack alignItems="center">
-                  <Stack direction="row" alignItems="center" spacing={0.5}>
-                    <EmojiEvents sx={{ fontSize: 20, color: 'secondary.main' }} />
-                    <Typography variant="h4" fontWeight={700}>
-                      {gamification.longestStreak}
-                    </Typography>
-                  </Stack>
-                  <Typography variant="caption" color="text.secondary">record</Typography>
-                </Stack>
-              </Stack>
-            </CardContent>
-          </Card>
+          {/* XP bar */}
+          <Box sx={{ mt: 1.5 }}>
+            <LinearProgress variant="determinate" value={gamification.xpProgress} sx={{
+              height: 4, borderRadius: 2,
+              bgcolor: d ? alpha('#fff', 0.06) : alpha('#000', 0.05),
+              '& .MuiLinearProgress-bar': {
+                background: `linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT})`,
+                borderRadius: 2,
+              },
+            }} />
+            <Typography sx={{ fontSize: '0.55rem', color: tc.f(d), mt: 0.3, textAlign: 'right' }}>
+              {gamification.xpProgress}% vers niv. {gamification.currentLevel + 1}
+            </Typography>
+          </Box>
         </Box>
       )}
 
-      {/* Tabs - text style */}
-      <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" justifyContent="center" spacing={3}>
-          {([
-            { key: 0, label: 'Stats' },
-            { key: 1, label: 'Succès' },
-            { key: 2, label: 'XP' },
-            { key: 3, label: 'Param.' },
-          ] as const).map((item) => (
-            <Typography
-              key={item.key}
-              onClick={() => handleTabChange(item.key)}
+      {/* ── Streak + Morpho row ── */}
+      {gamification && (
+        <Stack direction="row" spacing={1} sx={{ px: 2.5, mt: 0.5 }}>
+          <Box sx={card(d, { flex: 1, p: 1.5 })}>
+            <Stack direction="row" alignItems="center" spacing={0.75}>
+              <Flame size={24} weight={W} color="#ff9800" />
+              <Box>
+                <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tc.h(d), lineHeight: 1 }}>
+                  {gamification.currentStreak}
+                </Typography>
+                <Typography sx={{ fontSize: '0.55rem', color: tc.f(d) }}>jours streak</Typography>
+              </Box>
+            </Stack>
+          </Box>
+          <Box
+            component={Link}
+            href="/morphology"
+            sx={card(d, {
+              flex: 1.5, p: 1.5, cursor: 'pointer', textDecoration: 'none',
+              borderColor: alpha(GOLD, 0.2),
+              '&:active': { transform: 'scale(0.98)' },
+              transition: 'transform 0.1s ease',
+            })}
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Box sx={{
+                width: 36, height: 36, borderRadius: '10px',
+                bgcolor: alpha(GOLD, 0.1),
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {morphoProfile
+                  ? <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: GOLD }}>{morphoInfo.abbr}</Typography>
+                  : <PersonArmsSpread size={20} weight={W} color={GOLD} />}
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: tc.h(d) }}>
+                  {morphoProfile ? morphoInfo.title : 'Morphotype'}
+                </Typography>
+                <Typography sx={{ fontSize: '0.55rem', color: tc.f(d) }}>
+                  {morphoProfile ? 'Mon morphotype' : 'Découvrir'}
+                </Typography>
+              </Box>
+              <CaretRight size={16} weight="bold" color={tc.f(d)} />
+            </Stack>
+          </Box>
+        </Stack>
+      )}
+
+      {/* ── Actions grid 2x2 ── */}
+      <Box sx={{ px: 2.5, mt: 2.5 }}>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.06em', textTransform: 'uppercase', mb: 1.5 }}>
+          Actions rapides
+        </Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+          {[
+            { Icon: Barbell, label: 'Training', sub: stats ? `${stats.totalWorkouts} séances` : '0 séance', href: '/workout', accent: '#ff9800' },
+            { Icon: BowlSteam, label: 'Journal', sub: stats ? `${stats.totalFoodEntries} repas` : '0 repas', href: '/diet', accent: '#4caf50' },
+            { Icon: Ruler, label: 'Mesures', sub: stats ? `${stats.totalMeasurements} prises` : '0 prise', href: '/measurements', accent: '#2196f3' },
+            { Icon: PersonArmsSpread, label: 'Morpho', sub: morphoProfile ? morphoInfo.title : 'Analyser', href: '/morphology', accent: '#9c27b0' },
+          ].map((item) => (
+            <Box
+              key={item.label}
+              component={Link}
+              href={item.href}
+              sx={card(d, {
+                p: 2, cursor: 'pointer', textDecoration: 'none',
+                transition: 'all 0.15s ease',
+                '&:active': { transform: 'scale(0.96)', bgcolor: d ? alpha('#fff', 0.1) : alpha('#000', 0.03) },
+              })}
+            >
+              <Box sx={{ mb: 1.5, display: 'flex' }}>
+                <item.Icon size={30} weight={W} color={item.accent} />
+              </Box>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, color: tc.h(d) }}>{item.label}</Typography>
+              <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mt: 0.2 }}>{item.sub}</Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+
+      {/* ── Tabs ── */}
+      <Box sx={{ px: 2.5, mt: 2.5 }}>
+        <Stack direction="row" spacing={0}>
+          {['En bref', 'Succès', 'XP', 'Param.'].map((label, i) => (
+            <Box
+              key={label}
+              onClick={() => handleTabChange(i)}
               sx={{
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: tab === item.key ? 600 : 400,
-                color: tab === item.key ? 'text.primary' : 'text.disabled',
+                flex: 1, py: 1, textAlign: 'center', cursor: 'pointer',
+                borderBottom: tab === i ? `2px solid ${GOLD}` : `1px solid ${d ? alpha('#fff', 0.06) : alpha('#000', 0.06)}`,
                 transition: 'all 0.15s ease',
                 '&:active': { opacity: 0.5 },
               }}
             >
-              {item.label}
-            </Typography>
+              <Typography sx={{
+                fontSize: '0.8rem', fontWeight: tab === i ? 700 : 400,
+                color: tab === i ? tc.h(d) : tc.f(d),
+              }}>
+                {label}
+              </Typography>
+            </Box>
           ))}
         </Stack>
       </Box>
 
-      {/* Content */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2, pb: 10 }}>
-        {tab === 0 && <StatsTab stats={stats} achievements={achievements} morphoProfile={morphoProfile} />}
-        {tab === 1 && <AchievementsTab achievements={achievements} />}
-        {tab === 2 && <HistoryTab transactions={recentXp} />}
+      {/* ── Tab content ── */}
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2.5, pt: 2, pb: 12 }}>
+        {tab === 0 && <OverviewTab stats={stats} unlockedAchievements={achievements.filter((a) => a.unlockedAt)} totalCount={achievements.length} d={d} />}
+        {tab === 1 && <AchievementsTab achievements={achievements} d={d} />}
+        {tab === 2 && <HistoryTab transactions={recentXp} d={d} />}
         {tab === 3 && <SettingsTab />}
       </Box>
 
-      {/* Bottom Navigation */}
       <BottomNav />
     </Box>
   );
 }
 
-function getAvatarEmoji(stage: number): string {
-  const avatars = ['🥚', '🐣', '🐥', '🦅', '🐉'];
-  return avatars[Math.min(stage - 1, avatars.length - 1)];
-}
-
-const morphotypeInfo: Record<string, { emoji: string; title: string; gradient: string }> = {
-  longiligne: { emoji: '🦒', title: 'Longiligne', gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)' },
-  breviline: { emoji: '🐻', title: 'Bréviligne', gradient: 'linear-gradient(135deg, #10b981 0%, #22c55e 100%)' },
-  normo: { emoji: '🦁', title: 'Normoligne', gradient: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)' },
-  ectomorph: { emoji: '🦒', title: 'Ectomorphe', gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)' },
-  mesomorph: { emoji: '🦁', title: 'Mésomorphe', gradient: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)' },
-  endomorph: { emoji: '🐻', title: 'Endomorphe', gradient: 'linear-gradient(135deg, #10b981 0%, #22c55e 100%)' },
-  ecto_meso: { emoji: '🦅', title: 'Ecto-Méso', gradient: 'linear-gradient(135deg, #3b82f6 0%, #f59e0b 100%)' },
-  meso_endo: { emoji: '🦍', title: 'Méso-Endo', gradient: 'linear-gradient(135deg, #f59e0b 0%, #10b981 100%)' },
-  ecto_endo: { emoji: '🦎', title: 'Ecto-Endo', gradient: 'linear-gradient(135deg, #3b82f6 0%, #10b981 100%)' },
-};
-
-function StatsTab({ stats, achievements, morphoProfile }: { stats: StatsData | null; achievements: AchievementData[]; morphoProfile: MorphoProfileData }) {
-  const unlockedCount = achievements.filter((a) => a.unlockedAt).length;
+/* ── Overview tab (mini stats + recent achievements) ── */
+function OverviewTab({ stats, unlockedAchievements, totalCount, d }: {
+  stats: StatsData | null; unlockedAchievements: AchievementData[]; totalCount: number; d: boolean;
+}) {
   if (!stats) return null;
-  const totalCount = achievements.length;
 
   return (
-    <Stack spacing={3}>
-      {/* Morphotype Section */}
-      {morphoProfile ? (
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-            Mon morphotype
-          </Typography>
-          <Card
-            sx={{
-              background: morphotypeInfo[morphoProfile.morphotypeScore?.globalType || morphoProfile.primaryMorphotype]?.gradient || morphotypeInfo.longiligne.gradient,
-              color: 'white',
-            }}
-          >
-            <CardActionArea component={Link} href="/morphology">
-              <CardContent sx={{ py: 2 }}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="h2">
-                    {morphotypeInfo[morphoProfile.morphotypeScore?.globalType || morphoProfile.primaryMorphotype]?.emoji || '🧬'}
-                  </Typography>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={700}>
-                      {morphotypeInfo[morphoProfile.morphotypeScore?.globalType || morphoProfile.primaryMorphotype]?.title || 'Morphotype'}
-                    </Typography>
-                    {morphoProfile.strengths && morphoProfile.strengths.length > 0 && (
-                      <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
-                        {morphoProfile.strengths.slice(0, 2).map((s) => (
-                          <Chip
-                            key={s}
-                            label={s}
-                            size="small"
-                            sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontSize: '0.7rem' }}
-                          />
-                        ))}
-                      </Stack>
-                    )}
-                  </Box>
-                  <Typography sx={{ opacity: 0.7 }}>→</Typography>
-                </Stack>
-              </CardContent>
-            </CardActionArea>
-          </Card>
-        </Box>
-      ) : (
-        <Card
-          sx={{
-            background: 'linear-gradient(135deg, #6750a4 0%, #9a67ea 100%)',
-            color: 'white',
-          }}
-        >
-          <CardActionArea component={Link} href="/morphology">
-            <CardContent sx={{ py: 2 }}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Typography variant="h4">🧬</Typography>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body1" fontWeight={600}>Analyse Morphologique</Typography>
-                  <Typography variant="caption" sx={{ opacity: 0.85 }}>Découvre ton morphotype</Typography>
-                </Box>
-                <Typography sx={{ opacity: 0.7 }}>→</Typography>
-              </Stack>
-            </CardContent>
-          </CardActionArea>
-        </Card>
-      )}
+    <Stack spacing={2.5}>
+      {/* Mini stats row */}
+      <Stack direction="row" spacing={1}>
+        {[
+          { val: stats.totalPRs, label: 'PRs', Icon: Trophy },
+          { val: stats.bossFightsWon, label: 'Boss', Icon: ShieldCheck },
+          { val: `${unlockedAchievements.length}/${totalCount}`, label: 'Succès', Icon: Star },
+          { val: stats.totalWorkouts, label: 'Séances', Icon: Barbell },
+        ].map((s) => (
+          <Box key={s.label} sx={card(d, { flex: 1, py: 1.5, textAlign: 'center' })}>
+            <Box sx={{ mb: 0.3, display: 'flex', justifyContent: 'center', color: GOLD }}>
+              <s.Icon size={18} weight={W} />
+            </Box>
+            <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: tc.h(d), lineHeight: 1 }}>{s.val}</Typography>
+            <Typography sx={{ fontSize: '0.5rem', color: tc.f(d), mt: 0.3 }}>{s.label}</Typography>
+          </Box>
+        ))}
+      </Stack>
 
-      {/* Stats Grid */}
+      {/* Recent achievements */}
       <Box>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-          Statistiques
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.06em', textTransform: 'uppercase', mb: 1 }}>
+          Derniers succès
         </Typography>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-          <StatCard icon="🏋️" label="Entraînements" value={stats.totalWorkouts} />
-          <StatCard icon="🍎" label="Repas loggés" value={stats.totalFoodEntries} />
-          <StatCard icon="📏" label="Mensurations" value={stats.totalMeasurements} href="/measurements" />
-          <StatCard icon="🏆" label="Records (PR)" value={stats.totalPRs} />
-          <StatCard icon="🐉" label="Boss vaincus" value={stats.bossFightsWon} />
-          <StatCard icon="⭐" label="Succès" value={`${unlockedCount}/${totalCount}`} />
-        </Box>
-      </Box>
-
-      {/* Recent Achievements */}
-      <Box>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-          Derniers succès débloqués
-        </Typography>
-        <Stack spacing={1}>
-          {achievements
-            .filter((a) => a.unlockedAt)
-            .slice(0, 3)
-            .map((achievement) => (
-              <Card key={achievement.id}>
-                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Stack direction="row" alignItems="center" spacing={2}>
-                    <Typography variant="h5">{achievement.icon}</Typography>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" fontWeight={600}>{achievement.nameFr}</Typography>
-                      <Typography variant="caption" color="text.secondary">{achievement.descriptionFr}</Typography>
-                    </Box>
-                    <Chip label={`+${achievement.xpReward} XP`} size="small" color="warning" />
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))}
-          {achievements.filter((a) => a.unlockedAt).length === 0 && (
-            <Typography color="text.secondary" textAlign="center" sx={{ py: 3 }}>
+        {unlockedAchievements.length === 0 ? (
+          <Box sx={{ py: 4, textAlign: 'center' }}>
+            <Star size={32} weight={W} color={tc.f(d)} />
+            <Typography sx={{ fontSize: '0.8rem', color: tc.f(d), mt: 1 }}>
               Aucun succès débloqué pour l&apos;instant
             </Typography>
-          )}
-        </Stack>
+          </Box>
+        ) : (
+          <Stack spacing={1}>
+            {unlockedAchievements
+              .slice(0, 3)
+              .map((a) => (
+                <Box key={a.id} sx={card(d, { p: 1.5 })}>
+                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Box sx={{
+                      width: 32, height: 32, borderRadius: '8px',
+                      bgcolor: alpha(GOLD, 0.1),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: GOLD,
+                    }}>
+                      <Star size={16} weight={W} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.h(d) }}>{a.nameFr}</Typography>
+                      <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>{a.descriptionFr}</Typography>
+                    </Box>
+                    <Chip label={`+${a.xpReward}`} size="small" sx={{ bgcolor: alpha(GOLD, 0.1), color: GOLD, fontWeight: 700, fontSize: '0.6rem', height: 20 }} />
+                  </Stack>
+                </Box>
+              ))}
+          </Stack>
+        )}
       </Box>
     </Stack>
   );
 }
 
-function StatCard({ icon, label, value, href }: { icon: string; label: string; value: number | string; href?: string }) {
-  const content = (
-    <CardContent sx={{ py: 2 }}>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-        <Typography fontSize="1.25rem">{icon}</Typography>
-        <Typography variant="caption" color="text.secondary">{label}</Typography>
-      </Stack>
-      <Typography variant="h4" fontWeight={700}>{value}</Typography>
-    </CardContent>
-  );
+/* ── Achievements tab ── */
+const categoryColors: Record<string, string> = {
+  training: '#ff9800',
+  consistency: '#f59e0b',
+  nutrition: '#4caf50',
+  measurements: '#2196f3',
+};
 
-  return (
-    <Card>
-      {href ? (
-        <CardActionArea component={Link} href={href}>
-          {content}
-        </CardActionArea>
-      ) : (
-        content
-      )}
-    </Card>
-  );
-}
+const CATEGORIES = ['training', 'consistency', 'nutrition', 'measurements'] as const;
+const CATEGORY_LABELS: Record<string, string> = {
+  training: 'Entraînement',
+  consistency: 'Régularité',
+  nutrition: 'Nutrition',
+  measurements: 'Mensurations',
+};
 
-function AchievementsTab({ achievements }: { achievements: AchievementData[] }) {
-  const categories = ['training', 'consistency', 'nutrition', 'measurements'];
-  const categoryLabels: Record<string, string> = {
-    training: '🏋️ Entraînement',
-    consistency: '🔥 Régularité',
-    nutrition: '🍎 Nutrition',
-    measurements: '📏 Mensurations',
-  };
+function AchievementsTab({ achievements, d }: { achievements: AchievementData[]; d: boolean }) {
 
   return (
     <Stack spacing={3}>
-      {categories.map((category) => {
-        const categoryAchievements = achievements.filter((a) => a.category === category);
-        if (categoryAchievements.length === 0) return null;
+      {CATEGORIES.map((category) => {
+        const catAch = achievements.filter((a) => a.category === category);
+        if (catAch.length === 0) return null;
 
         return (
           <Box key={category}>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-              {categoryLabels[category]}
-            </Typography>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: categoryColors[category] || GOLD }} />
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                {CATEGORY_LABELS[category]}
+              </Typography>
+            </Stack>
             <Stack spacing={1}>
-              {categoryAchievements.map((achievement) => {
-                const isUnlocked = !!achievement.unlockedAt;
-                const isSecret = achievement.isSecret && !isUnlocked;
-
+              {catAch.map((a) => {
+                const unlocked = !!a.unlockedAt;
+                const secret = a.isSecret && !unlocked;
                 return (
-                  <Card
-                    key={achievement.id}
-                    sx={{
-                      opacity: isUnlocked ? 1 : 0.6,
-                      ...(isUnlocked && {
-                        background: (theme) => theme.palette.mode === 'dark'
-                          ? 'linear-gradient(135deg, rgba(255,183,77,0.15) 0%, rgba(255,152,0,0.1) 100%)'
-                          : 'linear-gradient(135deg, rgba(255,183,77,0.2) 0%, rgba(255,152,0,0.15) 100%)',
-                        border: 1,
-                        borderColor: 'warning.main',
+                  <Box
+                    key={a.id}
+                    sx={card(d, {
+                      p: 1.5,
+                      opacity: unlocked ? 1 : 0.6,
+                      ...(unlocked && {
+                        borderColor: alpha(GOLD, 0.3),
+                        bgcolor: d ? alpha(GOLD, 0.06) : alpha(GOLD, 0.04),
                       }),
-                    }}
+                    })}
                   >
-                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                      <Stack direction="row" alignItems="center" spacing={2}>
-                        <Typography
-                          variant="h5"
-                          sx={{ filter: !isUnlocked ? 'grayscale(1)' : 'none' }}
-                        >
-                          {isSecret ? <Lock sx={{ fontSize: 28 }} /> : achievement.icon}
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <Box sx={{
+                        width: 36, height: 36, borderRadius: '10px',
+                        bgcolor: unlocked ? alpha(GOLD, 0.12) : (d ? alpha('#fff', 0.05) : alpha('#000', 0.04)),
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: unlocked ? GOLD : tc.f(d),
+                      }}>
+                        {secret ? <Lock size={18} weight={W} /> : <Star size={18} weight={W} />}
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d) }}>
+                          {secret ? '???' : a.nameFr}
                         </Typography>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="body2" fontWeight={600}>
-                            {isSecret ? '???' : achievement.nameFr}
+                        <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>
+                          {secret ? 'Succès secret' : a.descriptionFr}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Chip
+                          label={`+${a.xpReward}`}
+                          size="small"
+                          sx={unlocked
+                            ? { bgcolor: alpha(GOLD, 0.1), color: GOLD, fontWeight: 700, fontSize: '0.6rem', height: 20 }
+                            : { bgcolor: d ? alpha('#fff', 0.06) : alpha('#000', 0.04), color: tc.f(d), fontSize: '0.6rem', height: 20 }
+                          }
+                        />
+                        {unlocked && (
+                          <Typography sx={{ fontSize: '0.55rem', color: tc.f(d), mt: 0.3 }}>
+                            {new Date(a.unlockedAt!).toLocaleDateString('fr-FR')}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {isSecret ? 'Succès secret' : achievement.descriptionFr}
-                          </Typography>
-                        </Box>
-                        <Box textAlign="right">
-                          <Chip
-                            label={`+${achievement.xpReward} XP`}
-                            size="small"
-                            color={isUnlocked ? 'warning' : 'default'}
-                          />
-                          {isUnlocked && (
-                            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                              {new Date(achievement.unlockedAt!).toLocaleDateString('fr-FR')}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Stack>
-                    </CardContent>
-                  </Card>
+                        )}
+                      </Box>
+                    </Stack>
+                  </Box>
                 );
               })}
             </Stack>
@@ -628,41 +562,43 @@ function AchievementsTab({ achievements }: { achievements: AchievementData[] }) 
   );
 }
 
-function HistoryTab({ transactions }: { transactions: XpTransactionData[] }) {
+/* ── XP History tab ── */
+function HistoryTab({ transactions, d }: { transactions: XpTransactionData[]; d: boolean }) {
   return (
     <Box>
-      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-        Historique XP récent
-      </Typography>
       {transactions.length === 0 ? (
-        <Typography color="text.secondary" textAlign="center" sx={{ py: 6 }}>
-          Pas encore d&apos;XP gagné. Commence à t&apos;entraîner !
-        </Typography>
+        <Box sx={{ py: 6, textAlign: 'center' }}>
+          <TrendUp size={36} weight={W} color={tc.f(d)} />
+          <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.m(d), mt: 1, mb: 0.5 }}>
+            Pas encore d&apos;XP
+          </Typography>
+          <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
+            Commence à t&apos;entraîner pour gagner de l&apos;XP !
+          </Typography>
+        </Box>
       ) : (
         <Stack spacing={1}>
           {transactions.map((tx) => (
-            <Card key={tx.id}>
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" fontWeight={500}>{tx.reason}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(tx.createdAt as string).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Typography>
-                  </Box>
-                  <Chip
-                    label={`${tx.amount > 0 ? '+' : ''}${tx.amount} XP`}
-                    size="small"
-                    color={tx.amount > 0 ? 'success' : 'error'}
-                  />
-                </Stack>
-              </CardContent>
-            </Card>
+            <Box key={tx.id} sx={card(d, { p: 1.5 })}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: tc.h(d) }}>{tx.reason}</Typography>
+                  <Typography sx={{ fontSize: '0.65rem', color: tc.f(d) }}>
+                    {new Date(tx.createdAt as string).toLocaleDateString('fr-FR', {
+                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                    })}
+                  </Typography>
+                </Box>
+                <Chip
+                  label={`${tx.amount > 0 ? '+' : ''}${tx.amount} XP`}
+                  size="small"
+                  sx={tx.amount > 0
+                    ? { bgcolor: alpha('#22c55e', 0.1), color: '#22c55e', fontWeight: 600, fontSize: '0.6rem', height: 20 }
+                    : { bgcolor: alpha('#ef4444', 0.1), color: '#ef4444', fontWeight: 600, fontSize: '0.6rem', height: 20 }
+                  }
+                />
+              </Stack>
+            </Box>
           ))}
         </Stack>
       )}
@@ -670,14 +606,28 @@ function HistoryTab({ transactions }: { transactions: XpTransactionData[] }) {
   );
 }
 
+const GOLD_FIELD_SX = {
+  '& .MuiOutlinedInput-root': {
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: GOLD },
+  },
+  '& .MuiInputLabel-root.Mui-focused': { color: GOLD },
+};
+
+const THEME_OPTIONS = [
+  { value: 'system', label: 'Système', desc: 'Suit les préférences de ton appareil', Icon: Monitor },
+  { value: 'light', label: 'Clair', desc: 'Thème lumineux', Icon: Sun },
+  { value: 'dark', label: 'Sombre', desc: 'Thème sombre pour les yeux', Icon: Moon },
+];
+
+/* ── Settings tab ── */
 function SettingsTab() {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
   const [mounted, setMounted] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [apiKeyLoaded, setApiKeyLoaded] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [savingKey, setSavingKey] = useState(false);
-  // Huawei
   const [huaweiCreds, setHuaweiCreds] = useState<HuaweiCredentials | null>(null);
   const [hwClientId, setHwClientId] = useState('');
   const [hwClientSecret, setHwClientSecret] = useState('');
@@ -699,13 +649,11 @@ function SettingsTab() {
       if (creds.clientId) setHwClientId(creds.clientId);
       if (creds.clientSecret) setHwClientSecret(creds.clientSecret);
     });
-    // Check URL params for Huawei OAuth callback
     const params = new URLSearchParams(window.location.search);
     const huaweiStatus = params.get('huawei');
     if (huaweiStatus === 'success') {
       setSnackbar({ open: true, message: 'Huawei Health connecté !', severity: 'success' });
       window.history.replaceState({}, '', window.location.pathname);
-      getHuaweiCredentials().then(setHuaweiCreds);
     } else if (huaweiStatus === 'error') {
       const msg = params.get('message') || 'Erreur de connexion';
       setSnackbar({ open: true, message: `Huawei: ${msg}`, severity: 'error' });
@@ -728,118 +676,91 @@ function SettingsTab() {
   if (!mounted) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress size={32} />
+        <CircularProgress size={32} sx={{ color: GOLD }} />
       </Box>
     );
   }
 
-  const themeOptions = [
-    {
-      value: 'system',
-      label: 'Système',
-      description: 'Suit les préférences de ton appareil',
-      icon: <SettingsBrightness sx={{ fontSize: 28 }} />,
-    },
-    {
-      value: 'light',
-      label: 'Clair',
-      description: 'Thème lumineux',
-      icon: <LightMode sx={{ fontSize: 28, color: '#ffb74d' }} />,
-    },
-    {
-      value: 'dark',
-      label: 'Sombre',
-      description: 'Thème sombre pour les yeux',
-      icon: <DarkMode sx={{ fontSize: 28, color: '#bb86fc' }} />,
-    },
-  ];
-
   return (
     <Stack spacing={3}>
+      {/* Theme */}
       <Box>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), mb: 1.5, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           Apparence
         </Typography>
-        <Stack spacing={1}>
-          {themeOptions.map((option) => {
-            const isSelected = theme === option.value;
+        <Stack spacing={0.75}>
+          {THEME_OPTIONS.map((option) => {
+            const sel = theme === option.value;
             return (
-              <Card
+              <Box
                 key={option.value}
-                sx={{
-                  ...(isSelected && {
-                    border: 2,
-                    borderColor: 'primary.main',
-                    bgcolor: (t) => t.palette.mode === 'dark'
-                      ? 'rgba(187,134,252,0.1)'
-                      : 'rgba(103,80,164,0.08)',
-                  }),
-                }}
+                onClick={() => setTheme(option.value)}
+                sx={card(d, {
+                  p: 0, overflow: 'hidden', cursor: 'pointer',
+                  borderColor: sel ? GOLD : undefined,
+                  transition: 'all 0.2s ease',
+                })}
               >
-                <CardActionArea onClick={() => setTheme(option.value)} sx={{ p: 0 }}>
-                  <CardContent sx={{ py: 2 }}>
+                <Stack direction="row" alignItems="stretch">
+                  <Box sx={{
+                    width: 4,
+                    bgcolor: sel ? GOLD : 'transparent',
+                    borderRadius: '4px 0 0 4px',
+                    transition: 'background-color 0.2s ease',
+                  }} />
+                  <Box sx={{ py: 1.5, px: 2, flex: 1 }}>
                     <Stack direction="row" alignItems="center" spacing={2}>
-                      <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        color: isSelected ? 'primary.main' : 'text.secondary',
-                      }}>
-                        {option.icon}
+                      <Box sx={{ display: 'flex', color: sel ? GOLD : tc.f(d) }}>
+                        <option.Icon size={22} weight={W} />
                       </Box>
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="body1" fontWeight={600}>
+                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: sel ? GOLD : tc.h(d) }}>
                           {option.label}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {option.description}
-                        </Typography>
+                        <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>{option.desc}</Typography>
                       </Box>
-                      {isSelected && (
-                        <Check sx={{ color: 'primary.main' }} />
-                      )}
+                      {sel && <Check size={18} weight="bold" color={GOLD} />}
                     </Stack>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
+                  </Box>
+                </Stack>
+              </Box>
             );
           })}
         </Stack>
         {theme === 'system' && (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
+          <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mt: 1.5 }}>
             Mode actuel : {resolvedTheme === 'dark' ? 'Sombre' : 'Clair'}
           </Typography>
         )}
       </Box>
 
-      <Divider />
-
+      {/* Gemini API Key */}
       <Box>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), mb: 1, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           Reconnaissance IA
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-          Clé API Google Gemini pour la reconnaissance photo (repas et screenshots cardio).
+        <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mb: 1.5 }}>
+          Clé API Google Gemini pour la reconnaissance photo.
         </Typography>
         <Stack direction="row" spacing={1}>
           <TextField
-            size="small"
-            fullWidth
-            placeholder="AIza..."
+            size="small" fullWidth placeholder="AIza..."
             type={showApiKey ? 'text' : 'password'}
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             disabled={!apiKeyLoaded}
+            sx={GOLD_FIELD_SX}
             slotProps={{
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Key sx={{ fontSize: 18, color: 'text.disabled' }} />
+                    <Key size={16} weight={W} color={tc.f(d)} />
                   </InputAdornment>
                 ),
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton size="small" onClick={() => setShowApiKey(!showApiKey)} edge="end">
-                      {showApiKey ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      {showApiKey ? <EyeSlash size={16} weight={W} /> : <Eye size={16} weight={W} />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -847,66 +768,55 @@ function SettingsTab() {
             }}
           />
           <Button
-            variant="contained"
-            size="small"
+            variant="contained" size="small"
             onClick={handleSaveApiKey}
             disabled={savingKey || !apiKey.trim()}
-            sx={{ textTransform: 'none', minWidth: 'auto', px: 2 }}
+            sx={{
+              textTransform: 'none', minWidth: 'auto', px: 2,
+              bgcolor: GOLD, color: '#1a1a1a', fontWeight: 600,
+              '&:hover': { bgcolor: GOLD_LIGHT },
+              '&.Mui-disabled': { bgcolor: alpha(GOLD, 0.3), color: alpha('#1a1a1a', 0.4) },
+            }}
           >
-            {savingKey ? <CircularProgress size={18} /> : 'OK'}
+            {savingKey ? <CircularProgress size={18} sx={{ color: '#1a1a1a' }} /> : 'OK'}
           </Button>
         </Stack>
         <Button
-          component="a"
-          href="https://aistudio.google.com/apikey"
-          target="_blank"
-          rel="noopener noreferrer"
-          size="small"
-          sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.8rem' }}
+          component="a" href="https://aistudio.google.com/apikey"
+          target="_blank" rel="noopener noreferrer" size="small"
+          sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.75rem', color: GOLD }}
         >
-          Obtenir une clé gratuite →
+          Obtenir une clé gratuite ›
         </Button>
       </Box>
 
-      <Divider />
-
       {/* Huawei Health */}
-      <Box>
+      <Box sx={card(d, { p: 2 })}>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-          <Watch sx={{ fontSize: 20, color: 'error.main' }} />
-          <Typography variant="subtitle2" color="text.secondary">
+          <Watch size={20} weight={W} color={GOLD} />
+          <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             Huawei Health
           </Typography>
           {huaweiCreds?.isConnected && (
-            <Chip label="Connecté" size="small" color="success" sx={{ height: 20, fontSize: '0.65rem' }} />
+            <Chip label="Connecté" size="small" color="success" sx={{ height: 20, fontSize: '0.6rem' }} />
           )}
         </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-          Connecte ta montre Huawei pour synchroniser tes séances cardio automatiquement.
+        <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mb: 1.5 }}>
+          Connecte ta montre Huawei pour synchroniser tes séances cardio.
         </Typography>
 
         <Stack spacing={1.5}>
-          <TextField
-            size="small"
-            fullWidth
-            label="Client ID"
-            placeholder="1234567890"
-            value={hwClientId}
-            onChange={(e) => setHwClientId(e.target.value)}
-          />
-          <TextField
-            size="small"
-            fullWidth
-            label="Client Secret"
+          <TextField size="small" fullWidth label="Client ID" placeholder="1234567890"
+            value={hwClientId} onChange={(e) => setHwClientId(e.target.value)} sx={GOLD_FIELD_SX} />
+          <TextField size="small" fullWidth label="Client Secret"
             type={showHwSecret ? 'text' : 'password'}
-            value={hwClientSecret}
-            onChange={(e) => setHwClientSecret(e.target.value)}
+            value={hwClientSecret} onChange={(e) => setHwClientSecret(e.target.value)} sx={GOLD_FIELD_SX}
             slotProps={{
               input: {
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton size="small" onClick={() => setShowHwSecret(!showHwSecret)} edge="end">
-                      {showHwSecret ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      {showHwSecret ? <EyeSlash size={16} weight={W} /> : <Eye size={16} weight={W} />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -915,8 +825,7 @@ function SettingsTab() {
           />
           <Stack direction="row" spacing={1}>
             <Button
-              variant="outlined"
-              size="small"
+              variant="outlined" size="small"
               onClick={async () => {
                 if (!hwClientId.trim() || !hwClientSecret.trim()) {
                   setSnackbar({ open: true, message: 'Client ID et Secret requis', severity: 'error' });
@@ -934,18 +843,16 @@ function SettingsTab() {
                 }
               }}
               disabled={savingHw || !hwClientId.trim() || !hwClientSecret.trim()}
-              sx={{ textTransform: 'none', flex: 1 }}
+              sx={{ textTransform: 'none', flex: 1, borderColor: alpha(GOLD, 0.3), color: GOLD, '&:hover': { borderColor: GOLD, bgcolor: alpha(GOLD, 0.05) } }}
             >
-              {savingHw ? <CircularProgress size={18} /> : 'Sauvegarder'}
+              {savingHw ? <CircularProgress size={18} sx={{ color: GOLD }} /> : 'Sauvegarder'}
             </Button>
 
             {huaweiCreds?.isConnected ? (
               <>
                 <Button
-                  variant="contained"
-                  size="small"
-                  color="success"
-                  startIcon={syncingHw ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <Sync />}
+                  variant="contained" size="small"
+                  startIcon={syncingHw ? <CircularProgress size={16} sx={{ color: '#1a1a1a' }} /> : <ArrowsClockwise size={16} weight={W} />}
                   onClick={async () => {
                     setSyncingHw(true);
                     try {
@@ -969,27 +876,25 @@ function SettingsTab() {
                     }
                   }}
                   disabled={syncingHw}
-                  sx={{ textTransform: 'none', flex: 1 }}
+                  sx={{ textTransform: 'none', flex: 1, bgcolor: GOLD, color: '#1a1a1a', '&:hover': { bgcolor: GOLD_LIGHT } }}
                 >
                   Sync
                 </Button>
-                <IconButton
-                  size="small"
-                  color="error"
+                <IconButton size="small"
                   onClick={async () => {
                     await disconnectHuawei();
                     setHuaweiCreds((prev) => prev ? { ...prev, isConnected: false, tokenExpiresAt: null } : prev);
                     setSnackbar({ open: true, message: 'Huawei déconnecté', severity: 'success' });
                   }}
+                  sx={{ color: '#ef4444' }}
                 >
-                  <LinkOff fontSize="small" />
+                  <LinkBreak size={18} weight={W} />
                 </IconButton>
               </>
             ) : (
               <Button
-                variant="contained"
-                size="small"
-                startIcon={<Link2 />}
+                variant="contained" size="small"
+                startIcon={<LinkSimple size={16} weight={W} />}
                 onClick={() => {
                   if (!hwClientId.trim() || !hwClientSecret.trim()) {
                     setSnackbar({ open: true, message: 'Sauvegarde d\'abord tes credentials', severity: 'error' });
@@ -998,7 +903,7 @@ function SettingsTab() {
                   window.location.href = '/api/huawei/auth';
                 }}
                 disabled={!huaweiCreds?.clientId}
-                sx={{ textTransform: 'none', flex: 1 }}
+                sx={{ textTransform: 'none', flex: 1, bgcolor: GOLD, color: '#1a1a1a', '&:hover': { bgcolor: GOLD_LIGHT } }}
               >
                 Connecter
               </Button>
@@ -1007,48 +912,39 @@ function SettingsTab() {
         </Stack>
 
         <Button
-          component="a"
-          href="https://developer.huawei.com/consumer/en/service/josp/agc/index.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          size="small"
-          sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.8rem' }}
+          component="a" href="https://developer.huawei.com/consumer/en/service/josp/agc/index.html"
+          target="_blank" rel="noopener noreferrer" size="small"
+          sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.75rem', color: GOLD }}
         >
-          Huawei Developer Console →
+          Huawei Developer Console ›
         </Button>
       </Box>
 
-      <Divider />
-
+      {/* About */}
       <Box>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), mb: 0.5, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           À propos
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Workout App v1.0.0
-        </Typography>
+        <Typography sx={{ fontSize: '0.75rem', color: tc.f(d) }}>Workout App v1.0.0</Typography>
       </Box>
 
-      <Divider />
-
-      <Box>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-          Compte
-        </Typography>
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<Logout />}
-          fullWidth
-          onClick={() => logout()}
-        >
-          Se déconnecter
-        </Button>
-      </Box>
+      {/* Logout */}
+      <Button
+        variant="outlined" fullWidth
+        startIcon={<SignOut size={18} weight={W} />}
+        onClick={() => logout()}
+        sx={{
+          textTransform: 'none',
+          borderColor: alpha('#ef4444', 0.3), color: '#ef4444',
+          borderRadius: '14px', py: 1.2,
+          '&:hover': { borderColor: '#ef4444', bgcolor: alpha('#ef4444', 0.05) },
+        }}
+      >
+        Se déconnecter
+      </Button>
 
       <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
+        open={snackbar.open} autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
