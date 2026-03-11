@@ -20,14 +20,12 @@ export default function MealSlotCard({
   targetCalories,
   onAddPress,
   onDeleteEntry,
-  readOnly = false,
 }: {
   mealType: MealType;
   entries: FoodEntryData[];
   targetCalories: number;
   onAddPress: (mealType: MealType) => void;
   onDeleteEntry: (id: string) => void;
-  readOnly?: boolean;
 }) {
   const { resolvedTheme } = useTheme();
   const d = resolvedTheme !== 'light';
@@ -57,18 +55,16 @@ export default function MealSlotCard({
         <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), fontVariantNumeric: 'tabular-nums' }}>
           {Math.round(mealCals)}/{mealTarget}
         </Typography>
-        {!readOnly && (
-          <IconButton
-            size="small"
-            onClick={() => {
-              triggerHaptic('light');
-              onAddPress(mealType);
-            }}
-            sx={{ width: 28, height: 28, bgcolor: alpha(GOLD, 0.1) }}
-          >
-            <Add sx={{ fontSize: 16, color: GOLD }} />
-          </IconButton>
-        )}
+        <IconButton
+          size="small"
+          onClick={() => {
+            triggerHaptic('light');
+            onAddPress(mealType);
+          }}
+          sx={{ width: 28, height: 28, bgcolor: alpha(GOLD, 0.1) }}
+        >
+          <Add sx={{ fontSize: 16, color: GOLD }} />
+        </IconButton>
       </Stack>
 
       {hasMacros && (
@@ -121,19 +117,17 @@ export default function MealSlotCard({
                   >
                     {entry.calories ? Math.round(parseFloat(entry.calories)) : '--'}
                   </Typography>
-                  {!readOnly && (
-                    <IconButton
-                      size="small"
-                      onClick={() => onDeleteEntry(entry.id)}
-                      sx={{
-                        p: 0.25,
-                        color: tc.f(d),
-                        '&:hover': { color: '#ef4444' },
-                      }}
-                    >
-                      <Close sx={{ fontSize: 14 }} />
-                    </IconButton>
-                  )}
+                  <IconButton
+                    size="small"
+                    onClick={() => onDeleteEntry(entry.id)}
+                    sx={{
+                      p: 0.25,
+                      color: tc.f(d),
+                      '&:hover': { color: '#ef4444' },
+                    }}
+                  >
+                    <Close sx={{ fontSize: 14 }} />
+                  </IconButton>
                 </Stack>
               </Box>
             );

@@ -2,11 +2,15 @@
 
 import { usePowerSync } from '@powersync/react';
 import { useUserId } from '../auth-context';
-import { uuid, nowISO, todayStr, localDayBoundsUTC } from '../helpers';
+import { uuid, nowISO, todayStr, localDayBoundsUTC, toSqliteTimestamp } from '../helpers';
 
-export function useDietMutations() {
+export function useDietMutations(targetDate?: string) {
   const db = usePowerSync();
   const userId = useUserId();
+
+  /** Resolved date: provided targetDate or today */
+  const resolvedDate = targetDate || todayStr();
+  const isToday = resolvedDate === todayStr();
 
   async function addFoodEntry(data: {
     foodId?: string;
@@ -27,6 +31,7 @@ export function useDietMutations() {
   }): Promise<string> {
     const id = uuid();
     const now = nowISO();
+    const loggedAt = isToday ? now : toSqliteTimestamp(new Date(resolvedDate + 'T12:00:00'));
 
     await db.execute(
       `INSERT INTO food_entries (
@@ -39,7 +44,7 @@ export function useDietMutations() {
         data.foodId ?? null,
         data.cravingId ?? null,
         data.customName ?? null,
-        now,
+        loggedAt,
         data.mealType,
         data.quantity.toString(),
         data.servingSize?.toString() ?? null,
@@ -56,7 +61,6 @@ export function useDietMutations() {
       ]
     );
 
-    // Update daily summary locally
     await recalcDailySummary();
     return id;
   }
@@ -67,12 +71,12 @@ export function useDietMutations() {
   }
 
   async function recalcDailySummary(): Promise<void> {
-    const today = todayStr();
-    const { start: todayStart, end: todayEnd } = localDayBoundsUTC(today);
+    const date = resolvedDate;
+    const { start: dayStart, end: dayEnd } = localDayBoundsUTC(date);
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const sinceDate = `${sevenDaysAgo.getFullYear()}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sevenDaysAgo.getDate()).padStart(2, '0')}`;
+    const ref = new Date(date + 'T12:00:00');
+    ref.setDate(ref.getDate() - 7);
+    const sinceDate = `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}-${String(ref.getDate()).padStart(2, '0')}`;
 
     const [totals, weekData, existing] = await Promise.all([
       db.getOptional<{
@@ -89,8 +93,8 @@ export function useDietMutations() {
           COALESCE(SUM(CAST(fat AS REAL)), 0) as total_fat,
           COUNT(*) as entries_count
         FROM food_entries
-        WHERE user_id = ? AND logged_at >= ? AND logged_at <= ?`,
-        [userId, todayStart, todayEnd]
+        WHERE user_id = ? AND logged_at >= ? AND logged_at < ?`,
+        [userId, dayStart, dayEnd]
       ),
       db.getAll<{
         total_calories: string | null;
@@ -101,11 +105,11 @@ export function useDietMutations() {
         `SELECT total_calories, total_protein, total_carbs, total_fat
          FROM nutrition_daily_summary
          WHERE user_id = ? AND date >= ? AND date != ?`,
-        [userId, sinceDate, today]
+        [userId, sinceDate, date]
       ),
       db.getOptional<{ id: string }>(
         `SELECT id FROM nutrition_daily_summary WHERE user_id = ? AND date = ?`,
-        [userId, today]
+        [userId, date]
       ),
     ]);
 
@@ -142,7 +146,7 @@ export function useDietMutations() {
         `INSERT INTO nutrition_daily_summary (id, user_id, date, total_calories, total_protein, total_carbs, total_fat, avg_7d_calories, avg_7d_protein, avg_7d_carbs, avg_7d_fat, entries_count)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          uuid(), userId, today,
+          uuid(), userId, date,
           totals.total_calories.toString(),
           totals.total_protein.toString(),
           totals.total_carbs.toString(),

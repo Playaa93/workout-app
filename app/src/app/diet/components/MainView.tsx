@@ -146,12 +146,11 @@ export default function MainView({
                 targetCalories={adjustedTarget}
                 onAddPress={onOpenAddSheet}
                 onDeleteEntry={onDeleteEntry}
-                readOnly={!viewingToday}
               />
             ))}
 
             {/* Add extra meal slot */}
-            {viewingToday && availableExtras.length > 0 && (
+            {availableExtras.length > 0 && (
               !showExtraPicker ? (
                   <Box
                     onClick={() => { triggerHaptic('light'); setShowExtraPicker(true); }}

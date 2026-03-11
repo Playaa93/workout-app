@@ -108,7 +108,7 @@ function DietContent() {
   const { data: workoutCalRows } = useTodayWorkoutCalories();
   const { data: recentRows } = useRecentFoods();
   const { data: latestMeasurement } = useLatestMeasurement();
-  const mutations = useDietMutations();
+  const mutations = useDietMutations(selectedDate);
 
   // Map cravings
   const cravings = useMemo<CravingData[]>(() => {
