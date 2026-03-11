@@ -316,7 +316,7 @@ export const workoutSets = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     sessionId: uuid('session_id').references(() => workoutSessions.id, { onDelete: 'cascade' }),
-    exerciseId: uuid('exercise_id').references(() => exercises.id, { onDelete: 'cascade' }),
+    exerciseId: uuid('exercise_id').references(() => exercises.id, { onDelete: 'set null' }),
     setNumber: integer('set_number').notNull(),
     reps: integer('reps'),
     weight: decimal('weight', { precision: 6, scale: 2 }),
@@ -354,7 +354,7 @@ export const personalRecords = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
-    exerciseId: uuid('exercise_id').references(() => exercises.id, { onDelete: 'cascade' }),
+    exerciseId: uuid('exercise_id').references(() => exercises.id, { onDelete: 'set null' }),
     recordType: varchar('record_type', { length: 20 }).notNull(),
     value: decimal('value', { precision: 8, scale: 2 }).notNull(),
     workoutSetId: uuid('workout_set_id').references(() => workoutSets.id, { onDelete: 'set null' }),
@@ -579,7 +579,7 @@ export const userAchievements = pgTable(
 export const bossFights = pgTable('boss_fights', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
-  exerciseId: uuid('exercise_id').references(() => exercises.id, { onDelete: 'cascade' }),
+  exerciseId: uuid('exercise_id').references(() => exercises.id, { onDelete: 'set null' }),
   targetWeight: decimal('target_weight', { precision: 6, scale: 2 }),
   targetReps: integer('target_reps'),
   bossName: varchar('boss_name', { length: 100 }),
