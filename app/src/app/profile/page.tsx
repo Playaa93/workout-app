@@ -231,106 +231,102 @@ function ProfileContent() {
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
 
       {/* ── Header compact ── */}
-      {gamification && profile && (
-        <Box sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Avatar sx={{
-              width: 52, height: 52,
-              bgcolor: d ? '#1e1c16' : '#f0ece4',
-              color: GOLD, fontSize: '1.2rem', fontWeight: 700,
-              border: `2px solid ${GOLD}`,
-              boxShadow: `0 0 20px ${alpha(GOLD, 0.2)}`,
-            }}>
-              {(profile.displayName || 'G')[0].toUpperCase()}
-            </Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: '1.05rem', fontWeight: 700, color: tc.h(d) }}>
-                {profile.displayName || 'Guerrier'}
-              </Typography>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Chip label={`Niv. ${gamification.currentLevel}`} size="small" sx={{
-                  bgcolor: GOLD, color: '#1a1a1a', fontWeight: 700, fontSize: '0.6rem', height: 20,
-                }} />
-                <Stack direction="row" alignItems="center" spacing={0.3}>
-                  <Lightning size={14} weight={W} color={GOLD} />
-                  <Typography sx={{ fontSize: '0.7rem', color: tc.m(d) }}>
-                    {gamification.totalXp.toLocaleString()} XP
-                  </Typography>
-                </Stack>
-              </Stack>
-            </Box>
-            <Box
-              onClick={() => handleTabChange(3)}
-              sx={{ cursor: 'pointer', p: 0.5, color: tc.f(d), display: 'flex', '&:active': { opacity: 0.5 } }}
-            >
-              <GearSix size={22} weight={W} />
-            </Box>
-          </Stack>
-
-          {/* XP bar */}
-          <Box sx={{ mt: 1.5 }}>
-            <LinearProgress variant="determinate" value={gamification.xpProgress} sx={{
-              height: 4, borderRadius: 2,
-              bgcolor: d ? alpha('#fff', 0.06) : alpha('#000', 0.05),
-              '& .MuiLinearProgress-bar': {
-                background: `linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT})`,
-                borderRadius: 2,
-              },
-            }} />
-            <Typography sx={{ fontSize: '0.55rem', color: tc.f(d), mt: 0.3, textAlign: 'right' }}>
-              {gamification.xpProgress}% vers niv. {gamification.currentLevel + 1}
+      <Box sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Avatar sx={{
+            width: 52, height: 52,
+            bgcolor: d ? '#1e1c16' : '#f0ece4',
+            color: GOLD, fontSize: '1.2rem', fontWeight: 700,
+            border: `2px solid ${GOLD}`,
+            boxShadow: `0 0 20px ${alpha(GOLD, 0.2)}`,
+          }}>
+            {(profile?.displayName || 'G')[0].toUpperCase()}
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontSize: '1.05rem', fontWeight: 700, color: tc.h(d) }}>
+              {profile?.displayName || 'Guerrier'}
             </Typography>
-          </Box>
-        </Box>
-      )}
-
-      {/* ── Streak + Morpho row ── */}
-      {gamification && (
-        <Stack direction="row" spacing={1} sx={{ px: 2.5, mt: 0.5 }}>
-          <Box sx={card(d, { flex: 1, p: 1.5 })}>
-            <Stack direction="row" alignItems="center" spacing={0.75}>
-              <Flame size={24} weight={W} color="#ff9800" />
-              <Box>
-                <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tc.h(d), lineHeight: 1 }}>
-                  {gamification.currentStreak}
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Chip label={`Niv. ${gamification?.currentLevel ?? 1}`} size="small" sx={{
+                bgcolor: GOLD, color: '#1a1a1a', fontWeight: 700, fontSize: '0.6rem', height: 20,
+              }} />
+              <Stack direction="row" alignItems="center" spacing={0.3}>
+                <Lightning size={14} weight={W} color={GOLD} />
+                <Typography sx={{ fontSize: '0.7rem', color: tc.m(d) }}>
+                  {(gamification?.totalXp ?? 0).toLocaleString()} XP
                 </Typography>
-                <Typography sx={{ fontSize: '0.55rem', color: tc.f(d) }}>jours streak</Typography>
-              </Box>
+              </Stack>
             </Stack>
           </Box>
           <Box
-            component={Link}
-            href="/morphology"
-            sx={card(d, {
-              flex: 1.5, p: 1.5, cursor: 'pointer', textDecoration: 'none',
-              borderColor: alpha(GOLD, 0.2),
-              '&:active': { transform: 'scale(0.98)' },
-              transition: 'transform 0.1s ease',
-            })}
+            onClick={() => handleTabChange(3)}
+            sx={{ cursor: 'pointer', p: 0.5, color: tc.f(d), display: 'flex', '&:active': { opacity: 0.5 } }}
           >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Box sx={{
-                width: 36, height: 36, borderRadius: '10px',
-                bgcolor: alpha(GOLD, 0.1),
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {morphoProfile
-                  ? <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: GOLD }}>{morphoInfo.abbr}</Typography>
-                  : <PersonArmsSpread size={20} weight={W} color={GOLD} />}
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: tc.h(d) }}>
-                  {morphoProfile ? morphoInfo.title : 'Morphotype'}
-                </Typography>
-                <Typography sx={{ fontSize: '0.55rem', color: tc.f(d) }}>
-                  {morphoProfile ? 'Mon morphotype' : 'Découvrir'}
-                </Typography>
-              </Box>
-              <CaretRight size={16} weight="bold" color={tc.f(d)} />
-            </Stack>
+            <GearSix size={22} weight={W} />
           </Box>
         </Stack>
-      )}
+
+        {/* XP bar */}
+        <Box sx={{ mt: 1.5 }}>
+          <LinearProgress variant="determinate" value={gamification?.xpProgress ?? 0} sx={{
+            height: 4, borderRadius: 2,
+            bgcolor: d ? alpha('#fff', 0.06) : alpha('#000', 0.05),
+            '& .MuiLinearProgress-bar': {
+              background: `linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT})`,
+              borderRadius: 2,
+            },
+          }} />
+          <Typography sx={{ fontSize: '0.55rem', color: tc.f(d), mt: 0.3, textAlign: 'right' }}>
+            {gamification?.xpProgress ?? 0}% vers niv. {(gamification?.currentLevel ?? 1) + 1}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* ── Streak + Morpho row ── */}
+      <Stack direction="row" spacing={1} sx={{ px: 2.5, mt: 0.5 }}>
+        <Box sx={card(d, { flex: 1, p: 1.5 })}>
+          <Stack direction="row" alignItems="center" spacing={0.75}>
+            <Flame size={24} weight={W} color="#ff9800" />
+            <Box>
+              <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tc.h(d), lineHeight: 1 }}>
+                {gamification?.currentStreak ?? 0}
+              </Typography>
+              <Typography sx={{ fontSize: '0.55rem', color: tc.f(d) }}>jours streak</Typography>
+            </Box>
+          </Stack>
+        </Box>
+        <Box
+          component={Link}
+          href="/morphology"
+          sx={card(d, {
+            flex: 1.5, p: 1.5, cursor: 'pointer', textDecoration: 'none',
+            borderColor: alpha(GOLD, 0.2),
+            '&:active': { transform: 'scale(0.98)' },
+            transition: 'transform 0.1s ease',
+          })}
+        >
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Box sx={{
+              width: 36, height: 36, borderRadius: '10px',
+              bgcolor: alpha(GOLD, 0.1),
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {morphoProfile
+                ? <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: GOLD }}>{morphoInfo.abbr}</Typography>
+                : <PersonArmsSpread size={20} weight={W} color={GOLD} />}
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: tc.h(d) }}>
+                {morphoProfile ? morphoInfo.title : 'Morphotype'}
+              </Typography>
+              <Typography sx={{ fontSize: '0.55rem', color: tc.f(d) }}>
+                {morphoProfile ? 'Mon morphotype' : 'Découvrir'}
+              </Typography>
+            </Box>
+            <CaretRight size={16} weight="bold" color={tc.f(d)} />
+          </Stack>
+        </Box>
+      </Stack>
 
       {/* ── Actions grid 2x2 ── */}
       <Box sx={{ px: 2.5, mt: 2.5 }}>
