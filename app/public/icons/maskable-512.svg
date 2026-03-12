@@ -7,7 +7,9 @@
   </defs>
   <!-- Maskable: pas de border-radius, l'OS applique son propre masque -->
   <rect width="512" height="512" fill="#09090b"/>
-  <!-- A centré dans la safe zone (80% = padding 10% de chaque côté) -->
-  <path d="M256 128 L372 400 L324 400 L290 316 L222 316 L188 400 L140 400 Z" fill="url(#gold)"/>
-  <path d="M256 216 L234 288 L278 288 Z" fill="#09090b"/>
+  <!-- Hexagone + calice centré dans la safe zone 80% -->
+  <polygon points="256,104 376,160 376,352 256,408 136,352 136,160" fill="none" stroke="url(#gold)" stroke-width="6"/>
+  <path d="M224 200 h64 l-8 60 c-2 14-12 22-24 22s-22-8-24-22Z" fill="url(#gold)"/>
+  <rect x="250" y="282" width="12" height="24" fill="url(#gold)"/>
+  <rect x="234" y="302" width="44" height="7" rx="3.5" fill="url(#gold)"/>
 </svg>
