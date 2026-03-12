@@ -3,20 +3,18 @@
 import { useState, useEffect, useRef } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
+import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
-import Chip from '@mui/material/Chip';
-import { ArrowLeft } from '@phosphor-icons/react';
-import { W } from '@/lib/design-tokens';
+import { ArrowLeft, Barcode, MagnifyingGlass } from '@phosphor-icons/react';
+import { alpha } from '@mui/material/styles';
+import { useTheme } from 'next-themes';
+import { tc, card, GOLD, GOLD_CONTRAST, W } from '@/lib/design-tokens';
 import { lookupBarcode, addFoodEntry } from '../actions';
-import { triggerHaptic, MEAL_CONFIG } from './shared';
+import { triggerHaptic, MACRO_COLORS } from './shared';
 import type { FoodData, MealType } from './shared';
 
-type ScanState = 'scanning' | 'found' | 'not-found' | 'confirm';
+type ScanState = 'scanning' | 'found' | 'not-found';
 
 export default function ScannerView({
   mealType,
@@ -29,6 +27,9 @@ export default function ScannerView({
   onClose: () => void;
   onSwitchToSearch: () => void;
 }) {
+  const { resolvedTheme } = useTheme();
+  const d = resolvedTheme !== 'light';
+
   const [state, setState] = useState<ScanState>('scanning');
   const [food, setFood] = useState<FoodData | null>(null);
   const [quantity, setQuantity] = useState('100');
@@ -122,163 +123,257 @@ export default function ScannerView({
     });
   };
 
-  const meal = MEAL_CONFIG[mealType];
+  const canSubmitBarcode = manualBarcode.length >= 8 && !isLooking;
 
   return (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
-      <Box sx={{ pt: 1.5, pb: 1, px: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Box
-            onClick={onClose}
-            sx={{
-              cursor: 'pointer',
-              p: 0.5,
-              display: 'flex',
-              alignItems: 'center',
-              color: 'text.secondary',
-              '&:active': { opacity: 0.5 },
-            }}
-          >
-            <ArrowLeft size={24} weight={W} />
-          </Box>
-          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>Scanner</Typography>
-          <Chip label={meal.label} size="small" sx={{ bgcolor: `${meal.color}15`, color: meal.color, fontWeight: 600 }} />
+      <Box sx={{ px: 2, pt: 1, pb: 1.5 }}>
+        <Stack direction="row" alignItems="center">
+          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(d), mr: 1 }}>
+            <ArrowLeft size={20} weight={W} />
+          </IconButton>
+          <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(d) }}>
+            Scanner
+          </Typography>
         </Stack>
       </Box>
 
-      <Box sx={{ flex: 1, p: 2 }}>
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 12 }}>
         {state === 'scanning' && (
           <Stack spacing={2}>
+            {/* Camera viewfinder */}
             <Box
               id="scanner-region"
               ref={scannerRef}
               sx={{
                 width: '100%',
-                maxWidth: 400,
                 mx: 'auto',
-                borderRadius: 2,
+                borderRadius: '14px',
                 overflow: 'hidden',
-                bgcolor: 'black',
-                minHeight: 250,
+                bgcolor: d ? '#111' : '#000',
+                minHeight: 220,
+                border: '1px solid',
+                borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
               }}
             />
 
             {isLooking && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                <CircularProgress size={24} />
-              </Box>
+              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ py: 1 }}>
+                <CircularProgress size={16} sx={{ color: GOLD }} />
+                <Typography sx={{ fontSize: '0.75rem', color: tc.f(d) }}>
+                  Recherche...
+                </Typography>
+              </Stack>
             )}
 
-            <Typography variant="body2" color="text.secondary" textAlign="center">
-              Place le code-barres devant la caméra
-            </Typography>
-
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                Ou saisir manuellement :
+            {!isLooking && (
+              <Typography sx={{ textAlign: 'center', color: tc.f(d), fontSize: '0.75rem' }}>
+                Place le code-barres devant la camera
               </Typography>
-              <Stack direction="row" spacing={1}>
-                <TextField
-                  size="small"
-                  placeholder="Code-barres (ex: 3017620422003)"
-                  value={manualBarcode}
-                  onChange={(e) => setManualBarcode(e.target.value)}
-                  fullWidth
-                  type="number"
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleManualLookup}
-                  disabled={manualBarcode.length < 8 || isLooking}
-                  sx={{ minWidth: 80 }}
+            )}
+
+            {/* Manual input */}
+            <Box sx={card(d, { p: 2, mt: 1 })}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.f(d), mb: 1, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+                Saisie manuelle
+              </Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Box sx={{ position: 'relative', flex: 1 }}>
+                  <Barcode size={16} weight={W} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: tc.f(d) }} />
+                  <Box
+                    component="input"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={manualBarcode}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualBarcode(e.target.value)}
+                    placeholder="3017620422003"
+                    sx={{
+                      width: '100%',
+                      py: 1.2,
+                      pl: 4.5,
+                      pr: 1.5,
+                      borderRadius: '10px',
+                      border: '1px solid',
+                      borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+                      bgcolor: 'transparent',
+                      color: tc.h(d),
+                      fontSize: '0.85rem',
+                      fontFamily: 'inherit',
+                      fontVariantNumeric: 'tabular-nums',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      '&:focus': { borderColor: GOLD },
+                      '&::placeholder': { color: tc.f(d) },
+                    }}
+                  />
+                </Box>
+                <Box
+                  onClick={canSubmitBarcode ? handleManualLookup : undefined}
+                  sx={{
+                    px: 2.5,
+                    py: 1.2,
+                    borderRadius: '10px',
+                    bgcolor: canSubmitBarcode ? GOLD : (d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06)),
+                    color: canSubmitBarcode ? GOLD_CONTRAST : tc.f(d),
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    cursor: canSubmitBarcode ? 'pointer' : 'default',
+                    transition: 'all 0.15s',
+                    ...(canSubmitBarcode && { '&:active': { transform: 'scale(0.96)' } }),
+                  }}
                 >
                   OK
-                </Button>
+                </Box>
               </Stack>
             </Box>
           </Stack>
         )}
 
         {state === 'found' && food && (
-          <Stack spacing={3}>
-            <Typography variant="h6" fontWeight={600}>
-              {food.nameFr}
-            </Typography>
-            {food.brand && (
-              <Typography variant="body2" color="text.secondary">
-                {food.brand}
+          <Stack spacing={2}>
+            {/* Food name + brand */}
+            <Box>
+              <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(d) }}>
+                {food.nameFr}
               </Typography>
-            )}
+              {food.brand && (
+                <Typography sx={{ fontSize: '0.7rem', color: tc.f(d), mt: 0.25 }}>
+                  {food.brand}
+                </Typography>
+              )}
+            </Box>
 
-            <TextField
-              label="Quantité (g)"
-              type="number"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              fullWidth
-            />
+            {/* Calorie hero + macros */}
+            {(() => {
+              const multiplier = (parseFloat(quantity) || 0) / 100;
+              const cal = food.calories ? parseFloat(food.calories) * multiplier : 0;
+              const prot = food.protein ? parseFloat(food.protein) * multiplier : 0;
+              const carbs = food.carbohydrates ? parseFloat(food.carbohydrates) * multiplier : 0;
+              const fat = food.fat ? parseFloat(food.fat) * multiplier : 0;
+              return (
+                <Box sx={card(d, { p: 2.5, textAlign: 'center' })}>
+                  <Typography sx={{
+                    fontSize: '2.4rem',
+                    fontWeight: 800,
+                    color: GOLD,
+                    lineHeight: 1,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    {Math.round(cal)}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.5 }}>
+                    kcal pour {quantity || 0}g
+                  </Typography>
 
-            <Card>
-              <CardContent>
-                {(() => {
-                  const multiplier = (parseFloat(quantity) || 100) / 100;
-                  const cal = food.calories ? parseFloat(food.calories) * multiplier : 0;
-                  return (
-                    <>
-                      <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
-                        {Math.round(cal)} kcal
-                      </Typography>
-                      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">Protéines</Typography>
-                          <Typography variant="body2">
-                            {food.protein ? Math.round(parseFloat(food.protein) * multiplier) : 0}g
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">Glucides</Typography>
-                          <Typography variant="body2">
-                            {food.carbohydrates ? Math.round(parseFloat(food.carbohydrates) * multiplier) : 0}g
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">Lipides</Typography>
-                          <Typography variant="body2">
-                            {food.fat ? Math.round(parseFloat(food.fat) * multiplier) : 0}g
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </>
-                  );
-                })()}
-              </CardContent>
-            </Card>
+                  <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 1.5 }}>
+                    {[
+                      { label: 'Prot', value: Math.round(prot), color: MACRO_COLORS.protein },
+                      { label: 'Gluc', value: Math.round(carbs), color: MACRO_COLORS.carbs },
+                      { label: 'Lip', value: Math.round(fat), color: MACRO_COLORS.fat },
+                    ].map((m) => (
+                      <Stack key={m.label} direction="row" alignItems="center" spacing={0.5}>
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: m.color, flexShrink: 0 }} />
+                        <Typography sx={{ fontSize: '0.65rem', color: tc.m(d) }}>
+                          {m.label}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.h(d), fontVariantNumeric: 'tabular-nums' }}>
+                          {m.value}g
+                        </Typography>
+                      </Stack>
+                    ))}
+                  </Stack>
+                </Box>
+              );
+            })()}
 
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
+            {/* Quantity input */}
+            <Box sx={card(d, { p: 2 })}>
+              <Box sx={{ position: 'relative' }}>
+                <Box
+                  component="input"
+                  type="number"
+                  inputMode="decimal"
+                  value={quantity}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuantity(e.target.value)}
+                  sx={{
+                    width: '100%',
+                    py: 1.5,
+                    px: 1,
+                    textAlign: 'center',
+                    borderRadius: '14px',
+                    border: '1px solid',
+                    borderColor: quantity ? (d ? alpha('#ffffff', 0.12) : alpha('#000000', 0.1)) : (d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.04)),
+                    bgcolor: 'transparent',
+                    color: tc.h(d),
+                    fontSize: '1.2rem',
+                    fontWeight: 700,
+                    fontFamily: 'inherit',
+                    fontVariantNumeric: 'tabular-nums',
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    '&:focus': { borderColor: GOLD },
+                    '&::placeholder': { color: tc.f(d), fontWeight: 400, fontSize: '0.8rem' },
+                    '&::-webkit-inner-spin-button, &::-webkit-outer-spin-button': { WebkitAppearance: 'none', margin: 0 },
+                    MozAppearance: 'textfield',
+                  }}
+                  placeholder="Grammes"
+                />
+                <Typography sx={{
+                  position: 'absolute',
+                  right: 16,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  fontSize: '0.7rem',
+                  color: tc.f(d),
+                  pointerEvents: 'none',
+                }}>
+                  g
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Action buttons */}
+            <Stack direction="row" spacing={1.5}>
+              <Box
                 onClick={() => {
                   setFood(null);
                   setState('scanning');
                   setManualBarcode('');
                 }}
-                sx={{ flex: 1 }}
+                sx={{
+                  flex: 1,
+                  py: 1.5,
+                  textAlign: 'center',
+                  borderRadius: '14px',
+                  border: '1px solid',
+                  borderColor: alpha(GOLD, 0.3),
+                  color: GOLD,
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  '&:active': { transform: 'scale(0.97)', bgcolor: alpha(GOLD, 0.05) },
+                }}
               >
                 Re-scanner
-              </Button>
+              </Box>
               <Box
                 onClick={handleConfirmAdd}
                 sx={{
                   flex: 2,
                   py: 1.5,
                   textAlign: 'center',
-                  bgcolor: 'text.primary',
-                  color: 'background.default',
-                  borderRadius: 2,
-                  fontWeight: 600,
+                  bgcolor: GOLD,
+                  color: GOLD_CONTRAST,
+                  borderRadius: '14px',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
                   cursor: 'pointer',
-                  '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
+                  transition: 'all 0.2s',
+                  boxShadow: `0 4px 16px ${alpha(GOLD, 0.3)}`,
+                  '&:active': { transform: 'scale(0.97)' },
                 }}
               >
                 Ajouter
@@ -288,30 +383,63 @@ export default function ScannerView({
         )}
 
         {state === 'not-found' && (
-          <Stack spacing={3} sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="h5">😕</Typography>
-            <Typography variant="h6" fontWeight={600}>
-              Produit non trouvé
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Ce code-barres n&apos;est pas dans notre base de données.
-            </Typography>
+          <Stack spacing={2.5} sx={{ textAlign: 'center', py: 6 }}>
+            <Box sx={{
+              width: 64, height: 64, borderRadius: '50%', mx: 'auto',
+              bgcolor: alpha(GOLD, 0.1),
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Barcode size={28} weight={W} color={GOLD} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: tc.h(d), mb: 0.5 }}>
+                Produit non trouve
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: tc.f(d) }}>
+                Ce code-barres n&apos;est pas dans notre base.
+              </Typography>
+            </Box>
             <Stack spacing={1.5}>
-              <Button
-                variant="contained"
+              <Box
                 onClick={onSwitchToSearch}
+                sx={{
+                  py: 1.5,
+                  textAlign: 'center',
+                  bgcolor: GOLD,
+                  color: GOLD_CONTRAST,
+                  borderRadius: '14px',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1,
+                  boxShadow: `0 4px 16px ${alpha(GOLD, 0.3)}`,
+                  '&:active': { transform: 'scale(0.97)' },
+                }}
               >
+                <MagnifyingGlass size={16} weight={W} />
                 Chercher manuellement
-              </Button>
-              <Button
-                variant="outlined"
+              </Box>
+              <Box
                 onClick={() => {
                   setState('scanning');
                   setManualBarcode('');
                 }}
+                sx={{
+                  py: 1.5,
+                  textAlign: 'center',
+                  borderRadius: '14px',
+                  border: '1px solid',
+                  borderColor: alpha(GOLD, 0.3),
+                  color: GOLD,
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  '&:active': { transform: 'scale(0.97)', bgcolor: alpha(GOLD, 0.05) },
+                }}
               >
-                Réessayer
-              </Button>
+                Reessayer
+              </Box>
             </Stack>
           </Stack>
         )}
