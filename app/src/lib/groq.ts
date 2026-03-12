@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 export const GROQ_TEXT_MODEL = 'llama-3.3-70b-versatile';
-export const GROQ_VISION_MODEL = 'llama-3.2-90b-vision-preview';
+export const GROQ_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
