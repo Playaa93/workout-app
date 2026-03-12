@@ -53,11 +53,6 @@ export const userSettings = sqliteTable('user_settings', {
   notificationsEnabled: integer('notifications_enabled', { mode: 'boolean' }).default(true),
   unitSystem: text('unit_system').default('metric'),
   geminiApiKey: text('gemini_api_key'),
-  huaweiClientId: text('huawei_client_id'),
-  huaweiClientSecret: text('huawei_client_secret'),
-  huaweiAccessToken: text('huawei_access_token'),
-  huaweiRefreshToken: text('huawei_refresh_token'),
-  huaweiTokenExpiresAt: text('huawei_token_expires_at'),
   createdAt: text('created_at'),
   updatedAt: text('updated_at'),
 });

@@ -22,11 +22,6 @@ export function runMigrations() {
       notifications_enabled INTEGER DEFAULT 1,
       unit_system TEXT DEFAULT 'metric',
       gemini_api_key TEXT,
-      huawei_client_id TEXT,
-      huawei_client_secret TEXT,
-      huawei_access_token TEXT,
-      huawei_refresh_token TEXT,
-      huawei_token_expires_at TEXT,
       created_at TEXT,
       updated_at TEXT
     );

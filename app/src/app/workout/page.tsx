@@ -47,7 +47,6 @@ import {
   X,
   Trash,
   Camera,
-  Watch as WatchIcon,
   PencilSimple,
   Sparkle,
 } from '@phosphor-icons/react';
@@ -587,38 +586,6 @@ function WorkoutContent() {
                   hidden
                   onChange={handleImportScreenshot}
                 />
-              </Button>
-              <Button
-                size="small"
-                fullWidth
-                startIcon={<WatchIcon size={18} weight={W} />}
-                onClick={async () => {
-                  setShowNewSessionDrawer(false);
-                  setImportLoading(true);
-                  try {
-                    const res = await fetch('/api/huawei/sync', { method: 'POST' });
-                    const data = await res.json();
-                    if (!res.ok) {
-                      setSnackbar({ open: true, message: data.error || 'Erreur sync Huawei', severity: 'error' });
-                      return;
-                    }
-                    setSnackbar({
-                      open: true,
-                      message: data.imported > 0
-                        ? `${data.imported} séance(s) Huawei importée(s) ! +${data.totalXp} XP`
-                        : 'Aucune nouvelle séance Huawei',
-                      severity: 'success',
-                    });
-                    // Data will auto-update via PowerSync sync
-                  } catch {
-                    setSnackbar({ open: true, message: 'Erreur sync Huawei', severity: 'error' });
-                  } finally {
-                    setImportLoading(false);
-                  }
-                }}
-                sx={{ textTransform: 'none', color: 'text.secondary', fontWeight: 500 }}
-              >
-                Sync Huawei Health
               </Button>
             </>
           )}

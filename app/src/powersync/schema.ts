@@ -27,11 +27,6 @@ const user_settings = new Table({
   notifications_enabled: column.integer,
   unit_system: column.text,
   // gemini_api_key, groq_api_key EXCLUDED (security)
-  huawei_client_id: column.text,
-  // huawei_client_secret EXCLUDED (security)
-  // huawei_access_token EXCLUDED (security)
-  // huawei_refresh_token EXCLUDED (security)
-  huawei_token_expires_at: column.text,
   created_at: column.text,
   updated_at: column.text,
 });

@@ -15,7 +15,7 @@ bucket_definitions:
 
       # User settings (exclude sensitive fields)
       - SELECT id, user_id, language, theme, notifications_enabled, unit_system,
-               huawei_client_id, huawei_token_expires_at, created_at, updated_at
+               created_at, updated_at
         FROM user_settings
         WHERE user_id = bucket.user_id
 

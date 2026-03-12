@@ -6,10 +6,6 @@ import { useTheme } from 'next-themes';
 import {
   getGroqApiKey,
   saveGroqApiKey,
-  getHuaweiCredentials,
-  saveHuaweiCredentials,
-  disconnectHuawei,
-  type HuaweiCredentials,
 } from './actions';
 import { useAuth } from '@/powersync/auth-context';
 import {
@@ -54,10 +50,6 @@ import {
   Check,
   SignOut,
   Key,
-  Watch,
-  ArrowsClockwise,
-  LinkBreak,
-  LinkSimple,
   Eye,
   EyeSlash,
 } from '@phosphor-icons/react';
@@ -624,12 +616,6 @@ function SettingsTab() {
   const [groqKeyLoaded, setGroqKeyLoaded] = useState(false);
   const [showGroqKey, setShowGroqKey] = useState(false);
   const [savingGroqKey, setSavingGroqKey] = useState(false);
-  const [huaweiCreds, setHuaweiCreds] = useState<HuaweiCredentials | null>(null);
-  const [hwClientId, setHwClientId] = useState('');
-  const [hwClientSecret, setHwClientSecret] = useState('');
-  const [showHwSecret, setShowHwSecret] = useState(false);
-  const [savingHw, setSavingHw] = useState(false);
-  const [syncingHw, setSyncingHw] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
   });
@@ -640,21 +626,6 @@ function SettingsTab() {
       if (key) setGroqKey(key);
       setGroqKeyLoaded(true);
     });
-    getHuaweiCredentials().then((creds) => {
-      setHuaweiCreds(creds);
-      if (creds.clientId) setHwClientId(creds.clientId);
-      if (creds.clientSecret) setHwClientSecret(creds.clientSecret);
-    });
-    const params = new URLSearchParams(window.location.search);
-    const huaweiStatus = params.get('huawei');
-    if (huaweiStatus === 'success') {
-      setSnackbar({ open: true, message: 'Huawei Health connecté !', severity: 'success' });
-      window.history.replaceState({}, '', window.location.pathname);
-    } else if (huaweiStatus === 'error') {
-      const msg = params.get('message') || 'Erreur de connexion';
-      setSnackbar({ open: true, message: `Huawei: ${msg}`, severity: 'error' });
-      window.history.replaceState({}, '', window.location.pathname);
-    }
   }, []);
 
   const handleSaveGroqKey = async () => {
@@ -792,136 +763,6 @@ function SettingsTab() {
           sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.7rem', color: GOLD }}
         >
           Obtenir une clé gratuite ›
-        </Button>
-      </Box>
-
-      {/* Huawei Health */}
-      <Box sx={card(d, { p: 2 })}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-          <Watch size={20} weight={W} color={GOLD} />
-          <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            Huawei Health
-          </Typography>
-          {huaweiCreds?.isConnected && (
-            <Chip label="Connecté" size="small" color="success" sx={{ height: 20, fontSize: '0.6rem' }} />
-          )}
-        </Stack>
-        <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mb: 1.5 }}>
-          Connecte ta montre Huawei pour synchroniser tes séances cardio.
-        </Typography>
-
-        <Stack spacing={1.5}>
-          <TextField size="small" fullWidth label="Client ID" placeholder="1234567890"
-            value={hwClientId} onChange={(e) => setHwClientId(e.target.value)} sx={GOLD_FIELD_SX} />
-          <TextField size="small" fullWidth label="Client Secret"
-            type={showHwSecret ? 'text' : 'password'}
-            value={hwClientSecret} onChange={(e) => setHwClientSecret(e.target.value)} sx={GOLD_FIELD_SX}
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setShowHwSecret(!showHwSecret)} edge="end">
-                      {showHwSecret ? <EyeSlash size={16} weight={W} /> : <Eye size={16} weight={W} />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="outlined" size="small"
-              onClick={async () => {
-                if (!hwClientId.trim() || !hwClientSecret.trim()) {
-                  setSnackbar({ open: true, message: 'Client ID et Secret requis', severity: 'error' });
-                  return;
-                }
-                setSavingHw(true);
-                try {
-                  await saveHuaweiCredentials(hwClientId.trim(), hwClientSecret.trim());
-                  setSnackbar({ open: true, message: 'Credentials sauvegardés', severity: 'success' });
-                  setHuaweiCreds((prev) => prev ? { ...prev, clientId: hwClientId.trim(), clientSecret: hwClientSecret.trim() } : prev);
-                } catch {
-                  setSnackbar({ open: true, message: 'Erreur de sauvegarde', severity: 'error' });
-                } finally {
-                  setSavingHw(false);
-                }
-              }}
-              disabled={savingHw || !hwClientId.trim() || !hwClientSecret.trim()}
-              sx={{ textTransform: 'none', flex: 1, borderColor: alpha(GOLD, 0.3), color: GOLD, '&:hover': { borderColor: GOLD, bgcolor: alpha(GOLD, 0.05) } }}
-            >
-              {savingHw ? <CircularProgress size={18} sx={{ color: GOLD }} /> : 'Sauvegarder'}
-            </Button>
-
-            {huaweiCreds?.isConnected ? (
-              <>
-                <Button
-                  variant="contained" size="small"
-                  startIcon={syncingHw ? <CircularProgress size={16} sx={{ color: '#1a1a1a' }} /> : <ArrowsClockwise size={16} weight={W} />}
-                  onClick={async () => {
-                    setSyncingHw(true);
-                    try {
-                      const res = await fetch('/api/huawei/sync', { method: 'POST' });
-                      const data = await res.json();
-                      if (!res.ok) {
-                        setSnackbar({ open: true, message: data.error || 'Erreur sync', severity: 'error' });
-                        return;
-                      }
-                      setSnackbar({
-                        open: true,
-                        message: data.imported > 0
-                          ? `${data.imported} séance(s) importée(s) ! +${data.totalXp} XP`
-                          : 'Aucune nouvelle séance à importer',
-                        severity: 'success',
-                      });
-                    } catch {
-                      setSnackbar({ open: true, message: 'Erreur de synchronisation', severity: 'error' });
-                    } finally {
-                      setSyncingHw(false);
-                    }
-                  }}
-                  disabled={syncingHw}
-                  sx={{ textTransform: 'none', flex: 1, bgcolor: GOLD, color: '#1a1a1a', '&:hover': { bgcolor: GOLD_LIGHT } }}
-                >
-                  Sync
-                </Button>
-                <IconButton size="small"
-                  onClick={async () => {
-                    await disconnectHuawei();
-                    setHuaweiCreds((prev) => prev ? { ...prev, isConnected: false, tokenExpiresAt: null } : prev);
-                    setSnackbar({ open: true, message: 'Huawei déconnecté', severity: 'success' });
-                  }}
-                  sx={{ color: '#ef4444' }}
-                >
-                  <LinkBreak size={18} weight={W} />
-                </IconButton>
-              </>
-            ) : (
-              <Button
-                variant="contained" size="small"
-                startIcon={<LinkSimple size={16} weight={W} />}
-                onClick={() => {
-                  if (!hwClientId.trim() || !hwClientSecret.trim()) {
-                    setSnackbar({ open: true, message: 'Sauvegarde d\'abord tes credentials', severity: 'error' });
-                    return;
-                  }
-                  window.location.href = '/api/huawei/auth';
-                }}
-                disabled={!huaweiCreds?.clientId}
-                sx={{ textTransform: 'none', flex: 1, bgcolor: GOLD, color: '#1a1a1a', '&:hover': { bgcolor: GOLD_LIGHT } }}
-              >
-                Connecter
-              </Button>
-            )}
-          </Stack>
-        </Stack>
-
-        <Button
-          component="a" href="https://developer.huawei.com/consumer/en/service/josp/agc/index.html"
-          target="_blank" rel="noopener noreferrer" size="small"
-          sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.75rem', color: GOLD }}
-        >
-          Huawei Developer Console ›
         </Button>
       </Box>
 

@@ -65,11 +65,6 @@ export const userSettings = pgTable('user_settings', {
   unitSystem: varchar('unit_system', { length: 10 }).default('metric'),
   geminiApiKey: varchar('gemini_api_key', { length: 255 }),
   groqApiKey: varchar('groq_api_key', { length: 255 }),
-  huaweiClientId: varchar('huawei_client_id', { length: 255 }),
-  huaweiClientSecret: varchar('huawei_client_secret', { length: 255 }),
-  huaweiAccessToken: text('huawei_access_token'),
-  huaweiRefreshToken: text('huawei_refresh_token'),
-  huaweiTokenExpiresAt: timestamp('huawei_token_expires_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

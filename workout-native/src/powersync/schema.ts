@@ -19,8 +19,6 @@ const user_settings = new Table({
   theme: column.text,
   notifications_enabled: column.integer,
   unit_system: column.text,
-  huawei_client_id: column.text,
-  huawei_token_expires_at: column.text,
   created_at: column.text,
   updated_at: column.text,
 });

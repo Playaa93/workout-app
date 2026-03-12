@@ -127,7 +127,6 @@ export function useProfileMutations() {
     theme?: string;
     notificationsEnabled?: boolean;
     unitSystem?: string;
-    huaweiClientId?: string;
   }): Promise<void> {
     const now = nowISO();
     const existing = await db.getOptional<{ id: string }>(
@@ -142,7 +141,6 @@ export function useProfileMutations() {
       if (data.theme !== undefined) { sets.push('theme = ?'); vals.push(data.theme); }
       if (data.notificationsEnabled !== undefined) { sets.push('notifications_enabled = ?'); vals.push(data.notificationsEnabled ? 1 : 0); }
       if (data.unitSystem !== undefined) { sets.push('unit_system = ?'); vals.push(data.unitSystem); }
-      if (data.huaweiClientId !== undefined) { sets.push('huawei_client_id = ?'); vals.push(data.huaweiClientId); }
       sets.push('updated_at = ?'); vals.push(now);
       vals.push(userId);
 
@@ -152,15 +150,14 @@ export function useProfileMutations() {
       );
     } else {
       await db.execute(
-        `INSERT INTO user_settings (id, user_id, language, theme, notifications_enabled, unit_system, huawei_client_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO user_settings (id, user_id, language, theme, notifications_enabled, unit_system, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           uuid(), userId,
           data.language ?? 'fr',
           data.theme ?? 'system',
           data.notificationsEnabled !== undefined ? (data.notificationsEnabled ? 1 : 0) : 1,
           data.unitSystem ?? 'metric',
-          data.huaweiClientId ?? null,
           now, now,
         ]
       );
