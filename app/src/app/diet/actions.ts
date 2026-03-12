@@ -146,44 +146,67 @@ export async function getCravings(): Promise<CravingData[]> {
   return result;
 }
 
-// Search foods
+const foodColumns = {
+  id: foods.id,
+  nameFr: foods.nameFr,
+  nameEn: foods.nameEn,
+  brand: foods.brand,
+  calories: foods.calories,
+  protein: foods.protein,
+  carbohydrates: foods.carbohydrates,
+  fat: foods.fat,
+  servingSize: foods.servingSize,
+};
+
+// Search foods — 3 layers: full-text (french_unaccent) → fuzzy (pg_trgm) → AI estimation (client-side)
 export async function searchFoods(query: string, limit = 20): Promise<FoodData[]> {
   if (!query || query.length < 2) return [];
 
   const words = query.toLowerCase().split(/\s+/).filter(w => w.length >= 2);
   if (words.length === 0) return [];
 
-  // Chaque mot doit être présent dans le nom OU la marque (AND entre mots)
-  const conditions = words.map(w =>
-    sql`(LOWER(${foods.nameFr}) LIKE ${`%${w}%`} OR LOWER(COALESCE(${foods.brand}, '')) LIKE ${`%${w}%`})`
-  );
-  const firstWord = words[0];
-
-  const result = await db
-    .select({
-      id: foods.id,
-      nameFr: foods.nameFr,
-      nameEn: foods.nameEn,
-      brand: foods.brand,
-      calories: foods.calories,
-      protein: foods.protein,
-      carbohydrates: foods.carbohydrates,
-      fat: foods.fat,
-      servingSize: foods.servingSize,
-    })
+  // Layer 1 — Full-text search with French stemming + unaccent (handles plurals, accents, ranking)
+  const tsQuery = sql`websearch_to_tsquery('french_unaccent', ${query})`;
+  const fts = await db
+    .select(foodColumns)
     .from(foods)
-    .where(and(...conditions))
+    .where(sql`search_vector @@ ${tsQuery}`)
     .orderBy(
-      sql`CASE
-        WHEN LOWER(${foods.nameFr}) LIKE ${`${firstWord}%`} THEN 0
-        WHEN LOWER(${foods.nameFr}) LIKE ${`% ${firstWord}%`} THEN 1
-        ELSE 2
-      END`,
+      sql`ts_rank(search_vector, ${tsQuery}) DESC`,
       sql`LENGTH(${foods.nameFr})`,
     )
     .limit(limit);
 
-  return result;
+  if (fts.length >= 5) return fts;
+
+  // Layer 2 — Fuzzy per-word via pg_trgm (handles typos: loc→lok, poulle→poulet, etc.)
+  const seenIds = new Set(fts.map(r => r.id));
+  const nameLower = sql`LOWER(${foods.nameFr})`;
+  const fuzzyConditions = words.map(w =>
+    sql`(word_similarity(${w}, ${nameLower}) > 0.4 OR LOWER(COALESCE(${foods.brand}, '')) LIKE ${`%${w}%`})`
+  );
+  const simScore = words.length === 1
+    ? sql`word_similarity(${words[0]}, ${nameLower})`
+    : sql`(${sql.join(words.map(w => sql`word_similarity(${w}, ${nameLower})`), sql` + `)}) / ${words.length}`;
+
+  const fuzzy = await db
+    .select(foodColumns)
+    .from(foods)
+    .where(and(...fuzzyConditions))
+    .orderBy(sql`${simScore} DESC`, sql`LENGTH(${foods.nameFr})`)
+    .limit(limit);
+
+  // Merge: FTS first (best relevance), then fuzzy (deduplicated)
+  const merged = [...fts];
+  for (const row of fuzzy) {
+    if (!seenIds.has(row.id)) {
+      merged.push(row);
+      seenIds.add(row.id);
+    }
+    if (merged.length >= limit) break;
+  }
+
+  return merged;
 }
 
 // Get today's entries
@@ -275,17 +298,7 @@ export async function addFoodEntry(data: {
   let foodData: FoodData | null = null;
   if (data.foodId) {
     const [food] = await db
-      .select({
-        id: foods.id,
-        nameFr: foods.nameFr,
-        nameEn: foods.nameEn,
-        brand: foods.brand,
-        calories: foods.calories,
-        protein: foods.protein,
-        carbohydrates: foods.carbohydrates,
-        fat: foods.fat,
-        servingSize: foods.servingSize,
-      })
+      .select(foodColumns)
       .from(foods)
       .where(eq(foods.id, data.foodId));
     foodData = food;
@@ -765,7 +778,7 @@ export async function searchOpenFoodFacts(query: string, limit = 20): Promise<Fo
 
     const response = await fetch(
       `https://search.openfoodfacts.org/search?${params}`,
-      { signal: AbortSignal.timeout(5000) }
+      { signal: AbortSignal.timeout(3000) }
     );
 
     if (!response.ok) return [];
@@ -790,7 +803,7 @@ export async function searchOpenFoodFacts(query: string, limit = 20): Promise<Fo
 }
 
 // Save an Open Food Facts product to the local DB (cache on select)
-export async function cacheOpenFoodFactsProduct(product: FoodData): Promise<FoodData> {
+export async function cacheFoodProduct(product: FoodData): Promise<FoodData> {
   // Check if already cached (by name + brand combo)
   const existing = await db
     .select({ id: foods.id })
@@ -831,17 +844,7 @@ export async function cacheOpenFoodFactsProduct(product: FoodData): Promise<Food
 export async function lookupBarcode(barcode: string): Promise<FoodData | null> {
   // First, check local database
   const [localFood] = await db
-    .select({
-      id: foods.id,
-      nameFr: foods.nameFr,
-      nameEn: foods.nameEn,
-      brand: foods.brand,
-      calories: foods.calories,
-      protein: foods.protein,
-      carbohydrates: foods.carbohydrates,
-      fat: foods.fat,
-      servingSize: foods.servingSize,
-    })
+    .select(foodColumns)
     .from(foods)
     .where(eq(foods.barcode, barcode));
 

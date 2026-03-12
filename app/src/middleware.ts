@@ -29,8 +29,12 @@ export async function middleware(request: NextRequest) {
 
   const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname === route);
 
-  // Not authenticated + protected route → redirect to login
+  // Not authenticated + protected route
   if (!isAuthenticated && !isPublicRoute) {
+    // API routes: return 401 JSON instead of redirect
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);

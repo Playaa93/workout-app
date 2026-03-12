@@ -7,12 +7,12 @@ import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import Snackbar from '@mui/material/Snackbar';
-import { ArrowLeft, MagnifyingGlass } from '@phosphor-icons/react';
+import { ArrowLeft, MagnifyingGlass, Sparkle } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
 import { tc, card, GOLD, W } from '@/lib/design-tokens';
 import { triggerHaptic, MACRO_COLORS } from './shared';
-import { searchFoods, searchOpenFoodFacts, cacheOpenFoodFactsProduct, addFoodEntry } from '../actions';
+import { searchFoods, searchOpenFoodFacts, cacheFoodProduct, addFoodEntry } from '../actions';
 import type { FoodData, MealType } from './shared';
 
 function foodDedupeKey(f: FoodData): string {
@@ -84,6 +84,7 @@ export default function SearchView({
   const [isSearchingOff, setIsSearchingOff] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [addedSnackbar, setAddedSnackbar] = useState<string | null>(null);
+  const [isEstimatingAI, setIsEstimatingAI] = useState(false);
 
   useEffect(() => {
     if (query.length < 2) {
@@ -98,21 +99,25 @@ export default function SearchView({
       setIsSearching(true);
       setIsSearchingOff(true);
       setOffResults([]);
+
+      // Run local DB + Open Food Facts in parallel
+      const localPromise = searchFoods(query).catch(() => [] as FoodData[]);
+      const offPromise = searchOpenFoodFacts(query).catch(() => [] as FoodData[]);
+
       try {
-        const local = await searchFoods(query);
+        // Show local results as soon as ready
+        const local = await localPromise;
         if (cancelled) return;
         setLocalResults(local);
         setIsSearching(false);
 
+        // Then merge OFF results (already fetching in parallel)
         if (local.length < 5) {
-          const off = await searchOpenFoodFacts(query);
+          const off = await offPromise;
           if (cancelled) return;
           const localKeys = new Set(local.map(foodDedupeKey));
-          const filtered = off.filter(f => !localKeys.has(foodDedupeKey(f)));
-          setOffResults(filtered);
+          setOffResults(off.filter(f => !localKeys.has(foodDedupeKey(f))));
         }
-      } catch {
-        // degrade gracefully
       } finally {
         if (!cancelled) {
           setIsSearching(false);
@@ -129,13 +134,50 @@ export default function SearchView({
 
   const results = [...localResults, ...offResults];
 
+  const handleEstimateAI = async () => {
+    if (isEstimatingAI) return;
+    setIsEstimatingAI(true);
+    try {
+      const res = await fetch('/api/estimate-food', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ foodName: query }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erreur serveur' }));
+        setAddedSnackbar(err.error || `Erreur ${res.status}`);
+        return;
+      }
+      const data = await res.json();
+      const aiFood: FoodData = {
+        id: `ai:${query}`,
+        nameFr: data.name || query,
+        nameEn: null,
+        brand: data.description || null,
+        calories: String(data.caloriesPer100g),
+        protein: String(data.proteinPer100g),
+        carbohydrates: String(data.carbsPer100g),
+        fat: String(data.fatPer100g),
+        servingSize: String(data.typicalPortionGrams),
+      };
+      setSelectedFood(aiFood);
+      setQuantity(String(data.typicalPortionGrams));
+      triggerHaptic('medium');
+    } catch (err) {
+      console.error('estimate-food error:', err);
+      setAddedSnackbar('Erreur estimation IA');
+    } finally {
+      setIsEstimatingAI(false);
+    }
+  };
+
   const handleAdd = async () => {
     if (!selectedFood || isAdding) return;
     setIsAdding(true);
     try {
       let foodId = selectedFood.id;
-      if (foodId.startsWith('off:')) {
-        const cached = await cacheOpenFoodFactsProduct(selectedFood);
+      if (foodId.startsWith('off:') || foodId.startsWith('ai:')) {
+        const cached = await cacheFoodProduct(selectedFood);
         foodId = cached.id;
       }
       const qty = parseFloat(quantity) || 0;
@@ -152,7 +194,7 @@ export default function SearchView({
         carbohydrates: scaled(selectedFood.carbohydrates),
         fat: scaled(selectedFood.fat),
       });
-      setAddedSnackbar(selectedFood.nameFr);
+      setAddedSnackbar(`${selectedFood.nameFr} ajouté`);
       setSelectedFood(null);
       setQuantity('100');
     } catch {
@@ -226,85 +268,120 @@ export default function SearchView({
 
       {/* Results */}
       <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 12 }}>
-        {!isSearching && results.length === 0 && !isSearchingOff ? (
+        {query.length < 2 && !isSearching ? (
           <Typography sx={{ textAlign: 'center', color: tc.f(d), fontSize: '0.8rem', py: 6 }}>
-            {query.length >= 2 ? 'Aucun resultat' : 'Tape au moins 2 caracteres'}
+            Tape au moins 2 caracteres
           </Typography>
-        ) : results.length > 0 ? (
-          <Box sx={card(d, { overflow: 'hidden' })}>
-            {results.map((food, i) => (
-              <Box
-                key={food.id}
-                onClick={() => {
-                  triggerHaptic('light');
-                  setSelectedFood(food);
-                  const serving = food.servingSize ? Math.round(parseFloat(food.servingSize)) : 100;
-                  setQuantity(String(serving !== 100 ? serving : 100));
-                }}
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  cursor: 'pointer',
-                  borderBottom: i < results.length - 1 ? '1px solid' : 'none',
-                  borderColor: d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.04),
-                  transition: 'background-color 0.15s ease',
-                  '&:active': { bgcolor: d ? alpha('#ffffff', 0.04) : alpha('#000000', 0.02) },
-                }}
-              >
-                <Stack direction="row" alignItems="center" spacing={1.5}>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{
-                      fontSize: '0.8rem',
-                      fontWeight: 500,
-                      color: tc.h(d),
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {food.nameFr}
-                    </Typography>
-                    <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.2 }}>
-                      {food.calories && (
-                        <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), fontVariantNumeric: 'tabular-nums' }}>
-                          {Math.round(parseFloat(food.calories))} kcal/100g
+        ) : (
+          <>
+            {results.length > 0 && (
+              <Box sx={card(d, { overflow: 'hidden' })}>
+                {results.map((food, i) => (
+                  <Box
+                    key={food.id}
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setSelectedFood(food);
+                      const serving = food.servingSize ? Math.round(parseFloat(food.servingSize)) : 100;
+                      setQuantity(String(serving !== 100 ? serving : 100));
+                    }}
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      cursor: 'pointer',
+                      borderBottom: i < results.length - 1 ? '1px solid' : 'none',
+                      borderColor: d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.04),
+                      transition: 'background-color 0.15s ease',
+                      '&:active': { bgcolor: d ? alpha('#ffffff', 0.04) : alpha('#000000', 0.02) },
+                    }}
+                  >
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{
+                          fontSize: '0.8rem',
+                          fontWeight: 500,
+                          color: tc.h(d),
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {food.nameFr}
                         </Typography>
-                      )}
-                      {food.brand && (
-                        <Typography sx={{ fontSize: '0.65rem', color: tc.f(d) }}>
-                          {food.brand}
+                        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.2 }}>
+                          {food.calories && (
+                            <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), fontVariantNumeric: 'tabular-nums' }}>
+                              {Math.round(parseFloat(food.calories))} kcal/100g
+                            </Typography>
+                          )}
+                          {food.brand && (
+                            <Typography sx={{ fontSize: '0.65rem', color: tc.f(d) }}>
+                              {food.brand}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </Box>
+                      {food.id.startsWith('off:') && (
+                        <Typography sx={{
+                          fontSize: '0.5rem',
+                          fontWeight: 700,
+                          color: GOLD,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                          px: 0.75,
+                          py: 0.25,
+                          borderRadius: '6px',
+                          bgcolor: alpha(GOLD, 0.1),
+                          flexShrink: 0,
+                        }}>
+                          OFF
                         </Typography>
                       )}
                     </Stack>
                   </Box>
-                  {food.id.startsWith('off:') && (
-                    <Typography sx={{
-                      fontSize: '0.5rem',
-                      fontWeight: 700,
-                      color: GOLD,
-                      letterSpacing: '0.05em',
-                      textTransform: 'uppercase',
-                      px: 0.75,
-                      py: 0.25,
-                      borderRadius: '6px',
-                      bgcolor: alpha(GOLD, 0.1),
-                      flexShrink: 0,
-                    }}>
-                      OFF
-                    </Typography>
-                  )}
-                </Stack>
+                ))}
               </Box>
-            ))}
-          </Box>
-        ) : null}
+            )}
 
-        {isSearchingOff && (
-          <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ py: 3 }}>
-            <CircularProgress size={14} sx={{ color: GOLD }} />
-            <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
-              Open Food Facts...
-            </Typography>
-          </Stack>
+            {isSearchingOff && (
+              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ py: 3 }}>
+                <CircularProgress size={14} sx={{ color: GOLD }} />
+                <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
+                  Open Food Facts...
+                </Typography>
+              </Stack>
+            )}
+
+            {/* AI estimation — always visible after search completes */}
+            {!isSearching && !isSearchingOff && query.length >= 2 && (
+              <Box
+                onClick={!isEstimatingAI ? handleEstimateAI : undefined}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1,
+                  mt: 2,
+                  py: 1.2,
+                  borderRadius: '14px',
+                  border: `1px solid ${alpha(GOLD, 0.25)}`,
+                  bgcolor: alpha(GOLD, 0.06),
+                  color: GOLD,
+                  fontWeight: 600,
+                  fontSize: '0.78rem',
+                  cursor: isEstimatingAI ? 'default' : 'pointer',
+                  transition: 'all 0.15s ease',
+                  ...(!isEstimatingAI && { '&:active': { transform: 'scale(0.97)', bgcolor: alpha(GOLD, 0.12) } }),
+                }}
+              >
+                {isEstimatingAI ? (
+                  <CircularProgress size={14} sx={{ color: GOLD }} />
+                ) : (
+                  <Sparkle size={16} weight="fill" />
+                )}
+                {isEstimatingAI ? 'Estimation...' : `Estimer "${query}" avec l'IA`}
+              </Box>
+            )}
+          </>
         )}
       </Box>
 
@@ -321,7 +398,7 @@ export default function SearchView({
           boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
         }}>
           <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d) }}>
-            {addedSnackbar} ajoute
+            {addedSnackbar}
           </Typography>
         </Box>
       </Snackbar>
