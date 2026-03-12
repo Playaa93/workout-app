@@ -530,23 +530,23 @@ export async function updateAvatarStage(): Promise<number> {
 // USER SETTINGS
 // =====================================================
 
-export async function getGeminiApiKey(): Promise<string | null> {
+export async function getGroqApiKey(): Promise<string | null> {
   const userId = await requireUserId();
   const [settings] = await db
-    .select({ geminiApiKey: userSettings.geminiApiKey })
+    .select({ groqApiKey: userSettings.groqApiKey })
     .from(userSettings)
     .where(eq(userSettings.userId, userId));
-  return settings?.geminiApiKey || null;
+  return settings?.groqApiKey || null;
 }
 
-export async function saveGeminiApiKey(apiKey: string): Promise<void> {
+export async function saveGroqApiKey(apiKey: string): Promise<void> {
   const userId = await requireUserId();
   await db
     .insert(userSettings)
-    .values({ userId, geminiApiKey: apiKey })
+    .values({ userId, groqApiKey: apiKey })
     .onConflictDoUpdate({
       target: userSettings.userId,
-      set: { geminiApiKey: apiKey, updatedAt: new Date() },
+      set: { groqApiKey: apiKey, updatedAt: new Date() },
     });
 }
 

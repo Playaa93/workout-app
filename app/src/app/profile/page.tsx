@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import {
-  getGeminiApiKey,
-  saveGeminiApiKey,
+  getGroqApiKey,
+  saveGroqApiKey,
   getHuaweiCredentials,
   saveHuaweiCredentials,
   disconnectHuawei,
@@ -620,10 +620,10 @@ function SettingsTab() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const d = resolvedTheme !== 'light';
   const [mounted, setMounted] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [apiKeyLoaded, setApiKeyLoaded] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [savingKey, setSavingKey] = useState(false);
+  const [groqKey, setGroqKey] = useState('');
+  const [groqKeyLoaded, setGroqKeyLoaded] = useState(false);
+  const [showGroqKey, setShowGroqKey] = useState(false);
+  const [savingGroqKey, setSavingGroqKey] = useState(false);
   const [huaweiCreds, setHuaweiCreds] = useState<HuaweiCredentials | null>(null);
   const [hwClientId, setHwClientId] = useState('');
   const [hwClientSecret, setHwClientSecret] = useState('');
@@ -636,9 +636,9 @@ function SettingsTab() {
 
   useEffect(() => {
     setMounted(true);
-    getGeminiApiKey().then((key) => {
-      if (key) setApiKey(key);
-      setApiKeyLoaded(true);
+    getGroqApiKey().then((key) => {
+      if (key) setGroqKey(key);
+      setGroqKeyLoaded(true);
     });
     getHuaweiCredentials().then((creds) => {
       setHuaweiCreds(creds);
@@ -657,15 +657,15 @@ function SettingsTab() {
     }
   }, []);
 
-  const handleSaveApiKey = async () => {
-    setSavingKey(true);
+  const handleSaveGroqKey = async () => {
+    setSavingGroqKey(true);
     try {
-      await saveGeminiApiKey(apiKey.trim());
-      setSnackbar({ open: true, message: 'Clé API sauvegardée', severity: 'success' });
+      await saveGroqApiKey(groqKey.trim());
+      setSnackbar({ open: true, message: 'Clé sauvegardée', severity: 'success' });
     } catch {
       setSnackbar({ open: true, message: 'Erreur lors de la sauvegarde', severity: 'error' });
     } finally {
-      setSavingKey(false);
+      setSavingGroqKey(false);
     }
   };
 
@@ -730,21 +730,30 @@ function SettingsTab() {
         )}
       </Box>
 
-      {/* Gemini API Key */}
-      <Box>
-        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), mb: 1, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          Reconnaissance IA
-        </Typography>
+      {/* Intelligence IA */}
+      <Box sx={card(d, { p: 2 })}>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+          <Lightning size={20} weight={W} color={GOLD} />
+          <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            Intelligence IA
+          </Typography>
+          {groqKey && (
+            <Chip label="Configuré" size="small" sx={{
+              height: 20, fontSize: '0.55rem', fontWeight: 600,
+              bgcolor: alpha(GOLD, 0.12), color: GOLD, border: 'none',
+            }} />
+          )}
+        </Stack>
         <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mb: 1.5 }}>
-          Clé API Google Gemini pour la reconnaissance photo.
+          Clé API Groq pour la reconnaissance photo et l{"'"}estimation nutritionnelle.
         </Typography>
         <Stack direction="row" spacing={1}>
           <TextField
-            size="small" fullWidth placeholder="AIza..."
-            type={showApiKey ? 'text' : 'password'}
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            disabled={!apiKeyLoaded}
+            size="small" fullWidth placeholder="gsk_..."
+            type={showGroqKey ? 'text' : 'password'}
+            value={groqKey}
+            onChange={(e) => setGroqKey(e.target.value)}
+            disabled={!groqKeyLoaded}
             sx={GOLD_FIELD_SX}
             slotProps={{
               input: {
@@ -755,8 +764,8 @@ function SettingsTab() {
                 ),
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setShowApiKey(!showApiKey)} edge="end">
-                      {showApiKey ? <EyeSlash size={16} weight={W} /> : <Eye size={16} weight={W} />}
+                    <IconButton size="small" onClick={() => setShowGroqKey(!showGroqKey)} edge="end">
+                      {showGroqKey ? <EyeSlash size={14} weight={W} /> : <Eye size={14} weight={W} />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -765,8 +774,8 @@ function SettingsTab() {
           />
           <Button
             variant="contained" size="small"
-            onClick={handleSaveApiKey}
-            disabled={savingKey || !apiKey.trim()}
+            onClick={handleSaveGroqKey}
+            disabled={savingGroqKey || !groqKey.trim()}
             sx={{
               textTransform: 'none', minWidth: 'auto', px: 2,
               bgcolor: GOLD, color: '#1a1a1a', fontWeight: 600,
@@ -774,13 +783,13 @@ function SettingsTab() {
               '&.Mui-disabled': { bgcolor: alpha(GOLD, 0.3), color: alpha('#1a1a1a', 0.4) },
             }}
           >
-            {savingKey ? <CircularProgress size={18} sx={{ color: '#1a1a1a' }} /> : 'OK'}
+            {savingGroqKey ? <CircularProgress size={16} sx={{ color: '#1a1a1a' }} /> : 'OK'}
           </Button>
         </Stack>
         <Button
-          component="a" href="https://aistudio.google.com/apikey"
+          component="a" href="https://console.groq.com/keys"
           target="_blank" rel="noopener noreferrer" size="small"
-          sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.75rem', color: GOLD }}
+          sx={{ textTransform: 'none', mt: 1, fontWeight: 600, fontSize: '0.7rem', color: GOLD }}
         >
           Obtenir une clé gratuite ›
         </Button>

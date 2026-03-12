@@ -64,6 +64,7 @@ export const userSettings = pgTable('user_settings', {
   notificationsEnabled: boolean('notifications_enabled').default(true),
   unitSystem: varchar('unit_system', { length: 10 }).default('metric'),
   geminiApiKey: varchar('gemini_api_key', { length: 255 }),
+  groqApiKey: varchar('groq_api_key', { length: 255 }),
   huaweiClientId: varchar('huawei_client_id', { length: 255 }),
   huaweiClientSecret: varchar('huawei_client_secret', { length: 255 }),
   huaweiAccessToken: text('huawei_access_token'),

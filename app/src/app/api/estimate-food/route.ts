@@ -1,19 +1,9 @@
 import { NextResponse } from 'next/server';
-import { requireUserId } from '@/lib/auth';
-
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+import { getGroqContext, callGroqChat, GROQ_TEXT_MODEL } from '@/lib/groq';
 
 export async function POST(request: Request) {
-  try {
-    await requireUserId();
-  } catch {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  }
-
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'Clé API Groq non configurée' }, { status: 500 });
-  }
+  const ctx = await getGroqContext();
+  if ('error' in ctx) return ctx.error;
 
   let foodName: string;
   try {
@@ -27,18 +17,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: `Tu es un nutritionniste diplômé. Estime les valeurs nutritionnelles par 100g de l'aliment demandé.
+    const parsed = await callGroqChat(
+      ctx.apiKey,
+      [
+        {
+          role: 'system',
+          content: `Tu es un nutritionniste diplômé. Estime les valeurs nutritionnelles par 100g de l'aliment demandé.
 
 REGLES :
 - Valeurs pour 100g du plat tel que servi (pas par ingrédient)
@@ -49,33 +33,16 @@ REGLES :
 - typicalPortionGrams = portion typique dans une assiette
 
 Réponds UNIQUEMENT en JSON valide, sans markdown.`,
-          },
-          {
-            role: 'user',
-            content: `Aliment : "${foodName}"
+        },
+        {
+          role: 'user',
+          content: `Aliment : "${foodName}"
 
 JSON exact : {"name":"nom normalisé en français","caloriesPer100g":0,"proteinPer100g":0,"carbsPer100g":0,"fatPer100g":0,"typicalPortionGrams":300,"confidence":0.7,"description":"courte description"}`,
-          },
-        ],
-        temperature: 0.2,
-        max_tokens: 256,
-        response_format: { type: 'json_object' },
-      }),
-      signal: AbortSignal.timeout(10000),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('Groq API error:', response.status, errText.slice(0, 300));
-      if (response.status === 429) {
-        return NextResponse.json({ error: 'Rate limit Groq, reessaie dans quelques secondes' }, { status: 429 });
-      }
-      return NextResponse.json({ error: "Erreur lors de l'estimation" }, { status: 500 });
-    }
-
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || '';
-    const parsed = JSON.parse(text);
+        },
+      ],
+      { model: GROQ_TEXT_MODEL, max_tokens: 256, jsonMode: true }
+    );
 
     return NextResponse.json({
       name: (parsed.name as string) || foodName,

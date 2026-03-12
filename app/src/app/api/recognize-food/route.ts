@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getGeminiContext, callGeminiVision, extractImageFromRequest } from '@/lib/gemini';
+import { getGroqContext, callGroqVision, extractImageFromRequest } from '@/lib/groq';
 
 export async function POST(request: Request) {
-  const ctx = await getGeminiContext();
+  const [ctx, img] = await Promise.all([getGroqContext(), extractImageFromRequest(request)]);
   if ('error' in ctx) return ctx.error;
-
-  const img = await extractImageFromRequest(request);
   if ('error' in img) return img.error;
 
   const prompt = `Analyse cette photo de nourriture/repas et identifie chaque aliment visible.
@@ -37,7 +35,7 @@ Réponds UNIQUEMENT avec du JSON valide, sans markdown, dans ce format exact:
 Si tu ne vois aucun aliment, réponds: {"foods": []}`;
 
   try {
-    const parsed = await callGeminiVision(ctx.apiKey, img.base64Data, prompt, 0.2);
+    const parsed = await callGroqVision(ctx.apiKey, img.base64Data, prompt, 0.2);
 
     if (!parsed.foods || !Array.isArray(parsed.foods)) {
       return NextResponse.json({ error: 'Format de réponse invalide' }, { status: 502 });

@@ -26,7 +26,7 @@ const user_settings = new Table({
   theme: column.text,
   notifications_enabled: column.integer,
   unit_system: column.text,
-  // gemini_api_key EXCLUDED (security)
+  // gemini_api_key, groq_api_key EXCLUDED (security)
   huawei_client_id: column.text,
   // huawei_client_secret EXCLUDED (security)
   // huawei_access_token EXCLUDED (security)

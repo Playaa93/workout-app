@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getGeminiContext, callGeminiVision, extractImageFromRequest } from '@/lib/gemini';
+import { getGroqContext, callGroqVision, extractImageFromRequest } from '@/lib/groq';
 
 export async function POST(request: Request) {
-  const ctx = await getGeminiContext();
+  const [ctx, img] = await Promise.all([getGroqContext(), extractImageFromRequest(request)]);
   if ('error' in ctx) return ctx.error;
-
-  const img = await extractImageFromRequest(request);
   if ('error' in img) return img.error;
 
   const prompt = `Analyse ce screenshot d'une application de fitness/santé (Huawei Health, Garmin, Strava, Apple Health, Samsung Health, etc.) et extrais les données de la séance cardio.
@@ -43,7 +41,7 @@ Règles :
 Si tu ne vois aucune donnée de séance sportive, réponds : {"activity": null, "confidence": 0}`;
 
   try {
-    const parsed = await callGeminiVision(ctx.apiKey, img.base64Data, prompt, 0.1);
+    const parsed = await callGroqVision(ctx.apiKey, img.base64Data, prompt, 0.1);
 
     if (!parsed.activity) {
       return NextResponse.json(
