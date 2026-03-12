@@ -13,7 +13,7 @@ import { useMorphoProfile } from '@/powersync/queries/morphology-queries'
 import { calculateLevel } from '@/lib/xp-utils'
 import { getISOWeekStart } from '@/lib/date-utils'
 import { toSqliteTimestamp } from '@/powersync/helpers'
-import { GOLD, GOLD_LIGHT, tc, glass, meshBg } from '@/lib/design-tokens'
+import { GOLD, GOLD_LIGHT, tc, glass, meshBg, W } from '@/lib/design-tokens'
 import { alpha } from '@mui/material/styles'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -24,13 +24,7 @@ import LinearProgress from '@mui/material/LinearProgress'
 import Avatar from '@mui/material/Avatar'
 import CircularProgress from '@mui/material/CircularProgress'
 import Collapse from '@mui/material/Collapse'
-import FitnessCenter from '@mui/icons-material/FitnessCenter'
-import Settings from '@mui/icons-material/Settings'
-import TrendingUp from '@mui/icons-material/TrendingUp'
-import TrendingDown from '@mui/icons-material/TrendingDown'
-import ExpandMore from '@mui/icons-material/ExpandMore'
-import Whatshot from '@mui/icons-material/Whatshot'
-import EmojiEvents from '@mui/icons-material/EmojiEvents'
+import { Barbell, GearSix, TrendUp, TrendDown, CaretDown, Flame, Trophy } from '@phosphor-icons/react'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
 
@@ -71,17 +65,17 @@ function ChangeIndicator({ cur, prev, isDark }: { cur: number; prev: number; isD
   let text = '='
 
   if (prev === 0 && cur > 0) {
-    icon = <TrendingUp sx={{ fontSize: 12, color: blue }} />
+    icon = <TrendUp size={12} weight={W} color={blue} />
     color = blue
     text = 'Nouveau'
   } else if (prev > 0) {
     const pct = Math.round(((cur - prev) / prev) * 100)
     if (pct > 0) {
-      icon = <TrendingUp sx={{ fontSize: 12, color: green }} />
+      icon = <TrendUp size={12} weight={W} color={green} />
       color = green
       text = `+${pct}%`
     } else if (pct < 0) {
-      icon = <TrendingDown sx={{ fontSize: 12, color: red }} />
+      icon = <TrendDown size={12} weight={W} color={red} />
       color = red
       text = `${pct}%`
     }
@@ -259,7 +253,7 @@ function HomeContentInner() {
                   border: `2px solid ${isDark ? '#0a0a0a' : '#f5f3ef'}`,
                   boxShadow: '0 2px 8px rgba(255,152,0,0.4)',
                 }}>
-                  <Whatshot sx={{ fontSize: 10 }} />{streak}
+                  <Flame size={10} weight={W} />{streak}
                 </Box>
               )}
             </Box>
@@ -273,7 +267,7 @@ function HomeContentInner() {
             </Box>
           </Stack>
           <IconButton component={Link} href="/profile" size="small">
-            <Settings sx={{ fontSize: 20, color: tc.f(isDark) }} />
+            <GearSix size={20} weight={W} color={tc.f(isDark)} />
           </IconButton>
         </Stack>
       </Box>
@@ -291,7 +285,7 @@ function HomeContentInner() {
           variant="contained"
           size="large"
           fullWidth
-          startIcon={<FitnessCenter />}
+          startIcon={<Barbell size={22} weight={W} />}
           sx={{
             py: 1.8, fontSize: '0.95rem', fontWeight: 700, letterSpacing: '0.02em',
             borderRadius: '14px',
@@ -359,11 +353,16 @@ function HomeContentInner() {
               }}>
                 Ton activité
               </Typography>
-              <ExpandMore sx={{
-                fontSize: 20, color: GOLD, opacity: 0.6,
-                transform: statsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.3s ease',
-              }} />
+              <CaretDown
+                size={20}
+                weight={W}
+                color={GOLD}
+                style={{
+                  opacity: 0.6,
+                  transform: statsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease',
+                }}
+              />
             </Stack>
             <Stack direction="row" justifyContent="space-around" textAlign="center">
               {STAT_ITEMS.map((item, i) => (
@@ -423,7 +422,7 @@ function HomeContentInner() {
                 borderColor: alpha(GOLD, 0.15),
                 display: 'flex', alignItems: 'center', gap: 2,
               }}>
-                <EmojiEvents sx={{ fontSize: 22, color: GOLD, filter: `drop-shadow(0 0 6px ${alpha(GOLD, 0.4)})` }} />
+                <Trophy size={22} weight={W} color={GOLD} style={{ filter: `drop-shadow(0 0 6px ${alpha(GOLD, 0.4)})` }} />
                 <Box sx={{ flex: 1 }}>
                   <Typography sx={{ fontSize: '1.1rem', fontWeight: 800, color: GOLD, letterSpacing: '-0.01em' }}>
                     {weeklyComparison.thisWeek.prCount} PRs

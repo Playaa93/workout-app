@@ -4,14 +4,10 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
-import Close from '@mui/icons-material/Close';
-import Search from '@mui/icons-material/Search';
-import QrCodeScanner from '@mui/icons-material/QrCodeScanner';
-import CameraAlt from '@mui/icons-material/CameraAlt';
-import Bolt from '@mui/icons-material/Bolt';
+import { X, MagnifyingGlass, Barcode, Camera, Lightning } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
-import { tc, card, panelBg, GOLD } from '@/lib/design-tokens';
+import { tc, card, panelBg, GOLD, W } from '@/lib/design-tokens';
 import { MEAL_CONFIG, triggerHaptic } from './shared';
 import type { MealType, FoodEntryData } from './shared';
 
@@ -134,13 +130,13 @@ export default function AddEntryBottomSheet({
               Ajouter - {meal.label}
             </Typography>
             <IconButton size="small" onClick={onClose} sx={{ color: tc.f(d) }}>
-              <Close fontSize="small" />
+              <X size={20} weight={W} />
             </IconButton>
           </Stack>
 
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
             <SheetActionCard
-              icon={<Search />}
+              icon={<MagnifyingGlass size={24} weight={W} />}
               label="Chercher"
               desc="Base de données"
               d={d}
@@ -150,7 +146,7 @@ export default function AddEntryBottomSheet({
               }}
             />
             <SheetActionCard
-              icon={<QrCodeScanner />}
+              icon={<Barcode size={24} weight={W} />}
               label="Scanner"
               desc="Code-barres"
               d={d}
@@ -160,7 +156,7 @@ export default function AddEntryBottomSheet({
               }}
             />
             <SheetActionCard
-              icon={<CameraAlt />}
+              icon={<Camera size={24} weight={W} />}
               label="Photo IA"
               desc="Reconnaissance"
               d={d}
@@ -170,7 +166,7 @@ export default function AddEntryBottomSheet({
               }}
             />
             <SheetActionCard
-              icon={<Bolt />}
+              icon={<Lightning size={24} weight={W} />}
               label="Rapide"
               desc="Estimation"
               d={d}

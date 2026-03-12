@@ -6,7 +6,8 @@ import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
 import TextField from '@mui/material/TextField';
-import ArrowBack from '@mui/icons-material/ArrowBack';
+import { ArrowLeft } from '@phosphor-icons/react';
+import { W } from '@/lib/design-tokens';
 import type { MealType } from './shared';
 
 export default function QuickEntryView({
@@ -41,7 +42,7 @@ export default function QuickEntryView({
               '&:active': { opacity: 0.5 },
             }}
           >
-            <ArrowBack sx={{ fontSize: 24 }} />
+            <ArrowLeft size={24} weight={W} />
           </Box>
           <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>Entrée rapide</Typography>
           <Box sx={{ width: 32 }} />

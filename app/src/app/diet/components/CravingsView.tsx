@@ -5,7 +5,8 @@ import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import Stack from '@mui/material/Stack';
-import ArrowBack from '@mui/icons-material/ArrowBack';
+import { ArrowLeft } from '@phosphor-icons/react';
+import { W } from '@/lib/design-tokens';
 import type { CravingData, MealType } from './shared';
 
 export default function CravingsView({
@@ -52,7 +53,7 @@ export default function CravingsView({
               '&:active': { opacity: 0.5 },
             }}
           >
-            <ArrowBack sx={{ fontSize: 24 }} />
+            <ArrowLeft size={24} weight={W} />
           </Box>
           <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
             J&apos;ai envie de...

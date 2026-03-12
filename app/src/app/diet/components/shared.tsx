@@ -5,10 +5,6 @@ import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
-import FreeBreakfast from '@mui/icons-material/FreeBreakfast';
-import LunchDining from '@mui/icons-material/LunchDining';
-import DinnerDining from '@mui/icons-material/DinnerDining';
-import Icecream from '@mui/icons-material/Icecream';
 import { tc } from '@/lib/design-tokens';
 
 export type {
@@ -33,17 +29,17 @@ export type MealType =
   | 'intra_workout'
   | 'post_workout';
 
-export const MEAL_CONFIG: Record<MealType, { label: string; icon: typeof FreeBreakfast; color: string }> = {
-  breakfast: { label: 'Petit-déj', icon: FreeBreakfast, color: '#ff9800' },
-  morning_snack: { label: 'Collation matin', icon: Icecream, color: '#f59e0b' },
-  lunch: { label: 'Déjeuner', icon: LunchDining, color: '#4caf50' },
-  afternoon_snack: { label: 'Goûter', icon: Icecream, color: '#ec4899' },
-  snack: { label: 'Snack', icon: Icecream, color: '#e91e63' },
-  dinner: { label: 'Dîner', icon: DinnerDining, color: '#7c3aed' },
-  evening_snack: { label: 'Collation soir', icon: Icecream, color: '#8b5cf6' },
-  pre_workout: { label: 'Pre-workout', icon: FreeBreakfast, color: '#06b6d4' },
-  intra_workout: { label: 'Intra-workout', icon: LunchDining, color: '#0891b2' },
-  post_workout: { label: 'Post-workout', icon: LunchDining, color: '#14b8a6' },
+export const MEAL_CONFIG: Record<MealType, { label: string; color: string }> = {
+  breakfast: { label: 'Petit-déj', color: '#ff9800' },
+  morning_snack: { label: 'Collation matin', color: '#f59e0b' },
+  lunch: { label: 'Déjeuner', color: '#4caf50' },
+  afternoon_snack: { label: 'Goûter', color: '#ec4899' },
+  snack: { label: 'Snack', color: '#e91e63' },
+  dinner: { label: 'Dîner', color: '#7c3aed' },
+  evening_snack: { label: 'Collation soir', color: '#8b5cf6' },
+  pre_workout: { label: 'Pre-workout', color: '#06b6d4' },
+  intra_workout: { label: 'Intra-workout', color: '#0891b2' },
+  post_workout: { label: 'Post-workout', color: '#14b8a6' },
 };
 
 export const DEFAULT_MEALS: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner'];

@@ -10,7 +10,8 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
-import ArrowBack from '@mui/icons-material/ArrowBack';
+import { ArrowLeft } from '@phosphor-icons/react';
+import { W } from '@/lib/design-tokens';
 import { lookupBarcode, addFoodEntry } from '../actions';
 import { triggerHaptic, MEAL_CONFIG } from './shared';
 import type { FoodData, MealType } from './shared';
@@ -133,7 +134,7 @@ export default function ScannerView({
               '&:active': { opacity: 0.5 },
             }}
           >
-            <ArrowBack sx={{ fontSize: 24 }} />
+            <ArrowLeft size={24} weight={W} />
           </Box>
           <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>Scanner</Typography>
           <Chip label={meal.label} size="small" sx={{ bgcolor: `${meal.color}15`, color: meal.color, fontWeight: 600 }} />

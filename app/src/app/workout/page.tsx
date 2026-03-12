@@ -38,23 +38,25 @@ import ListItemText from '@mui/material/ListItemText';
 import TextField from '@mui/material/TextField';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import FitnessCenter from '@mui/icons-material/FitnessCenter';
-import Bolt from '@mui/icons-material/Bolt';
-import Add from '@mui/icons-material/Add';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import Close from '@mui/icons-material/Close';
-import Delete from '@mui/icons-material/Delete';
-import PhotoCamera from '@mui/icons-material/PhotoCamera';
-import Watch from '@mui/icons-material/Watch';
-import EditIcon from '@mui/icons-material/Edit';
-import AutoAwesome from '@mui/icons-material/AutoAwesome';
+import {
+  ArrowLeft,
+  Barbell,
+  Lightning,
+  Plus,
+  CaretRight,
+  X,
+  Trash,
+  Camera,
+  Watch as WatchIcon,
+  PencilSimple,
+  Sparkle,
+} from '@phosphor-icons/react';
 import { useTheme } from 'next-themes';
 import { alpha } from '@mui/material/styles';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import { parseJsonArray } from '@/powersync/helpers';
 import BottomNav from '@/components/BottomNav';
-import { GOLD, GOLD_LIGHT, tc, card, surfaceBg, panelBg } from '@/lib/design-tokens';
+import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg } from '@/lib/design-tokens';
 import { formatDuration } from '@/lib/export-utils';
 
 export default function WorkoutPage() {
@@ -254,10 +256,10 @@ function WorkoutContent() {
           <Button
             fullWidth
             onClick={() => { setDrawerView('main'); setShowNewSessionDrawer(true); }}
-            startIcon={<Add />}
+            startIcon={<Plus size={18} weight={W} />}
             sx={{
               py: 2, borderRadius: '16px', fontSize: '0.95rem', fontWeight: 600,
-              bgcolor: GOLD, color: '#1a1a1a', textTransform: 'none',
+              bgcolor: GOLD, color: GOLD_CONTRAST, textTransform: 'none',
               boxShadow: `0 4px 20px ${alpha(GOLD, 0.3)}`,
               '&:hover': { bgcolor: GOLD_LIGHT },
             }}
@@ -298,7 +300,7 @@ function WorkoutContent() {
                     Reprendre
                   </Button>
                   <IconButton size="small" onClick={() => handleDeleteClick(session.id)} sx={{ color: tc.f(d) }}>
-                    <Delete fontSize="small" />
+                    <Trash size={18} weight={W} />
                   </IconButton>
                 </Stack>
               </Box>
@@ -320,7 +322,7 @@ function WorkoutContent() {
                 <Button
                   onClick={() => setShowCreateDrawer(true)}
                   size="small"
-                  startIcon={<Add sx={{ fontSize: 14 }} />}
+                  startIcon={<Plus size={14} weight={W} />}
                   sx={{ fontSize: '0.7rem', textTransform: 'none', color: GOLD, fontWeight: 600 }}
                 >
                   Créer
@@ -337,14 +339,14 @@ function WorkoutContent() {
                     })}
                   >
                     <Stack direction="row" alignItems="center" spacing={2}>
-                      <FitnessCenter sx={{ color: GOLD, fontSize: 20 }} />
+                      <Barbell size={20} weight={W} color={GOLD} />
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(d) }} noWrap>{t.name}</Typography>
                         <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.3 }}>
                           {t.targetMuscles.map((m) => MUSCLE_LABELS[m] || m).join(' · ')}
                         </Typography>
                       </Box>
-                      <ChevronRight sx={{ color: tc.f(d), fontSize: 18 }} />
+                      <CaretRight size={18} weight={W} style={{ color: tc.f(d) }} />
                     </Stack>
                   </Box>
                 ))}
@@ -363,7 +365,7 @@ function WorkoutContent() {
               }}
             >
               <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
-                <Add sx={{ fontSize: 20, color: GOLD }} />
+                <Plus size={20} weight={W} color={GOLD} />
                 <Typography sx={{ fontSize: '0.85rem', color: tc.m(d), fontWeight: 500 }}>
                   Créer un programme
                 </Typography>
@@ -384,7 +386,7 @@ function WorkoutContent() {
               </Stack>
             ) : completedSessions.length === 0 ? (
               <Box sx={card(d, { textAlign: 'center', py: 5 })}>
-                <FitnessCenter sx={{ fontSize: 48, color: tc.f(d), mb: 1.5 }} />
+                <Barbell size={48} weight={W} style={{ color: tc.f(d), marginBottom: 12 }} />
                 <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(d), mb: 0.5 }}>
                   Pas encore de séance
                 </Typography>
@@ -448,7 +450,7 @@ function WorkoutContent() {
               sx={{ borderRadius: '12px', mb: 0.5 }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>
-                <EditIcon sx={{ color: GOLD }} />
+                <PencilSimple size={22} weight={W} color={GOLD} />
               </ListItemIcon>
               <ListItemText
                 primary="Créer manuellement"
@@ -462,7 +464,7 @@ function WorkoutContent() {
               sx={{ borderRadius: '12px' }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>
-                <AutoAwesome sx={{ color: GOLD_LIGHT }} />
+                <Sparkle size={22} weight={W} color={GOLD_LIGHT} />
               </ListItemIcon>
               <ListItemText
                 primary="Générer avec l'IA"
@@ -489,7 +491,7 @@ function WorkoutContent() {
             {drawerView === 'cardio' ? (
               <Stack direction="row" alignItems="center" spacing={1}>
                 <IconButton size="small" onClick={() => setDrawerView('main')}>
-                  <ArrowBack fontSize="small" />
+                  <ArrowLeft size={20} weight={W} />
                 </IconButton>
                 <Typography variant="h6" fontWeight={600}>
                   Choisir une activité
@@ -501,7 +503,7 @@ function WorkoutContent() {
               </Typography>
             )}
             <IconButton onClick={() => { setShowNewSessionDrawer(false); setDrawerView('main'); }}>
-              <Close />
+              <X size={22} weight={W} />
             </IconButton>
           </Stack>
 
@@ -526,13 +528,13 @@ function WorkoutContent() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   mr: 2,
                 }}>
-                  <Bolt sx={{ color: '#1a1a1a', fontSize: 22 }} />
+                  <Lightning size={22} weight={W} color={GOLD_CONTRAST} />
                 </Box>
                 <ListItemText
                   primary="Séance libre"
                   secondary="Choisis tes exercices au fur et à mesure"
                 />
-                <ChevronRight sx={{ color: 'text.disabled' }} />
+                <CaretRight size={18} weight={W} style={{ color: tc.f(d) }} />
               </ListItemButton>
               <ListItemButton
                 onClick={() => setDrawerView('cardio')}
@@ -550,7 +552,7 @@ function WorkoutContent() {
                   primary="Séance cardio"
                   secondary="Course, vélo, rameur..."
                 />
-                <ChevronRight sx={{ color: 'text.disabled' }} />
+                <CaretRight size={18} weight={W} style={{ color: tc.f(d) }} />
               </ListItemButton>
             </List>
           ) : (
@@ -565,7 +567,7 @@ function WorkoutContent() {
                     >
                       <Typography sx={{ fontSize: '1.3rem', mr: 2 }}>{emoji}</Typography>
                       <ListItemText primary={label} />
-                      <ChevronRight sx={{ color: 'text.disabled' }} />
+                      <CaretRight size={18} weight={W} style={{ color: tc.f(d) }} />
                     </ListItemButton>
                   )
                 )}
@@ -575,7 +577,7 @@ function WorkoutContent() {
                 component="label"
                 size="small"
                 fullWidth
-                startIcon={<PhotoCamera />}
+                startIcon={<Camera size={18} weight={W} />}
                 sx={{ textTransform: 'none', color: 'text.secondary', fontWeight: 500 }}
               >
                 Importer depuis un screenshot
@@ -589,7 +591,7 @@ function WorkoutContent() {
               <Button
                 size="small"
                 fullWidth
-                startIcon={<Watch />}
+                startIcon={<WatchIcon size={18} weight={W} />}
                 onClick={async () => {
                   setShowNewSessionDrawer(false);
                   setImportLoading(true);
@@ -791,7 +793,7 @@ function SessionCard({ session, isDark: d }: { session: WorkoutSession; isDark: 
             {stats.join(' · ')}
           </Typography>
         </Box>
-        <ChevronRight sx={{ color: tc.f(d), fontSize: 18 }} />
+        <CaretRight size={18} weight={W} style={{ color: tc.f(d) }} />
       </Stack>
     </Box>
   );

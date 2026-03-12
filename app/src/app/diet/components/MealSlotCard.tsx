@@ -5,11 +5,10 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
-import Add from '@mui/icons-material/Add';
-import Close from '@mui/icons-material/Close';
+import { Plus, X } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
-import { tc, card, GOLD } from '@/lib/design-tokens';
+import { tc, card, GOLD, W } from '@/lib/design-tokens';
 import { MEAL_CONFIG, EXTRA_MEALS, MACRO_COLORS, triggerHaptic } from './shared';
 import type { MealType, FoodEntryData } from './shared';
 
@@ -63,7 +62,7 @@ export default function MealSlotCard({
           }}
           sx={{ width: 28, height: 28, bgcolor: alpha(GOLD, 0.1) }}
         >
-          <Add sx={{ fontSize: 16, color: GOLD }} />
+          <Plus size={16} weight={W} color={GOLD} />
         </IconButton>
       </Stack>
 
@@ -126,7 +125,7 @@ export default function MealSlotCard({
                       '&:hover': { color: '#ef4444' },
                     }}
                   >
-                    <Close sx={{ fontSize: 14 }} />
+                    <X size={14} weight={W} />
                   </IconButton>
                 </Stack>
               </Box>

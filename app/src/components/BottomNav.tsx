@@ -2,22 +2,19 @@
 
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { GOLD } from '@/lib/design-tokens';
+import { GOLD, W } from '@/lib/design-tokens';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
-import Home from '@mui/icons-material/Home';
-import Restaurant from '@mui/icons-material/Restaurant';
-import FitnessCenter from '@mui/icons-material/FitnessCenter';
-import Person from '@mui/icons-material/Person';
+import { House, ForkKnife, Barbell, User } from '@phosphor-icons/react';
 import Link from 'next/link';
 
 const NAV_ITEMS = [
-  { key: 'home', label: 'Accueil', Icon: Home, href: '/' },
-  { key: 'workout', label: 'Training', Icon: FitnessCenter, href: '/workout' },
-  { key: 'journal', label: 'Journal', Icon: Restaurant, href: '/diet' },
-  { key: 'profile', label: 'Profil', Icon: Person, href: '/profile' },
+  { key: 'home', label: 'Accueil', Icon: House, href: '/' },
+  { key: 'workout', label: 'Training', Icon: Barbell, href: '/workout' },
+  { key: 'journal', label: 'Journal', Icon: ForkKnife, href: '/diet' },
+  { key: 'profile', label: 'Profil', Icon: User, href: '/profile' },
 ];
 
 export default function BottomNav() {
@@ -70,11 +67,12 @@ export default function BottomNav() {
                     transition: 'all 0.3s ease',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <Icon sx={{
-                      fontSize: 21,
-                      color: isActive ? GOLD : isDark ? '#6b6560' : '#9a9490',
-                      ...(isActive && { filter: `drop-shadow(0 0 6px ${alpha(GOLD, 0.5)})` }),
-                    }} />
+                    <Icon
+                      size={21}
+                      weight={W}
+                      color={isActive ? GOLD : isDark ? '#6b6560' : '#9a9490'}
+                      style={isActive ? { filter: `drop-shadow(0 0 6px ${alpha(GOLD, 0.5)})` } : undefined}
+                    />
                   </Box>
                   <Typography sx={{
                     fontSize: '0.58rem',

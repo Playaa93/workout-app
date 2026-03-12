@@ -10,8 +10,9 @@ import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import CameraAlt from '@mui/icons-material/CameraAlt';
+import { ArrowLeft, Camera } from '@phosphor-icons/react';
+import { alpha } from '@mui/material/styles';
+import { GOLD, W } from '@/lib/design-tokens';
 import { addAIFoodEntry } from '../actions';
 import { compressImage } from '@/lib/image-utils';
 import { triggerHaptic, MEAL_CONFIG } from './shared';
@@ -138,7 +139,7 @@ export default function PhotoAIView({
               '&:active': { opacity: 0.5 },
             }}
           >
-            <ArrowBack sx={{ fontSize: 24 }} />
+            <ArrowLeft size={24} weight={W} />
           </Box>
           <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>Photo IA</Typography>
           <Chip
@@ -174,7 +175,7 @@ export default function PhotoAIView({
                 justifyContent: 'center',
               }}
             >
-              <CameraAlt sx={{ fontSize: 48, color: '#f59e0b' }} />
+              <Camera size={48} weight={W} color="#f59e0b" />
             </Box>
             <Typography variant="h6" fontWeight={600}>
               Prends en photo ton repas
@@ -186,7 +187,7 @@ export default function PhotoAIView({
             <Button
               variant="contained"
               size="large"
-              startIcon={<CameraAlt />}
+              startIcon={<Camera size={20} weight={W} />}
               onClick={() => {
                 triggerHaptic('light');
                 fileRef.current?.click();
@@ -293,7 +294,7 @@ export default function PhotoAIView({
               </Card>
             ))}
 
-            <Card sx={{ bgcolor: 'rgba(103,80,164,0.08)' }}>
+            <Card sx={{ bgcolor: alpha(GOLD, 0.08) }}>
               <CardContent sx={{ py: 1.5 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="body2" fontWeight={600}>

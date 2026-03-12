@@ -3,10 +3,10 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
-import TrendingUp from '@mui/icons-material/TrendingUp';
+import { TrendUp } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
-import { tc, card, GOLD } from '@/lib/design-tokens';
+import { tc, card, GOLD, W } from '@/lib/design-tokens';
 import type { DailySummaryData } from './shared';
 
 export default function WeekChart({
@@ -33,7 +33,7 @@ export default function WeekChart({
           Cette semaine
         </Typography>
         <Stack direction="row" alignItems="center" spacing={0.5}>
-          <TrendingUp sx={{ fontSize: 14, color: GOLD }} />
+          <TrendUp size={14} weight={W} color={GOLD} />
           <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.h(d) }}>
             Moy: {avg} kcal
           </Typography>

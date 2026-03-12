@@ -4,9 +4,9 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
-import FitnessCenter from '@mui/icons-material/FitnessCenter';
+import { Barbell } from '@phosphor-icons/react';
 import { useTheme } from 'next-themes';
-import { tc, card, GOLD } from '@/lib/design-tokens';
+import { tc, card, GOLD, W } from '@/lib/design-tokens';
 
 export default function WorkoutBonusChip({
   workoutCalories,
@@ -21,7 +21,7 @@ export default function WorkoutBonusChip({
   return (
     <Box sx={card(d, { p: 2, borderColor: alpha(GOLD, 0.2) })}>
       <Stack direction="row" alignItems="center" spacing={1.5}>
-        <FitnessCenter sx={{ fontSize: 18, color: GOLD }} />
+        <Barbell size={18} weight={W} color={GOLD} />
         <Typography sx={{ fontSize: '0.8rem', color: tc.m(d), flex: 1 }}>
           Séance aujourd&apos;hui
         </Typography>

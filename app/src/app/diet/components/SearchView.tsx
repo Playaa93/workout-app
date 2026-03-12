@@ -7,11 +7,10 @@ import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import Snackbar from '@mui/material/Snackbar';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import Search from '@mui/icons-material/Search';
+import { ArrowLeft, MagnifyingGlass } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
-import { tc, card, GOLD } from '@/lib/design-tokens';
+import { tc, card, GOLD, W } from '@/lib/design-tokens';
 import { triggerHaptic, MACRO_COLORS } from './shared';
 import { searchFoods, searchOpenFoodFacts, cacheOpenFoodFactsProduct, addFoodEntry } from '../actions';
 import type { FoodData, MealType } from './shared';
@@ -185,7 +184,7 @@ export default function SearchView({
       <Box sx={{ px: 2, pt: 1, pb: 1.5 }}>
         <Stack direction="row" alignItems="center" sx={{ mb: 1.5 }}>
           <IconButton onClick={onClose} size="small" sx={{ color: tc.m(d), mr: 1 }}>
-            <ArrowBack sx={{ fontSize: 20 }} />
+            <ArrowLeft size={20} weight={W} />
           </IconButton>
           <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(d) }}>
             Rechercher
@@ -201,7 +200,7 @@ export default function SearchView({
             py: 0.25,
           })}
         >
-          <Search sx={{ fontSize: 18, color: tc.f(d), mr: 1, flexShrink: 0 }} />
+          <MagnifyingGlass size={18} weight={W} style={{ color: tc.f(d), marginRight: 8, flexShrink: 0 }} />
           <Box
             component="input"
             type="text"
@@ -368,7 +367,7 @@ function FoodDetail({
       <Box sx={{ px: 2, pt: 1, pb: 1 }}>
         <Stack direction="row" alignItems="center">
           <IconButton onClick={onBack} size="small" sx={{ color: tc.m(d), mr: 1 }}>
-            <ArrowBack sx={{ fontSize: 20 }} />
+            <ArrowLeft size={20} weight={W} />
           </IconButton>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{

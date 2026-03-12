@@ -103,16 +103,12 @@ type ProgressSummary = {
 import Link from 'next/link';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardActionArea from '@mui/material/CardActionArea';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
-import Fab from '@mui/material/Fab';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
 import Skeleton from '@mui/material/Skeleton';
@@ -121,35 +117,25 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
-import SwipeableDrawer from '@mui/material/SwipeableDrawer';
+import Drawer from '@mui/material/Drawer';
 import LinearProgress from '@mui/material/LinearProgress';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import Add from '@mui/icons-material/Add';
-import Close from '@mui/icons-material/Close';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import TrendingDown from '@mui/icons-material/TrendingDown';
-import TrendingUp from '@mui/icons-material/TrendingUp';
-import TrendingFlat from '@mui/icons-material/TrendingFlat';
-import CameraAlt from '@mui/icons-material/CameraAlt';
-import PhotoLibrary from '@mui/icons-material/PhotoLibrary';
-import PhotoCamera from '@mui/icons-material/PhotoCamera';
-import Straighten from '@mui/icons-material/Straighten';
-import MonitorWeight from '@mui/icons-material/MonitorWeight';
-import InfoOutlined from '@mui/icons-material/InfoOutlined';
-import Delete from '@mui/icons-material/Delete';
-import Edit from '@mui/icons-material/Edit';
-import FileDownload from '@mui/icons-material/FileDownload';
-import TableChart from '@mui/icons-material/TableChart';
-import DataObject from '@mui/icons-material/DataObject';
-import PictureAsPdf from '@mui/icons-material/PictureAsPdf';
 import InputAdornment from '@mui/material/InputAdornment';
 import Tooltip from '@mui/material/Tooltip';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import { alpha } from '@mui/material/styles';
+import {
+  ArrowLeft, Plus, X, CaretDown, TrendDown, TrendUp, Minus,
+  Camera, Images, Ruler, Scales, Info, Trash, PencilSimple,
+  DownloadSimple, Table, BracketsCurly, FilePdf,
+} from '@phosphor-icons/react';
 import BottomNav from '@/components/BottomNav';
+import { useDark } from '@/hooks/useDark';
+import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, dialogPaperSx, goldFieldSx } from '@/lib/design-tokens';
+import FullScreenLoader from '@/components/FullScreenLoader';
 
-// Format decimal: remove trailing zeros (110.00 → 110, 34.20 → 34.2, 82.75 → 82.75)
+// Format decimal: remove trailing zeros (110.00 -> 110, 34.20 -> 34.2, 82.75 -> 82.75)
 const fmt = (val: string | null | undefined): string => {
   if (!val) return '--';
   return parseFloat(val).toString();
@@ -169,17 +155,14 @@ export default function MeasurementsPage() {
   const { userId, loading: authLoading } = useAuth();
 
   if (authLoading || !userId) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <FullScreenLoader />;
   }
 
   return <MeasurementsContent />;
 }
 
 function MeasurementsContent() {
+  const d = useDark();
   const [activeTab, setActiveTab] = useState<TabValue>('overview');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMeasurement, setEditingMeasurement] = useState<MeasurementData | null>(null);
@@ -233,33 +216,30 @@ function MeasurementsContent() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
       {/* Header */}
-      <Box sx={{
-        px: 2.5, pt: 2.5, pb: 1,
-        background: 'linear-gradient(180deg, rgba(103,80,164,0.1) 0%, transparent 100%)',
-      }}>
+      <Box sx={{ px: 3, pt: 3, pb: 1 }}>
         <Stack direction="row" alignItems="center" spacing={1.5}>
-          <IconButton component={Link} href="/" size="small" sx={{ color: 'text.secondary' }}>
-            <ArrowBack fontSize="small" />
+          <IconButton component={Link} href="/" size="small" sx={{ color: tc.m(d) }}>
+            <ArrowLeft size={20} weight={W} />
           </IconButton>
-          <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>
+          <Typography sx={{ flex: 1, fontSize: '1.5rem', fontWeight: 700, color: tc.h(d), letterSpacing: '-0.02em' }}>
             Mensurations
           </Typography>
           <IconButton
             size="small"
-            sx={{ color: 'text.secondary' }}
+            sx={{ color: tc.m(d) }}
             onClick={() => { triggerHaptic('light'); setShowExport(true); }}
             disabled={measurements.length === 0}
           >
-            <FileDownload fontSize="small" />
+            <DownloadSimple size={20} weight={W} />
           </IconButton>
           <IconButton
             size="small"
-            sx={{ color: 'text.secondary' }}
+            sx={{ color: tc.m(d) }}
             onClick={() => { triggerHaptic('light'); setActiveTab('photos'); }}
           >
-            <CameraAlt fontSize="small" />
+            <Camera size={20} weight={W} />
           </IconButton>
         </Stack>
       </Box>
@@ -268,7 +248,7 @@ function MeasurementsContent() {
       <Box sx={{ px: 2.5, pb: 1.5, pt: 1 }}>
         <Stack direction="row" spacing={1}>
           {([
-            { key: 'overview', label: 'Aperçu' },
+            { key: 'overview', label: 'Apercu' },
             { key: 'history', label: 'Historique' },
             { key: 'photos', label: 'Photos' },
           ] as const).map((tab) => (
@@ -280,10 +260,10 @@ function MeasurementsContent() {
               sx={{
                 fontWeight: 600,
                 fontSize: '0.75rem',
-                bgcolor: activeTab === tab.key ? 'primary.main' : 'action.hover',
-                color: activeTab === tab.key ? 'primary.contrastText' : 'text.secondary',
+                bgcolor: activeTab === tab.key ? GOLD : (d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.04)),
+                color: activeTab === tab.key ? GOLD_CONTRAST : tc.m(d),
                 '&:hover': {
-                  bgcolor: activeTab === tab.key ? 'primary.main' : 'action.selected',
+                  bgcolor: activeTab === tab.key ? GOLD : (d ? alpha('#ffffff', 0.08) : alpha('#000000', 0.06)),
                 },
               }}
             />
@@ -312,8 +292,6 @@ function MeasurementsContent() {
                 previous={previous}
                 summary={summary}
                 measurementCount={measurements.length}
-                onGoToPhotos={() => setActiveTab('photos')}
-                onGoToHistory={() => setActiveTab('history')}
                 onAddMeasurement={() => { triggerHaptic('light'); setShowAddForm(true); }}
                 onEditLatest={() => { if (latest) { triggerHaptic('light'); setEditingMeasurement(latest); } }}
               />
@@ -331,18 +309,7 @@ function MeasurementsContent() {
       {/* Bottom Navigation */}
       <BottomNav />
 
-      {/* FAB */}
-      <Fab
-        onClick={() => { triggerHaptic('light'); setShowAddForm(true); }}
-        sx={{
-          position: 'fixed', bottom: 24, right: 24, width: 56, height: 56,
-          background: 'linear-gradient(135deg, #6750a4, #9a67ea)', color: 'white',
-          boxShadow: '0 4px 16px rgba(103,80,164,0.4)',
-          '&:hover': { background: 'linear-gradient(135deg, #7f67be, #bb86fc)' },
-        }}
-      >
-        <Add sx={{ fontSize: 28 }} />
-      </Fab>
+
 
       {/* Add Form Modal */}
       {showAddForm && (
@@ -376,20 +343,39 @@ function MeasurementsContent() {
 // =========================================================
 // Shared: TrendBadge
 // =========================================================
+const TREND_GOOD = '#2d6a4f';
+const TREND_BAD = '#e53935';
+
 function TrendBadge({ value, unit, inverse = false }: { value: number; unit: string; inverse?: boolean }) {
+  const d = useDark();
   const isGood = inverse ? value < 0 : value > 0;
-  const color = value === 0 ? 'text.secondary' : isGood ? '#4caf50' : '#f44336';
-  const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : TrendingFlat;
+  const color = value === 0 ? tc.m(d) : isGood ? TREND_GOOD : TREND_BAD;
+  const Icon = value > 0 ? TrendUp : value < 0 ? TrendDown : Minus;
   const sign = value > 0 ? '+' : '';
 
   return (
-    <Stack direction="row" spacing={0.25} alignItems="center" sx={{ color }}>
-      <Icon sx={{ fontSize: 16 }} />
+    <Stack direction="row" spacing={0.25} alignItems="center" justifyContent="center" sx={{ color }}>
+      <Icon size={16} weight={W} />
       <Typography variant="caption" fontWeight={600} sx={{ color: 'inherit', fontSize: '0.7rem' }}>
         {sign}{value.toFixed(1)}{unit}
       </Typography>
     </Stack>
   );
+}
+
+// Navy body fat estimation (returns null if missing data)
+function estimateNavyBf(m: MeasurementData, isMale = true): number | null {
+  const h = m.height ? parseFloat(m.height) : null;
+  const n = m.neck ? parseFloat(m.neck) : null;
+  const w = m.waist ? parseFloat(m.waist) : null;
+  const hp = m.hips ? parseFloat(m.hips) : null;
+  if (!h || !n || !w) return null;
+  if (isMale) {
+    if (w <= n) return null;
+    return Math.round((86.010 * Math.log10(w - n) - 70.041 * Math.log10(h) + 36.76) * 10) / 10;
+  }
+  if (!hp || (w + hp) <= n) return null;
+  return Math.round((163.205 * Math.log10(w + hp - n) - 97.684 * Math.log10(h) - 78.387) * 10) / 10;
 }
 
 // =========================================================
@@ -400,8 +386,6 @@ function OverviewTab({
   previous,
   summary,
   measurementCount,
-  onGoToPhotos,
-  onGoToHistory,
   onAddMeasurement,
   onEditLatest,
 }: {
@@ -409,31 +393,34 @@ function OverviewTab({
   previous: MeasurementData | null;
   summary: ProgressSummary | null;
   measurementCount: number;
-  onGoToPhotos: () => void;
-  onGoToHistory: () => void;
   onAddMeasurement: () => void;
   onEditLatest: () => void;
 }) {
+  const d = useDark();
+  const [showNavyInfo, setShowNavyInfo] = useState(false);
+
   if (!latest) {
     return (
       <Box sx={{ px: 2.5, pt: 6, textAlign: 'center' }}>
-        <MonitorWeight sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-        <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+        <Scales size={64} weight={W} color={tc.f(d)} style={{ marginBottom: 16 }} />
+        <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, mb: 1, color: tc.h(d) }}>
           Suis ta transformation
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3, px: 2 }}>
+        <Typography variant="body2" sx={{ mb: 3, px: 2, color: tc.m(d) }}>
           Ajoute tes mesures pour voir les changements que le miroir ne montre pas
         </Typography>
         <Button
           variant="contained"
-          startIcon={<Add />}
+          startIcon={<Plus size={18} weight={W} />}
           onClick={onAddMeasurement}
           sx={{
             px: 4, py: 1.5, borderRadius: 3, fontWeight: 700,
-            background: 'linear-gradient(135deg, #6750a4, #9a67ea)',
+            bgcolor: GOLD, color: GOLD_CONTRAST,
+            background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
+            '&:hover': { bgcolor: GOLD_LIGHT },
           }}
         >
-          Première mesure
+          Premiere mesure
         </Button>
       </Box>
     );
@@ -458,7 +445,7 @@ function OverviewTab({
   // Build list of available measurements
   const bodyMeasures: { label: string; field: keyof MeasurementData; inverse?: boolean }[] = [
     { label: 'Poitrine', field: 'chest' },
-    { label: 'Épaules', field: 'shoulders' },
+    { label: 'Epaules', field: 'shoulders' },
     { label: 'Cou', field: 'neck' },
     { label: 'Hanches', field: 'hips', inverse: true },
     { label: 'Fesses', field: 'glutes' },
@@ -478,65 +465,111 @@ function OverviewTab({
     <Box sx={{ px: 2.5, pb: 4 }}>
       <Stack spacing={2}>
         {/* Hero Weight Card */}
-        <Card sx={{
-          background: 'linear-gradient(135deg, rgba(103,80,164,0.12) 0%, rgba(63,81,181,0.06) 100%)',
-          border: 1, borderColor: 'divider',
-        }}>
-          <CardActionArea onClick={onEditLatest}>
-            <CardContent sx={{ py: 3, textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                Poids actuel
-              </Typography>
-              <Typography variant="h2" fontWeight={800} sx={{ my: 1, lineHeight: 1 }}>
-                {fmt(latest.weight)}
-                <Typography component="span" variant="h5" color="text.secondary" fontWeight={400}> kg</Typography>
-              </Typography>
-              {weightChange !== null && (
-                <TrendBadge value={weightChange} unit=" kg" inverse />
-              )}
-              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1 }}>
-                {formattedDate} · Toucher pour modifier
-              </Typography>
-            </CardContent>
-          </CardActionArea>
-        </Card>
+        <Box
+          sx={card(d, {
+            background: `linear-gradient(135deg, ${alpha(GOLD, 0.12)}, ${alpha(GOLD, 0.06)})`,
+          })}
+        >
+          <Box sx={{ py: 3, textAlign: 'center' }}>
+            <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 500 }}>
+              Poids actuel
+            </Typography>
+            <Typography sx={{ fontSize: '3rem', fontWeight: 800, my: 1, lineHeight: 1, color: tc.h(d) }}>
+              {fmt(latest.weight)}
+              <Typography component="span" sx={{ fontSize: '1.25rem', color: tc.m(d), fontWeight: 400 }}> kg</Typography>
+            </Typography>
+            {weightChange !== null && (
+              <TrendBadge value={weightChange} unit=" kg" inverse />
+            )}
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: tc.f(d) }}>
+              {formattedDate}
+            </Typography>
+            <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 1.5 }}>
+              <Box
+                component="button"
+                onClick={() => { triggerHaptic('light'); onEditLatest(); }}
+                sx={{
+                  border: 'none', cursor: 'pointer',
+                  outline: 'none', '&:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 },
+                  display: 'flex', alignItems: 'center', gap: 0.5,
+                  px: 1.5, py: 0.5, borderRadius: 99,
+                  bgcolor: alpha(GOLD, 0.1),
+                  color: GOLD, fontSize: '0.7rem', fontWeight: 600,
+                  '&:active': { transform: 'scale(0.96)' },
+                }}
+              >
+                <PencilSimple size={13} weight={W} /> Modifier
+              </Box>
+              <Box
+                component="button"
+                onClick={() => { triggerHaptic('light'); onAddMeasurement(); }}
+                sx={{
+                  border: 'none', cursor: 'pointer',
+                  outline: 'none', '&:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 },
+                  display: 'flex', alignItems: 'center', gap: 0.5,
+                  px: 1.5, py: 0.5, borderRadius: 99,
+                  bgcolor: GOLD,
+                  color: GOLD_CONTRAST, fontSize: '0.7rem', fontWeight: 600,
+                  '&:active': { transform: 'scale(0.96)' },
+                }}
+              >
+                <Plus size={13} weight="bold" /> Nouvelle mesure
+              </Box>
+            </Stack>
+          </Box>
+        </Box>
 
         {/* Sparkline / Weight Chart */}
         {measurementCount >= 2 && <WeightChart />}
 
         {/* Body composition - 2 cards */}
+        {(() => {
+          const recorded = latest.bodyFatPercentage ? parseFloat(latest.bodyFatPercentage) : null;
+          const estimated = !recorded ? estimateNavyBf(latest) : null;
+          const displayBf = recorded ?? estimated;
+          const bfChange = calcChange('bodyFatPercentage');
+          return (
         <Stack direction="row" spacing={1.5}>
-          <Card sx={{ flex: 1 }}>
-            <CardContent sx={{ py: 2, textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary">Masse grasse</Typography>
-              <Typography variant="h5" fontWeight={700} sx={{ my: 0.5 }}>
-                {latest.bodyFatPercentage ? `${fmt(latest.bodyFatPercentage)}%` : '--'}
+          <Box
+            onClick={estimated !== null ? () => setShowNavyInfo(true) : undefined}
+            sx={{
+              ...card(d, { flex: 1, py: 2, textAlign: 'center' }),
+              ...(estimated !== null && { cursor: 'pointer' }),
+            }}
+          >
+            <Typography variant="caption" sx={{ color: tc.m(d) }}>Masse grasse</Typography>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, my: 0.5, color: tc.h(d) }}>
+              {displayBf !== null ? `${displayBf}%` : '--'}
+            </Typography>
+            {estimated !== null && (
+              <Typography sx={{ fontSize: '0.6rem', color: alpha(GOLD, 0.7), textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
+                est. Navy ⓘ
               </Typography>
-              {calcChange('bodyFatPercentage') !== null && (
-                <TrendBadge value={calcChange('bodyFatPercentage')!} unit="%" inverse />
-              )}
-            </CardContent>
-          </Card>
-          <Card sx={{ flex: 1 }}>
-            <CardContent sx={{ py: 2, textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary">Tour de taille</Typography>
-              <Typography variant="h5" fontWeight={700} sx={{ my: 0.5 }}>
-                {latest.waist ? `${fmt(latest.waist)} cm` : '--'}
-              </Typography>
-              {calcChange('waist') !== null && (
-                <TrendBadge value={calcChange('waist')!} unit=" cm" inverse />
-              )}
-            </CardContent>
-          </Card>
+            )}
+            {bfChange !== null && (
+              <TrendBadge value={bfChange} unit="%" inverse />
+            )}
+          </Box>
+          <Box sx={card(d, { flex: 1, py: 2, textAlign: 'center' })}>
+            <Typography variant="caption" sx={{ color: tc.m(d) }}>Tour de taille</Typography>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, my: 0.5, color: tc.h(d) }}>
+              {latest.waist ? `${fmt(latest.waist)} cm` : '--'}
+            </Typography>
+            {calcChange('waist') !== null && (
+              <TrendBadge value={calcChange('waist')!} unit=" cm" inverse />
+            )}
+          </Box>
         </Stack>
+          );
+        })()}
 
         {/* All measurements - compact CSS Grid list */}
         {filledMeasures.length > 0 && (
           <Box>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, color: tc.m(d) }}>
               Toutes les mesures
             </Typography>
-            <Card>
+            <Box sx={card(d)}>
               <Stack divider={<Divider />}>
                 {filledMeasures.map((m) => (
                   <ListRow
@@ -549,30 +582,58 @@ function OverviewTab({
                   />
                 ))}
               </Stack>
-            </Card>
+            </Box>
           </Box>
         )}
 
-        {/* Quick actions */}
-        <Stack direction="row" spacing={1.5}>
-          <Card sx={{ flex: 1 }}>
-            <CardActionArea onClick={onGoToPhotos}>
-              <CardContent sx={{ py: 2, textAlign: 'center' }}>
-                <CameraAlt sx={{ fontSize: 24, color: 'text.secondary', mb: 0.5 }} />
-                <Typography variant="caption" fontWeight={600}>Photos</Typography>
-              </CardContent>
-            </CardActionArea>
-          </Card>
-          <Card sx={{ flex: 1 }}>
-            <CardActionArea onClick={onGoToHistory}>
-              <CardContent sx={{ py: 2, textAlign: 'center' }}>
-                <Straighten sx={{ fontSize: 24, color: 'text.secondary', mb: 0.5 }} />
-                <Typography variant="caption" fontWeight={600}>Historique</Typography>
-              </CardContent>
-            </CardActionArea>
-          </Card>
-        </Stack>
       </Stack>
+
+      {/* Navy method explanation dialog */}
+      <Dialog
+        open={showNavyInfo}
+        onClose={() => setShowNavyInfo(false)}
+        PaperProps={{
+          sx: {
+            bgcolor: panelBg(d),
+            borderRadius: 3,
+            maxWidth: 360,
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: tc.h(d), fontSize: '1rem', fontWeight: 700, pb: 0.5 }}>
+          Méthode Navy (U.S. Navy)
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: tc.m(d), fontSize: '0.85rem', lineHeight: 1.6 }}>
+            Cette estimation utilise la formule développée par la Marine américaine, basée sur vos mensurations :
+          </DialogContentText>
+          <Stack spacing={1} sx={{ mt: 1.5 }}>
+            {[
+              { label: 'Tour de taille', value: latest.waist, unit: 'cm' },
+              { label: 'Tour de cou', value: latest.neck, unit: 'cm' },
+              { label: 'Taille', value: latest.height, unit: 'cm' },
+            ].map((m) => (
+              <Stack key={m.label} direction="row" justifyContent="space-between" alignItems="center">
+                <Typography sx={{ fontSize: '0.8rem', color: tc.m(d) }}>{m.label}</Typography>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d) }}>
+                  {m.value ? `${parseFloat(m.value)} ${m.unit}` : '--'}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
+          <Typography sx={{ mt: 2, fontSize: '0.75rem', color: tc.f(d), lineHeight: 1.5 }}>
+            Précision : ±3-4% par rapport à un DEXA scan. Pour une mesure plus précise, enregistrez directement votre % de masse grasse via un impédancemètre ou un professionnel.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setShowNavyInfo(false)}
+            sx={{ color: GOLD, fontWeight: 600, fontSize: '0.85rem' }}
+          >
+            Compris
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
@@ -583,6 +644,7 @@ function OverviewTab({
 function ListRow({ label, value, unit, change, inverse = false }: {
   label: string; value: string; unit: string; change: number | null; inverse?: boolean;
 }) {
+  const d = useDark();
   return (
     <Box sx={{
       px: 2.5, py: 1.5,
@@ -591,15 +653,15 @@ function ListRow({ label, value, unit, change, inverse = false }: {
       gap: 1,
       alignItems: 'center',
     }}>
-      <Typography variant="body2" color="text.secondary">{label}</Typography>
-      <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
+      <Typography variant="body2" sx={{ color: tc.m(d) }}>{label}</Typography>
+      <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums', textAlign: 'right', color: tc.h(d) }}>
         {fmt(value)} {unit}
       </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
         {change !== null ? (
           <TrendBadge value={change} unit="" inverse={inverse} />
         ) : (
-          <Typography variant="caption" color="text.disabled">--</Typography>
+          <Typography variant="caption" sx={{ color: tc.f(d) }}>--</Typography>
         )}
       </Box>
     </Box>
@@ -610,6 +672,8 @@ function ListRow({ label, value, unit, change, inverse = false }: {
 // Weight Chart
 // =========================================================
 function WeightChart() {
+  const d = useDark();
+  const [selected, setSelected] = useState<number | null>(null);
   const { data: rawData } = useMeasurementHistory('weight', 10);
 
   const data = useMemo(() =>
@@ -622,41 +686,56 @@ function WeightChart() {
 
   if (data.length < 2) return null;
 
-  const min = Math.min(...data.map((d) => d.value)) - 1;
-  const max = Math.max(...data.map((d) => d.value)) + 1;
+  const min = Math.min(...data.map((p) => p.value)) - 1;
+  const max = Math.max(...data.map((p) => p.value)) + 1;
   const range = max - min;
+  const active = selected !== null ? data[selected] : null;
 
   return (
-    <Card>
-      <CardContent sx={{ py: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-          <Typography variant="caption" color="text.secondary">
-            Évolution du poids
+    <Box sx={card(d, { py: 2, px: 2 })}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+        <Typography variant="caption" sx={{ color: tc.m(d) }}>
+          Évolution du poids
+        </Typography>
+        {active ? (
+          <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>
+            {active.value.toFixed(1)} kg · {new Date(active.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
           </Typography>
+        ) : (
           <Stack direction="row" spacing={1}>
-            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
+            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: tc.f(d) }}>
               {min.toFixed(1)}kg
             </Typography>
-            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem' }}>
+            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: tc.f(d) }}>
               {max.toFixed(1)}kg
             </Typography>
           </Stack>
-        </Stack>
-        <Box sx={{ height: 48, display: 'flex', alignItems: 'flex-end', gap: 0.5 }}>
-          {data.map((point, i) => {
-            const height = ((point.value - min) / range) * 100;
-            return (
-              <Box key={i} sx={{
-                flex: 1, bgcolor: i === data.length - 1 ? 'primary.main' : 'action.hover',
+        )}
+      </Stack>
+      <Box sx={{ height: 48, display: 'flex', alignItems: 'flex-end', gap: 0.5 }}>
+        {data.map((point, i) => {
+          const height = ((point.value - min) / range) * 100;
+          const isLast = i === data.length - 1;
+          const isActive = selected === i;
+          return (
+            <Box
+              key={i}
+              onClick={() => setSelected(isActive ? null : i)}
+              sx={{
+                flex: 1,
+                bgcolor: isActive || isLast ? GOLD : (d ? alpha('#ffffff', 0.08) : alpha('#000000', 0.06)),
+                opacity: selected !== null && !isActive ? 0.4 : 1,
                 borderRadius: 0.5,
                 height: `${height}%`,
                 minHeight: 4,
-              }} />
-            );
-          })}
-        </Box>
-      </CardContent>
-    </Card>
+                cursor: 'pointer',
+                transition: 'opacity 0.15s ease',
+              }}
+            />
+          );
+        })}
+      </Box>
+    </Box>
   );
 }
 
@@ -670,6 +749,7 @@ function HistoryTab({
   measurements: MeasurementData[];
   onDelete: (id: string) => void;
 }) {
+  const d = useDark();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [measureToDelete, setMeasureToDelete] = useState<string | null>(null);
@@ -677,12 +757,12 @@ function HistoryTab({
   if (measurements.length === 0) {
     return (
       <Box sx={{ px: 2.5, textAlign: 'center', py: 6 }}>
-        <Straighten sx={{ fontSize: 48, color: 'text.disabled', mb: 1.5, transform: 'rotate(-45deg)' }} />
-        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>
+        <Ruler size={48} weight={W} color={tc.f(d)} style={{ marginBottom: 12, transform: 'rotate(-45deg)' }} />
+        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5, color: tc.h(d) }}>
           Aucun historique
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Tes mesures apparaîtront ici
+        <Typography variant="body2" sx={{ color: tc.m(d) }}>
+          Tes mesures apparaitront ici
         </Typography>
       </Box>
     );
@@ -712,7 +792,7 @@ function HistoryTab({
             { label: 'Poids', value: m.weight ? `${fmt(m.weight)} kg` : null },
             { label: '% Gras', value: m.bodyFatPercentage ? `${fmt(m.bodyFatPercentage)}%` : null },
             { label: 'Cou', value: m.neck ? `${fmt(m.neck)} cm` : null },
-            { label: 'Épaules', value: m.shoulders ? `${fmt(m.shoulders)} cm` : null },
+            { label: 'Epaules', value: m.shoulders ? `${fmt(m.shoulders)} cm` : null },
             { label: 'Poitrine', value: m.chest ? `${fmt(m.chest)} cm` : null },
             { label: 'Taille', value: m.waist ? `${fmt(m.waist)} cm` : null },
             { label: 'Hanches', value: m.hips ? `${fmt(m.hips)} cm` : null },
@@ -725,28 +805,31 @@ function HistoryTab({
           ].filter((f) => f.value !== null);
 
           return (
-            <Card key={m.id}>
-              <CardActionArea
+            <Box key={m.id} sx={card(d)}>
+              <Box
                 onClick={() => setExpanded(isExpanded ? null : m.id)}
-                sx={{ px: 2.5, py: 2 }}
+                sx={{ px: 2.5, py: 2, cursor: 'pointer' }}
               >
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Box>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" fontWeight={600} sx={{ color: tc.h(d) }}>
                       {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: tc.m(d) }}>
                       {m.weight ? `${fmt(m.weight)} kg` : ''}{m.waist ? ` · Taille ${fmt(m.waist)} cm` : ''}
                     </Typography>
                   </Box>
-                  <ExpandMore sx={{
-                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.3s',
-                    color: 'text.secondary',
-                    fontSize: 20,
-                  }} />
+                  <CaretDown
+                    size={20}
+                    weight={W}
+                    color={tc.m(d)}
+                    style={{
+                      transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.3s',
+                    }}
+                  />
                 </Stack>
-              </CardActionArea>
+              </Box>
 
               <Collapse in={isExpanded}>
                 <Divider />
@@ -759,17 +842,17 @@ function HistoryTab({
                   }}>
                     {allFields.map((f) => (
                       <Box key={f.label}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                        <Typography variant="caption" sx={{ fontSize: '0.65rem', color: tc.m(d) }}>
                           {f.label}
                         </Typography>
-                        <Typography variant="body2" fontWeight={600} sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontVariantNumeric: 'tabular-nums', color: tc.h(d) }}>
                           {f.value}
                         </Typography>
                       </Box>
                     ))}
                   </Box>
                   {m.notes && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontStyle: 'italic' }}>
+                    <Typography variant="body2" sx={{ mb: 1.5, fontStyle: 'italic', color: tc.m(d) }}>
                       {m.notes}
                     </Typography>
                   )}
@@ -783,7 +866,7 @@ function HistoryTab({
                   </Button>
                 </Box>
               </Collapse>
-            </Card>
+            </Box>
           );
         })}
       </Stack>
@@ -791,16 +874,16 @@ function HistoryTab({
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        PaperProps={{ sx: dialogPaperSx(d) }}
       >
-        <DialogTitle>Supprimer la mesure ?</DialogTitle>
+        <DialogTitle sx={{ color: tc.h(d) }}>Supprimer la mesure ?</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Cette action est irréversible.
+          <DialogContentText sx={{ color: tc.m(d) }}>
+            Cette action est irreversible.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDeleteDialogOpen(false)} color="inherit">Annuler</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: tc.m(d), textTransform: 'none' }}>Annuler</Button>
           <Button onClick={handleDeleteConfirm} color="error" variant="contained">Supprimer</Button>
         </DialogActions>
       </Dialog>
@@ -818,6 +901,7 @@ function PhotosTab({
   photos: ProgressPhotoData[];
   mutations: ReturnType<typeof useMeasurementMutations>;
 }) {
+  const d = useDark();
   const [showUpload, setShowUpload] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhotoData | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -840,20 +924,22 @@ function PhotosTab({
   if (photos.length === 0 && !showUpload) {
     return (
       <Box sx={{ px: 2.5, textAlign: 'center', py: 6 }}>
-        <CameraAlt sx={{ fontSize: 48, color: 'text.disabled', mb: 1.5 }} />
-        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>
+        <Camera size={48} weight={W} color={tc.f(d)} style={{ marginBottom: 12 }} />
+        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5, color: tc.h(d) }}>
           Aucune photo
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography variant="body2" sx={{ mb: 3, color: tc.m(d) }}>
           Prends des photos pour suivre ta transformation
         </Typography>
         <Button
           variant="contained"
-          startIcon={<CameraAlt />}
+          startIcon={<Camera size={18} weight={W} />}
           onClick={() => { triggerHaptic('light'); setShowUpload(true); }}
           sx={{
             px: 4, py: 1.5, borderRadius: 3, fontWeight: 700,
-            background: 'linear-gradient(135deg, #6750a4, #9a67ea)',
+            bgcolor: GOLD, color: GOLD_CONTRAST,
+            background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
+            '&:hover': { bgcolor: GOLD_LIGHT },
           }}
         >
           Ajouter une photo
@@ -872,22 +958,31 @@ function PhotosTab({
   return (
     <Box sx={{ px: 2.5 }}>
       <Stack spacing={3}>
-        <Card sx={{ border: '1px dashed', borderColor: 'divider' }}>
-          <CardActionArea onClick={() => { triggerHaptic('light'); setShowUpload(true); }}>
-            <CardContent sx={{ py: 2, textAlign: 'center' }}>
-              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
-                <Add sx={{ fontSize: 20, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                  Ajouter une photo
-                </Typography>
-              </Stack>
-            </CardContent>
-          </CardActionArea>
-        </Card>
+        <Box
+          onClick={() => { triggerHaptic('light'); setShowUpload(true); }}
+          sx={{
+            cursor: 'pointer',
+            ...card(d, { py: 2, textAlign: 'center' }),
+            '&:active': { transform: 'scale(0.98)' },
+          }}
+        >
+          <Stack alignItems="center" spacing={0.5}>
+            <Box sx={{
+              width: 40, height: 40, borderRadius: '50%',
+              bgcolor: alpha(GOLD, 0.1),
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Plus size={20} weight="bold" color={GOLD} />
+            </Box>
+            <Typography sx={{ fontSize: '0.75rem', color: tc.m(d), fontWeight: 600 }}>
+              Ajouter une photo
+            </Typography>
+          </Stack>
+        </Box>
 
         {Object.entries(photosByDate).map(([date, datePhotos]) => (
           <Box key={date}>
-            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ mb: 1, display: 'block' }}>
+            <Typography variant="caption" fontWeight={500} sx={{ mb: 1, display: 'block', color: tc.m(d) }}>
               {date}
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
@@ -897,7 +992,7 @@ function PhotosTab({
                   onClick={() => { triggerHaptic('light'); setSelectedPhoto(photo); }}
                   sx={{
                     aspectRatio: '3/4',
-                    bgcolor: 'action.hover',
+                    bgcolor: d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.03),
                     borderRadius: 2,
                     overflow: 'hidden',
                     position: 'relative',
@@ -915,7 +1010,7 @@ function PhotosTab({
                     size="small"
                     sx={{
                       position: 'absolute', bottom: 8, left: 8,
-                      bgcolor: 'rgba(0,0,0,0.7)', textTransform: 'capitalize',
+                      bgcolor: alpha('#000000', 0.7), color: '#fff', textTransform: 'capitalize',
                       fontSize: '0.7rem',
                     }}
                   />
@@ -935,16 +1030,14 @@ function PhotosTab({
       )}
 
       {/* Photo actions drawer */}
-      <SwipeableDrawer
+      <Drawer
         anchor="bottom"
         open={!!selectedPhoto && !editingType}
         onClose={() => setSelectedPhoto(null)}
-        onOpen={() => {}}
-        disableSwipeToOpen
-        PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}
+        PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(d) } }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
-          <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: 'action.disabled' }} />
+          <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }} />
         </Box>
         {selectedPhoto && (
           <Box sx={{ px: 1, pb: 2 }}>
@@ -960,10 +1053,10 @@ function PhotosTab({
                 />
               </Box>
               <Box>
-                <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'capitalize' }}>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'capitalize', color: tc.h(d) }}>
                   {selectedPhoto.photoType.replace('_', ' ')}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: tc.m(d) }}>
                   {new Date(selectedPhoto.takenAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </Typography>
               </Box>
@@ -974,11 +1067,11 @@ function PhotosTab({
               sx={{ borderRadius: 2 }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>
-                <Edit sx={{ color: 'primary.main' }} />
+                <PencilSimple size={22} weight={W} color={GOLD} />
               </ListItemIcon>
               <ListItemText
                 primary="Changer le type de pose"
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }}
               />
             </ListItemButton>
 
@@ -987,7 +1080,7 @@ function PhotosTab({
               sx={{ borderRadius: 2 }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>
-                <Delete sx={{ color: '#f44336' }} />
+                <Trash size={22} weight={W} color="#f44336" />
               </ListItemIcon>
               <ListItemText
                 primary="Supprimer la photo"
@@ -996,29 +1089,27 @@ function PhotosTab({
             </ListItemButton>
           </Box>
         )}
-      </SwipeableDrawer>
+      </Drawer>
 
       {/* Change type drawer */}
-      <SwipeableDrawer
+      <Drawer
         anchor="bottom"
         open={editingType}
         onClose={() => { setEditingType(false); setSelectedPhoto(null); }}
-        onOpen={() => {}}
-        disableSwipeToOpen
-        PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20 } }}
+        PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(d) } }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
-          <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: 'action.disabled' }} />
+          <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }} />
         </Box>
         <Box sx={{ px: 1.5, pb: 2.5 }}>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ px: 0.5, pb: 1.5 }}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ px: 0.5, pb: 1.5, color: tc.h(d) }}>
             Type de pose
           </Typography>
           {([
             { key: 'front', label: 'Face' },
             { key: 'back', label: 'Dos' },
-            { key: 'side_left', label: 'Côté gauche' },
-            { key: 'side_right', label: 'Côté droit' },
+            { key: 'side_left', label: 'Cote gauche' },
+            { key: 'side_right', label: 'Cote droit' },
           ] as const).map((type) => (
             <ListItemButton
               key={type.key}
@@ -1031,30 +1122,31 @@ function PhotosTab({
                 primaryTypographyProps={{
                   fontWeight: selectedPhoto?.photoType === type.key ? 700 : 500,
                   fontSize: '0.9rem',
+                  color: tc.h(d),
                 }}
               />
               {selectedPhoto?.photoType === type.key && (
-                <Typography variant="caption" color="primary">actuel</Typography>
+                <Typography variant="caption" sx={{ color: GOLD }}>actuel</Typography>
               )}
             </ListItemButton>
           ))}
         </Box>
-      </SwipeableDrawer>
+      </Drawer>
 
       {/* Delete confirmation */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => { setDeleteDialogOpen(false); setSelectedPhoto(null); }}
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        PaperProps={{ sx: dialogPaperSx(d) }}
       >
-        <DialogTitle>Supprimer la photo ?</DialogTitle>
+        <DialogTitle sx={{ color: tc.h(d) }}>Supprimer la photo ?</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Cette action est irréversible.
+          <DialogContentText sx={{ color: tc.m(d) }}>
+            Cette action est irreversible.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => { setDeleteDialogOpen(false); setSelectedPhoto(null); }} color="inherit">
+          <Button onClick={() => { setDeleteDialogOpen(false); setSelectedPhoto(null); }} sx={{ color: tc.m(d), textTransform: 'none' }}>
             Annuler
           </Button>
           <Button onClick={handleDeletePhoto} color="error" variant="contained">
@@ -1080,6 +1172,7 @@ function PhotoUploadModal({
   onUpload: () => void;
   mutations: ReturnType<typeof useMeasurementMutations>;
 }) {
+  const d = useDark();
   const [photoType, setPhotoType] = useState<'front' | 'back' | 'side_left' | 'side_right'>('front');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -1120,32 +1213,31 @@ function PhotoUploadModal({
   };
 
   return (
-    <SwipeableDrawer
+    <Drawer
       anchor="bottom"
       open
       onClose={onClose}
-      onOpen={() => {}}
-      disableSwipeToOpen
       PaperProps={{
         sx: {
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           maxHeight: '85vh',
+          bgcolor: panelBg(d),
         },
       }}
     >
       {/* Drag handle */}
       <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 1 }}>
-        <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: 'action.disabled' }} />
+        <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }} />
       </Box>
 
-      {uploadProgress && <LinearProgress sx={{ mx: 2, borderRadius: 1 }} />}
+      {uploadProgress && <LinearProgress sx={{ mx: 2, borderRadius: 1, '& .MuiLinearProgress-bar': { bgcolor: GOLD } }} />}
 
       <Box sx={{ px: 2.5, pb: 3 }}>
         {!previewUrl ? (
           /* ===== Step 1: Choose source ===== */
           <Stack spacing={2}>
-            <Typography variant="subtitle1" fontWeight={700} sx={{ pt: 0.5 }}>
+            <Typography variant="subtitle1" fontWeight={700} sx={{ pt: 0.5, color: tc.h(d) }}>
               Ajouter une photo
             </Typography>
 
@@ -1158,31 +1250,29 @@ function PhotoUploadModal({
               onChange={handleFileChange}
               style={{ display: 'none' }}
             />
-            <Card sx={{ bgcolor: 'action.hover' }}>
-              <CardActionArea
-                onClick={() => {
-                  triggerHaptic('light');
-                  document.getElementById('photo-camera')?.click();
-                }}
-                sx={{ py: 2.5, px: 2.5 }}
-              >
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box sx={{
-                    width: 48, height: 48, borderRadius: '50%',
-                    bgcolor: 'rgba(103,80,164,0.12)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <PhotoCamera sx={{ color: 'primary.main', fontSize: 24 }} />
-                  </Box>
-                  <Box>
-                    <Typography variant="body1" fontWeight={600}>Prendre une photo</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Ouvre l&apos;appareil photo
-                    </Typography>
-                  </Box>
-                </Stack>
-              </CardActionArea>
-            </Card>
+            <Box
+              onClick={() => {
+                triggerHaptic('light');
+                document.getElementById('photo-camera')?.click();
+              }}
+              sx={{ cursor: 'pointer', ...card(d, { py: 2.5, px: 2.5 }) }}
+            >
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Box sx={{
+                  width: 48, height: 48, borderRadius: '50%',
+                  bgcolor: alpha(GOLD, 0.12),
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Camera size={24} weight={W} color={GOLD} />
+                </Box>
+                <Box>
+                  <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(d) }}>Prendre une photo</Typography>
+                  <Typography variant="caption" sx={{ color: tc.m(d) }}>
+                    Ouvre l&apos;appareil photo
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
 
             {/* Gallery button */}
             <input
@@ -1192,41 +1282,39 @@ function PhotoUploadModal({
               onChange={handleFileChange}
               style={{ display: 'none' }}
             />
-            <Card sx={{ bgcolor: 'action.hover' }}>
-              <CardActionArea
-                onClick={() => {
-                  triggerHaptic('light');
-                  document.getElementById('photo-gallery')?.click();
-                }}
-                sx={{ py: 2.5, px: 2.5 }}
-              >
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box sx={{
-                    width: 48, height: 48, borderRadius: '50%',
-                    bgcolor: 'rgba(103,80,164,0.12)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <PhotoLibrary sx={{ color: 'primary.main', fontSize: 24 }} />
-                  </Box>
-                  <Box>
-                    <Typography variant="body1" fontWeight={600}>Choisir depuis la galerie</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Sélectionne une photo existante
-                    </Typography>
-                  </Box>
-                </Stack>
-              </CardActionArea>
-            </Card>
+            <Box
+              onClick={() => {
+                triggerHaptic('light');
+                document.getElementById('photo-gallery')?.click();
+              }}
+              sx={{ cursor: 'pointer', ...card(d, { py: 2.5, px: 2.5 }) }}
+            >
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Box sx={{
+                  width: 48, height: 48, borderRadius: '50%',
+                  bgcolor: alpha(GOLD, 0.12),
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Images size={24} weight={W} color={GOLD} />
+                </Box>
+                <Box>
+                  <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(d) }}>Choisir depuis la galerie</Typography>
+                  <Typography variant="caption" sx={{ color: tc.m(d) }}>
+                    Selectionne une photo existante
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
           </Stack>
         ) : (
           /* ===== Step 2: Preview + Pose + Save ===== */
           <Stack spacing={2.5}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: 0.5 }}>
-              <Typography variant="subtitle1" fontWeight={700}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ color: tc.h(d) }}>
                 Photo de progression
               </Typography>
-              <IconButton onClick={handleReset} size="small" sx={{ color: 'text.secondary' }}>
-                <Close fontSize="small" />
+              <IconButton onClick={handleReset} size="small" sx={{ color: tc.m(d) }}>
+                <X size={18} weight={W} />
               </IconButton>
             </Stack>
 
@@ -1249,15 +1337,15 @@ function PhotoUploadModal({
 
             {/* Pose type selection */}
             <Box>
-              <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ mb: 1, display: 'block' }}>
+              <Typography variant="caption" fontWeight={500} sx={{ mb: 1, display: 'block', color: tc.m(d) }}>
                 Type de pose
               </Typography>
               <Stack direction="row" spacing={1}>
                 {([
                   { key: 'front', label: 'Face' },
                   { key: 'back', label: 'Dos' },
-                  { key: 'side_left', label: 'Côté G' },
-                  { key: 'side_right', label: 'Côté D' },
+                  { key: 'side_left', label: 'Cote G' },
+                  { key: 'side_right', label: 'Cote D' },
                 ] as const).map((type) => (
                   <Chip
                     key={type.key}
@@ -1266,8 +1354,8 @@ function PhotoUploadModal({
                     onClick={() => { triggerHaptic('light'); setPhotoType(type.key); }}
                     sx={{
                       flex: 1, fontWeight: 600, fontSize: '0.75rem',
-                      bgcolor: photoType === type.key ? 'primary.main' : 'action.hover',
-                      color: photoType === type.key ? 'primary.contrastText' : 'text.secondary',
+                      bgcolor: photoType === type.key ? GOLD : (d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.04)),
+                      color: photoType === type.key ? GOLD_CONTRAST : tc.m(d),
                     }}
                   />
                 ))}
@@ -1283,7 +1371,10 @@ function PhotoUploadModal({
               disabled={isUploading}
               sx={{
                 py: 1.5, borderRadius: 3, fontWeight: 700,
-                background: 'linear-gradient(135deg, #6750a4, #9a67ea)',
+                bgcolor: GOLD, color: GOLD_CONTRAST,
+                background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
+                '&:hover': { bgcolor: GOLD_LIGHT },
+                '&.Mui-disabled': { bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08), color: tc.f(d) },
               }}
             >
               {isUploading ? 'Enregistrement...' : 'Enregistrer'}
@@ -1291,7 +1382,7 @@ function PhotoUploadModal({
           </Stack>
         )}
       </Box>
-    </SwipeableDrawer>
+    </Drawer>
   );
 }
 
@@ -1309,6 +1400,7 @@ function AddMeasurementForm({
   onSubmit: (data: MeasurementInput) => void;
   onClose: () => void;
 }) {
+  const d = useDark();
   const isEditing = !!editingMeasurement;
   const source = editingMeasurement || lastMeasurement;
 
@@ -1342,15 +1434,10 @@ function AddMeasurementForm({
         }
       : {
           weight: lastMeasurement?.weight ? parseFloat(lastMeasurement.weight) : undefined,
+          height: lastMeasurement?.height ? parseFloat(lastMeasurement.height) : undefined,
         }
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const hasExtraFields = isEditing && !!(data.neck || data.shoulders || data.leftArm || data.rightArm || data.hips || data.glutes || data.leftThigh || data.rightThigh || data.leftCalf || data.rightCalf);
-  const [showMore, setShowMore] = useState(hasExtraFields);
-  const [showCalculator, setShowCalculator] = useState(false);
-  const [height, setHeight] = useState('175');
-  const [isMale, setIsMale] = useState(true);
-  const [calculatedBf, setCalculatedBf] = useState<number | null>(null);
 
   const handleSubmit = async () => {
     if (!data.weight || isSubmitting) return;
@@ -1365,252 +1452,166 @@ function AddMeasurementForm({
     }));
   };
 
-  const calculateNavyBodyFat = () => {
-    const h = parseFloat(height);
-    const n = data.neck;
-    const w = data.waist;
-    const hp = data.hips;
-    if (!h || !n || !w) return;
-    let bf: number;
-    if (isMale) {
-      if (w <= n) return;
-      bf = 86.010 * Math.log10(w - n) - 70.041 * Math.log10(h) + 36.76;
-    } else {
-      if (!hp || (w + hp) <= n) return;
-      bf = 163.205 * Math.log10(w + hp - n) - 97.684 * Math.log10(h) - 78.387;
-    }
-    const rounded = Math.round(bf * 10) / 10;
-    setCalculatedBf(rounded);
-    updateField('bodyFatPercentage', rounded.toString());
-  };
-
-  const canCalculate = data.neck && data.waist && height && (isMale || data.hips);
-
   return (
     <Box sx={{
       position: 'fixed', inset: 0,
-      bgcolor: 'background.default', zIndex: 1300,
+      bgcolor: surfaceBg(d), zIndex: 1300,
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* Header */}
-      <Box sx={{ pt: 1.5, pb: 1, px: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Button onClick={onClose} color="inherit" sx={{ textTransform: 'none', fontWeight: 500 }}>
-            Annuler
-          </Button>
-          <Typography fontWeight={600} fontSize="1.1rem">
-            {isEditing ? 'Modifier la mesure' : 'Nouvelle mesure'}
+      {/* Header — pill grab + close */}
+      <Box sx={{ pt: 1.5, px: 2.5 }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(d) }}>
+            <X size={20} weight={W} />
+          </IconButton>
+          <Typography sx={{ flex: 1, fontSize: '1.1rem', fontWeight: 700, color: tc.h(d) }}>
+            {isEditing ? 'Modifier' : 'Nouvelle mesure'}
           </Typography>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting || !data.weight}
-            sx={{ textTransform: 'none', fontWeight: 700 }}
-          >
-            {isSubmitting ? '...' : 'OK'}
-          </Button>
         </Stack>
       </Box>
 
       {/* Content */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2.5, pt: 2, pb: 4 }}>
         <Stack spacing={2.5}>
-          {/* Main metrics */}
-          <Stack direction="row" spacing={2}>
-            <MeasureInput
-              label="Poids"
-              unit="kg"
-              value={data.weight}
-              onChange={(v) => updateField('weight', v)}
-              placeholder={lastMeasurement?.weight || '80'}
-              tip="Le matin au réveil, après les toilettes, avant de manger. Toujours dans les mêmes conditions."
-            />
-            <MeasureInput
-              label="Taille"
-              unit="cm"
-              value={data.height}
-              onChange={(v) => updateField('height', v)}
-              placeholder={lastMeasurement?.height || '175'}
-              tip="Pieds nus, le matin (on est plus grand le matin qu'en fin de journée). Dos droit contre un mur."
-            />
-          </Stack>
 
-          <Stack direction="row" spacing={2}>
-            <MeasureInput
-              label="Tour de taille"
-              unit="cm"
-              value={data.waist}
-              onChange={(v) => updateField('waist', v)}
-              placeholder={lastMeasurement?.waist || ''}
-              tip="Au niveau du nombril, debout détendu. Ne pas rentrer le ventre. Mesurer après une expiration normale."
-            />
-            <MeasureInput
-              label="Poitrine"
-              unit="cm"
-              value={data.chest}
-              onChange={(v) => updateField('chest', v)}
-              placeholder={lastMeasurement?.chest || ''}
-              tip="Au niveau des tétons, bras le long du corps. Ruban horizontal, ne pas gonfler la poitrine."
-            />
-          </Stack>
-
-          <MeasureInput
-            label="Masse grasse"
-            unit="%"
-            value={data.bodyFatPercentage}
-            onChange={(v) => updateField('bodyFatPercentage', v)}
-            placeholder={lastMeasurement?.bodyFatPercentage || ''}
-            tip="Utilise une balance impédancemètre ou le calculateur Navy ci-dessous. Mesure le matin à jeun pour plus de fiabilité."
-          />
-
-          {/* Body Fat Calculator */}
-          <Box
-            onClick={() => { triggerHaptic('light'); setShowCalculator(!showCalculator); }}
-            sx={{
-              py: 1, color: 'text.secondary', fontSize: '0.85rem',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.5,
-            }}
-          >
-            <ExpandMore sx={{ fontSize: 18, transform: showCalculator ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
-            Calculer ma masse grasse
-          </Box>
-
-          <Collapse in={showCalculator}>
-            <Card sx={{ bgcolor: 'action.hover' }}>
-              <CardContent sx={{ py: 2 }}>
-                <Stack spacing={2}>
-                  <Stack direction="row" spacing={1}>
-                    {['Homme', 'Femme'].map((g) => (
-                      <Chip
-                        key={g}
-                        label={g}
-                        size="small"
-                        onClick={() => { setIsMale(g === 'Homme'); setCalculatedBf(null); }}
-                        sx={{
-                          flex: 1, fontWeight: 600,
-                          bgcolor: (g === 'Homme' ? isMale : !isMale) ? 'primary.main' : 'transparent',
-                          color: (g === 'Homme' ? isMale : !isMale) ? 'primary.contrastText' : 'text.secondary',
-                          border: 1,
-                          borderColor: (g === 'Homme' ? isMale : !isMale) ? 'primary.main' : 'divider',
-                        }}
-                      />
-                    ))}
-                  </Stack>
-
-                  <Stack direction="row" spacing={2}>
-                    <TextField
-                      label="Taille"
-                      type="number"
-                      value={height}
-                      onChange={(e) => setHeight(e.target.value)}
-                      size="small"
-                      fullWidth
-                      InputProps={{ endAdornment: <Typography color="text.secondary">cm</Typography> }}
-                    />
-                    <TextField
-                      label="Cou"
-                      type="number"
-                      value={data.neck || ''}
-                      onChange={(e) => updateField('neck', e.target.value)}
-                      size="small"
-                      fullWidth
-                      InputProps={{ endAdornment: <Typography color="text.secondary">cm</Typography> }}
-                    />
-                  </Stack>
-
-                  {!isMale && (
-                    <TextField
-                      label="Hanches"
-                      type="number"
-                      value={data.hips || ''}
-                      onChange={(e) => updateField('hips', e.target.value)}
-                      size="small"
-                      fullWidth
-                      InputProps={{ endAdornment: <Typography color="text.secondary">cm</Typography> }}
-                    />
-                  )}
-
-                  <Button
-                    onClick={canCalculate ? calculateNavyBodyFat : undefined}
-                    variant="contained"
-                    fullWidth
-                    disabled={!canCalculate}
-                    sx={{
-                      py: 1.5, borderRadius: 2, fontWeight: 700,
-                      background: canCalculate ? 'linear-gradient(135deg, #6750a4, #9a67ea)' : undefined,
-                    }}
-                  >
-                    {calculatedBf !== null ? `${calculatedBf}% - Appliqué` : 'Calculer'}
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Collapse>
-
-          {/* More measurements */}
-          <Box
-            onClick={() => { triggerHaptic('light'); setShowMore(!showMore); }}
-            sx={{
-              py: 1, color: 'text.secondary', fontSize: '0.85rem',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.5,
-            }}
-          >
-            <ExpandMore sx={{ fontSize: 18, transform: showMore ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
-            Plus de mesures
-          </Box>
-
-          <Collapse in={showMore}>
+          {/* Section: Essentiels */}
+          <Box>
+            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.f(d), textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.5 }}>
+              Essentiels
+            </Typography>
             <Stack spacing={2}>
-              <Stack direction="row" spacing={2}>
-                <MeasureInput label="Cou" unit="cm" value={data.neck} onChange={(v) => updateField('neck', v)} placeholder=""
-                  tip="Au milieu du cou, sous la pomme d'Adam. Ruban bien horizontal, ne pas serrer." />
-                <MeasureInput label="Épaules" unit="cm" value={data.shoulders} onChange={(v) => updateField('shoulders', v)} placeholder=""
-                  tip="Au point le plus large des épaules (deltoïdes). Bras détendus le long du corps. Demande de l'aide pour bien placer le ruban." />
-              </Stack>
-              <Stack direction="row" spacing={2}>
-                <MeasureInput label="Bras G" unit="cm" value={data.leftArm} onChange={(v) => updateField('leftArm', v)} placeholder=""
-                  tip="Au point le plus épais du biceps, bras fléchi à 90° et contracté. Toujours mesurer au même degré de contraction." />
-                <MeasureInput label="Bras D" unit="cm" value={data.rightArm} onChange={(v) => updateField('rightArm', v)} placeholder=""
-                  tip="Au point le plus épais du biceps, bras fléchi à 90° et contracté. Toujours mesurer au même degré de contraction." />
-              </Stack>
-              <Stack direction="row" spacing={2}>
-                <MeasureInput label="Av-bras G" unit="cm" value={data.leftForearm} onChange={(v) => updateField('leftForearm', v)} placeholder=""
-                  tip="Au point le plus large de l'avant-bras, environ 3 cm sous le coude. Bras tendu, poing fermé sans serrer." />
-                <MeasureInput label="Av-bras D" unit="cm" value={data.rightForearm} onChange={(v) => updateField('rightForearm', v)} placeholder=""
-                  tip="Au point le plus large de l'avant-bras, environ 3 cm sous le coude. Bras tendu, poing fermé sans serrer." />
-              </Stack>
-              <Stack direction="row" spacing={2}>
-                <MeasureInput label="Hanches" unit="cm" value={data.hips} onChange={(v) => updateField('hips', v)} placeholder=""
-                  tip="Au niveau des os de la hanche (crête iliaque). Ruban bien horizontal." />
-                <MeasureInput label="Fesses" unit="cm" value={data.glutes} onChange={(v) => updateField('glutes', v)} placeholder=""
-                  tip="Au point le plus large des fessiers, pieds joints. Ruban horizontal, sans comprimer." />
-              </Stack>
-              <Stack direction="row" spacing={2}>
-                <MeasureInput label="Cuisse G" unit="cm" value={data.leftThigh} onChange={(v) => updateField('leftThigh', v)} placeholder=""
-                  tip="Au point le plus épais de la cuisse, environ 15 cm sous le pli de l'aine. Debout, poids réparti sur les deux pieds." />
-                <MeasureInput label="Cuisse D" unit="cm" value={data.rightThigh} onChange={(v) => updateField('rightThigh', v)} placeholder=""
-                  tip="Au point le plus épais de la cuisse, environ 15 cm sous le pli de l'aine. Debout, poids réparti sur les deux pieds." />
-              </Stack>
-              <Stack direction="row" spacing={2}>
-                <MeasureInput label="Mollet G" unit="cm" value={data.leftCalf} onChange={(v) => updateField('leftCalf', v)} placeholder=""
-                  tip="Au point le plus large du mollet. Debout, poids réparti sur les deux pieds, jambe détendue." />
-                <MeasureInput label="Mollet D" unit="cm" value={data.rightCalf} onChange={(v) => updateField('rightCalf', v)} placeholder=""
-                  tip="Au point le plus large du mollet. Debout, poids réparti sur les deux pieds, jambe détendue." />
+              <MeasureInput label="Poids" unit="kg" value={data.weight} onChange={(v) => updateField('weight', v)}
+                placeholder={lastMeasurement?.weight || '80'}
+                tip="Le matin au reveil, apres les toilettes, avant de manger." />
+              <Stack direction="row" spacing={1.5}>
+                <MeasureInput label="Tour de taille" unit="cm" value={data.waist} onChange={(v) => updateField('waist', v)}
+                  placeholder={lastMeasurement?.waist || ''}
+                  tip="Au nombril, debout detendu, apres une expiration normale." />
+                <MeasureInput label="Poitrine" unit="cm" value={data.chest} onChange={(v) => updateField('chest', v)}
+                  placeholder={lastMeasurement?.chest || ''}
+                  tip="Au niveau des tetons, bras le long du corps." />
               </Stack>
             </Stack>
-          </Collapse>
+          </Box>
+
+          {/* Section: Mensurations detaillees */}
+          <Box>
+            <Box sx={{ mb: 0.5, mt: 1, height: '1px', bgcolor: d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06) }} />
+              <Stack spacing={3} sx={{ mt: 2 }}>
+                {/* General */}
+                <Box>
+                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(d), textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5 }}>
+                    General
+                  </Typography>
+                  <Stack spacing={2}>
+                    <Stack direction="row" spacing={1.5}>
+                      <MeasureInput label="Taille" unit="cm" value={data.height} onChange={(v) => updateField('height', v)}
+                        placeholder={lastMeasurement?.height || '175'}
+                        tip="Pieds nus, le matin. Dos droit contre un mur." />
+                      <MeasureInput label="Masse grasse" unit="%" value={data.bodyFatPercentage} onChange={(v) => updateField('bodyFatPercentage', v)}
+                        placeholder={lastMeasurement?.bodyFatPercentage || ''}
+                        tip="Impedancemetre ou pince. Sinon laisse vide, on estime auto." />
+                    </Stack>
+                    <Stack direction="row" spacing={1.5}>
+                      <MeasureInput label="Cou" unit="cm" value={data.neck} onChange={(v) => updateField('neck', v)} placeholder=""
+                        tip="Sous la pomme d'Adam, ruban horizontal." />
+                      <MeasureInput label="Epaules" unit="cm" value={data.shoulders} onChange={(v) => updateField('shoulders', v)} placeholder=""
+                        tip="Point le plus large, bras detendus." />
+                    </Stack>
+                  </Stack>
+                </Box>
+
+                {/* Haut du corps */}
+                <Box>
+                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(d), textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5 }}>
+                    Haut du corps
+                  </Typography>
+                  <Stack spacing={2}>
+                    <Stack direction="row" spacing={1.5}>
+                      <MeasureInput label="Bras G" unit="cm" value={data.leftArm} onChange={(v) => updateField('leftArm', v)} placeholder=""
+                        tip="Biceps contracte, bras flechi 90°." />
+                      <MeasureInput label="Bras D" unit="cm" value={data.rightArm} onChange={(v) => updateField('rightArm', v)} placeholder=""
+                        tip="Biceps contracte, bras flechi 90°." />
+                    </Stack>
+                    <Stack direction="row" spacing={1.5}>
+                      <MeasureInput label="Av-bras G" unit="cm" value={data.leftForearm} onChange={(v) => updateField('leftForearm', v)} placeholder=""
+                        tip="3 cm sous le coude, poing ferme." />
+                      <MeasureInput label="Av-bras D" unit="cm" value={data.rightForearm} onChange={(v) => updateField('rightForearm', v)} placeholder=""
+                        tip="3 cm sous le coude, poing ferme." />
+                    </Stack>
+                  </Stack>
+                </Box>
+
+                {/* Bas du corps */}
+                <Box>
+                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(d), textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5 }}>
+                    Bas du corps
+                  </Typography>
+                  <Stack spacing={2}>
+                    <Stack direction="row" spacing={1.5}>
+                      <MeasureInput label="Hanches" unit="cm" value={data.hips} onChange={(v) => updateField('hips', v)} placeholder=""
+                        tip="Os de la hanche, ruban horizontal." />
+                      <MeasureInput label="Fesses" unit="cm" value={data.glutes} onChange={(v) => updateField('glutes', v)} placeholder=""
+                        tip="Point le plus large, pieds joints." />
+                    </Stack>
+                    <Stack direction="row" spacing={1.5}>
+                      <MeasureInput label="Cuisse G" unit="cm" value={data.leftThigh} onChange={(v) => updateField('leftThigh', v)} placeholder=""
+                        tip="Point le plus epais, 15 cm sous l'aine." />
+                      <MeasureInput label="Cuisse D" unit="cm" value={data.rightThigh} onChange={(v) => updateField('rightThigh', v)} placeholder=""
+                        tip="Point le plus epais, 15 cm sous l'aine." />
+                    </Stack>
+                    <Stack direction="row" spacing={1.5}>
+                      <MeasureInput label="Mollet G" unit="cm" value={data.leftCalf} onChange={(v) => updateField('leftCalf', v)} placeholder=""
+                        tip="Point le plus large, jambe detendue." />
+                      <MeasureInput label="Mollet D" unit="cm" value={data.rightCalf} onChange={(v) => updateField('rightCalf', v)} placeholder=""
+                        tip="Point le plus large, jambe detendue." />
+                    </Stack>
+                  </Stack>
+                </Box>
+              </Stack>
+          </Box>
 
           {/* Notes */}
-          <TextField
-            label="Notes"
-            multiline
-            rows={2}
-            value={data.notes || ''}
-            onChange={(e) => setData((prev) => ({ ...prev, notes: e.target.value }))}
-            placeholder="Optionnel"
-            fullWidth
-            size="small"
-          />
+          <Box>
+            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.f(d), textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.5 }}>
+              Notes
+            </Typography>
+            <TextField
+              multiline
+              rows={2}
+              value={data.notes || ''}
+              onChange={(e) => setData((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="Conditions, sensations..."
+              fullWidth
+              size="small"
+              sx={goldFieldSx(d)}
+            />
+          </Box>
         </Stack>
+      </Box>
+
+      {/* Sticky CTA */}
+      <Box sx={{
+        px: 2.5, pb: 3, pt: 1.5, bgcolor: surfaceBg(d),
+        borderTop: '1px solid',
+        borderColor: d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06),
+      }}>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          fullWidth
+          disabled={isSubmitting || !data.weight}
+          sx={{
+            py: 1.5, borderRadius: 3, fontWeight: 700, fontSize: '0.9rem',
+            bgcolor: GOLD, color: GOLD_CONTRAST,
+            background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
+            boxShadow: `0 4px 16px ${alpha(GOLD, 0.3)}`,
+            '&:hover': { bgcolor: GOLD_LIGHT },
+            '&.Mui-disabled': { bgcolor: d ? alpha('#ffffff', 0.08) : alpha('#000000', 0.06), color: tc.f(d), boxShadow: 'none' },
+          }}
+        >
+          {isSubmitting ? 'Enregistrement...' : isEditing ? 'Enregistrer les modifications' : 'Enregistrer la mesure'}
+        </Button>
       </Box>
     </Box>
   );
@@ -1624,7 +1625,7 @@ const EXPORT_FIELDS: { key: keyof MeasurementData; label: string; unit: string }
   { key: 'weight', label: 'Poids', unit: 'kg' },
   { key: 'bodyFatPercentage', label: 'Masse grasse', unit: '%' },
   { key: 'neck', label: 'Cou', unit: 'cm' },
-  { key: 'shoulders', label: 'Épaules', unit: 'cm' },
+  { key: 'shoulders', label: 'Epaules', unit: 'cm' },
   { key: 'chest', label: 'Poitrine', unit: 'cm' },
   { key: 'waist', label: 'Tour de taille', unit: 'cm' },
   { key: 'hips', label: 'Hanches', unit: 'cm' },
@@ -1665,6 +1666,8 @@ function ExportDrawer({
   onClose: () => void;
   measurements: MeasurementData[];
 }) {
+  const d = useDark();
+
   const exportJSON = () => {
     const data = measurements.map((m) => {
       const row: Record<string, string | number | null> = {
@@ -1724,10 +1727,10 @@ function ExportDrawer({
   h1 { font-size: 22px; margin-bottom: 4px; }
   .subtitle { color: #666; font-size: 13px; margin-bottom: 24px; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { background: #6750a4; color: white; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
+  th { background: ${GOLD}; color: ${GOLD_CONTRAST}; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
   td { padding: 7px 10px; border-bottom: 1px solid #e0e0e0; white-space: nowrap; }
-  tr:nth-child(even) td { background: #f8f6ff; }
-  tr:hover td { background: #ece6ff; }
+  tr:nth-child(even) td { background: #faf8f2; }
+  tr:hover td { background: #f5f0e0; }
   .footer { margin-top: 24px; font-size: 11px; color: #999; text-align: center; }
   @media print { body { padding: 16px; } }
 </style>
@@ -1741,7 +1744,7 @@ function ExportDrawer({
 ${measurements.map((m) => `<tr><td>${formatDate(m.measuredAt)}</td>${usedFields.map((f) => { const v = m[f.key] as string | null; return `<td>${v != null ? fmt(v) : '-'}</td>`; }).join('')}</tr>`).join('\n')}
 </tbody>
 </table>
-<p class="footer">Généré depuis l'app Workout</p>
+<p class="footer">Genere depuis l'app Workout</p>
 <script>window.onload=function(){window.print()}<\/script>
 </body>
 </html>`;
@@ -1756,64 +1759,62 @@ ${measurements.map((m) => `<tr><td>${formatDate(m.measuredAt)}</td>${usedFields.
   };
 
   return (
-    <SwipeableDrawer
+    <Drawer
       anchor="bottom"
       open={open}
       onClose={onClose}
-      onOpen={() => {}}
-      disableSwipeToOpen
       PaperProps={{
-        sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+        sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(d) },
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
-        <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: 'action.disabled' }} />
+        <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }} />
       </Box>
       <Box sx={{ px: 1, pb: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1 }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1, color: tc.h(d) }}>
           Exporter les mensurations
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ px: 1.5, display: 'block', mb: 1 }}>
+        <Typography variant="caption" sx={{ px: 1.5, display: 'block', mb: 1, color: tc.m(d) }}>
           {measurements.length} mesure{measurements.length > 1 ? 's' : ''}
         </Typography>
 
         <ListItemButton onClick={exportExcel} sx={{ borderRadius: 2 }}>
           <ListItemIcon sx={{ minWidth: 40 }}>
-            <TableChart sx={{ color: '#4caf50' }} />
+            <Table size={22} weight={W} color="#2d6a4f" />
           </ListItemIcon>
           <ListItemText
             primary="Excel / CSV"
             secondary="Fichier .csv compatible Excel, Google Sheets"
-            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
-            secondaryTypographyProps={{ fontSize: '0.75rem' }}
+            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }}
+            secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }}
           />
         </ListItemButton>
 
         <ListItemButton onClick={exportJSON} sx={{ borderRadius: 2 }}>
           <ListItemIcon sx={{ minWidth: 40 }}>
-            <DataObject sx={{ color: '#ff9800' }} />
+            <BracketsCurly size={22} weight={W} color="#ff9800" />
           </ListItemIcon>
           <ListItemText
             primary="JSON"
-            secondary="Format brut pour traitement de données"
-            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
-            secondaryTypographyProps={{ fontSize: '0.75rem' }}
+            secondary="Format brut pour traitement de donnees"
+            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }}
+            secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }}
           />
         </ListItemButton>
 
         <ListItemButton onClick={exportPDF} sx={{ borderRadius: 2 }}>
           <ListItemIcon sx={{ minWidth: 40 }}>
-            <PictureAsPdf sx={{ color: '#f44336' }} />
+            <FilePdf size={22} weight={W} color="#f44336" />
           </ListItemIcon>
           <ListItemText
             primary="PDF"
             secondary="Tableau imprimable via le navigateur"
-            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
-            secondaryTypographyProps={{ fontSize: '0.75rem' }}
+            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }}
+            secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }}
           />
         </ListItemButton>
       </Box>
-    </SwipeableDrawer>
+    </Drawer>
   );
 }
 
@@ -1835,48 +1836,41 @@ function MeasureInput({
   placeholder: string;
   tip?: string;
 }) {
-  const [showTip, setShowTip] = useState(false);
+  const d = useDark();
+  const [focused, setFocused] = useState(false);
 
   return (
-    <Box sx={{ position: 'relative' }}>
+    <Box sx={{ flex: 1 }}>
       <TextField
         label={label}
         type="number"
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setTimeout(() => setFocused(false), 200)}
         placeholder={placeholder || '0'}
         fullWidth
+        sx={goldFieldSx(d)}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
-              {tip && (
-                <IconButton
-                  size="small"
-                  onClick={() => { triggerHaptic('light'); setShowTip(!showTip); }}
-                  sx={{ mr: -0.5, p: 0.5 }}
-                >
-                  <InfoOutlined sx={{ fontSize: 18, color: showTip ? 'primary.main' : 'text.disabled' }} />
-                </IconButton>
-              )}
-              <Typography color="text.secondary">{unit}</Typography>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: tc.f(d) }}>{unit}</Typography>
             </InputAdornment>
           ),
           inputProps: { step: '0.1' },
         }}
       />
-      <Collapse in={showTip}>
+      {tip && focused && (
         <Box sx={{
-          mt: 0.5, px: 1.5, py: 1,
-          bgcolor: 'rgba(103,80,164,0.08)',
+          mt: 0.5, px: 1.25, py: 0.5,
+          bgcolor: alpha(GOLD, 0.06),
           borderRadius: 1.5,
-          borderLeft: '3px solid',
-          borderColor: 'primary.main',
         }}>
-          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4, display: 'block' }}>
+          <Typography sx={{ fontSize: '0.6rem', lineHeight: 1.5, color: tc.m(d) }}>
             {tip}
           </Typography>
         </Box>
-      </Collapse>
+      )}
     </Box>
   );
 }

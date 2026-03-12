@@ -5,10 +5,10 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
-import Add from '@mui/icons-material/Add';
+import { Plus } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
-import { tc, card, GOLD } from '@/lib/design-tokens';
+import { tc, card, GOLD, W } from '@/lib/design-tokens';
 import { getLocalDateStr } from '@/lib/date-utils';
 import { DEFAULT_MEALS, EXTRA_MEALS, MEAL_CONFIG, MACRO_COLORS, triggerHaptic } from './shared';
 import DateStrip from './DateStrip';
@@ -166,7 +166,7 @@ export default function MainView({
                     }}
                   >
                     <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.75}>
-                      <Add sx={{ fontSize: 16, color: tc.f(d) }} />
+                      <Plus size={16} weight={W} style={{ color: tc.f(d) }} />
                       <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
                         Ajouter un repas
                       </Typography>
@@ -183,7 +183,7 @@ export default function MainView({
                         onClick={() => setShowExtraPicker(false)}
                         sx={{ p: 0.25, color: tc.f(d) }}
                       >
-                        <Add sx={{ fontSize: 14, transform: 'rotate(45deg)' }} />
+                        <Plus size={14} weight={W} style={{ transform: 'rotate(45deg)' }} />
                       </IconButton>
                     </Stack>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>

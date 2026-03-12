@@ -5,11 +5,10 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
-import ChevronLeft from '@mui/icons-material/ChevronLeft';
-import ChevronRight from '@mui/icons-material/ChevronRight';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
-import { tc, GOLD } from '@/lib/design-tokens';
+import { tc, GOLD, W } from '@/lib/design-tokens';
 import { getLocalDateStr, addDays } from '@/lib/date-utils';
 import { triggerHaptic } from './shared';
 
@@ -71,7 +70,7 @@ export default function DateStrip({
       </Typography>
       <Stack direction="row" alignItems="center" spacing={0.5}>
         <IconButton size="small" onClick={handlePrev} sx={{ color: tc.m(d), p: 0.5 }}>
-          <ChevronLeft sx={{ fontSize: 20 }} />
+          <CaretLeft size={20} weight={W} />
         </IconButton>
 
         <Stack direction="row" sx={{ flex: 1, justifyContent: 'space-around' }}>
@@ -138,7 +137,7 @@ export default function DateStrip({
           disabled={selectedDate >= today}
           sx={{ color: selectedDate >= today ? tc.f(d) : tc.m(d), p: 0.5 }}
         >
-          <ChevronRight sx={{ fontSize: 20 }} />
+          <CaretRight size={20} weight={W} />
         </IconButton>
       </Stack>
 
