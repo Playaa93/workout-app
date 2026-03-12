@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { MuiProvider } from "@/components/mui-theme-provider";
 import { PowerSyncProvider } from "@/powersync/PowerSyncProvider";
 import { AuthProvider } from "@/powersync/auth-context";
+import NavigationProgress from "@/components/NavigationProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,7 @@ export default function RootLayout({
             <MuiProvider>
               <AuthProvider>
                 <PowerSyncProvider>
+                  <NavigationProgress />
                   {children}
                 </PowerSyncProvider>
               </AuthProvider>
