@@ -63,7 +63,7 @@ import {
 } from '@phosphor-icons/react';
 import { logout } from '@/lib/auth-actions';
 import { triggerHaptic } from '@/lib/haptic';
-import { calculateLevel } from '@/lib/xp-utils';
+import { calculateLevel, xpReasonLabel } from '@/lib/xp-utils';
 import { parseJson, parseJsonArray } from '@/powersync/helpers';
 import { GOLD, GOLD_LIGHT, tc, card, surfaceBg } from '@/lib/design-tokens';
 import BottomNav from '@/components/BottomNav';
@@ -578,7 +578,7 @@ function HistoryTab({ transactions, d }: { transactions: XpTransactionData[]; d:
             <Box key={tx.id} sx={card(d, { p: 1.5 })}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: tc.h(d) }}>{tx.reason}</Typography>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: tc.h(d) }}>{xpReasonLabel(tx.reason)}</Typography>
                   <Typography sx={{ fontSize: '0.65rem', color: tc.f(d) }}>
                     {new Date(tx.createdAt as string).toLocaleDateString('fr-FR', {
                       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',

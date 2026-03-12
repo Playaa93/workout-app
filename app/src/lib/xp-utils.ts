@@ -15,3 +15,20 @@ export function calculateLevel(totalXp: number): { level: number; xpInCurrentLev
   }
   return { level, xpInCurrentLevel: xpRemaining, xpToNext: xpNeeded };
 }
+
+const XP_REASON_LABELS: Record<string, string> = {
+  workout_completed: 'Entraînement terminé',
+  cardio_completed: 'Cardio terminé',
+  pr_achieved: 'Record personnel',
+  streak_bonus: 'Bonus de série',
+  food_logged: 'Repas enregistré',
+  measurement_added: 'Mesure ajoutée',
+  photo_ai: 'Photo IA',
+  boss_fight_won: 'Boss vaincu',
+};
+
+export function xpReasonLabel(reason: string): string {
+  if (XP_REASON_LABELS[reason]) return XP_REASON_LABELS[reason];
+  if (reason.startsWith('Achievement: ')) return reason.replace('Achievement: ', 'Succès : ');
+  return reason;
+}
