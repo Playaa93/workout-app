@@ -84,6 +84,9 @@ export const goldOutlinedBtnSx = {
   '&:hover': { borderColor: GOLD, bgcolor: alpha(GOLD, 0.05) },
 }
 
+// Focus ring for accessible interactive elements
+export const focusRingSx = { outline: `2px solid ${GOLD}`, outlineOffset: 2 } as const
+
 // Dialog PaperProps sx
 export const dialogPaperSx = (isDark: boolean) => ({
   bgcolor: panelBg(isDark),

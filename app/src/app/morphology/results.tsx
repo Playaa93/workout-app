@@ -17,7 +17,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import { alpha } from '@mui/material/styles';
 import { CaretDown } from '@phosphor-icons/react';
-import { GOLD, GOLD_CONTRAST, GOLD_LIGHT, W, tc, card } from '@/lib/design-tokens';
+import { GOLD, GOLD_CONTRAST, GOLD_LIGHT, W, tc, card, focusRingSx } from '@/lib/design-tokens';
 import { useDark } from '@/hooks/useDark';
 
 type Props = {
@@ -252,6 +252,8 @@ export function Results({ result, onRetake }: Props) {
             borderRadius: 2,
             fontWeight: 600,
             textDecoration: 'none',
+            '&:hover': { filter: 'brightness(1.1)' },
+            '&:focus-visible': focusRingSx,
             '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
           }}
         >
@@ -271,12 +273,16 @@ export function Results({ result, onRetake }: Props) {
               color: GOLD,
               fontWeight: 500,
               textDecoration: 'none',
+              '&:hover': { bgcolor: alpha(GOLD, 0.08) },
+              '&:focus-visible': focusRingSx,
               '&:active': { opacity: 0.7 },
             }}
           >
             Accueil
           </Box>
           <Box
+            role="button"
+            tabIndex={0}
             onClick={onRetake}
             sx={{
               py: 1.5,
@@ -286,6 +292,8 @@ export function Results({ result, onRetake }: Props) {
               color: GOLD,
               fontWeight: 500,
               cursor: 'pointer',
+              '&:hover': { bgcolor: alpha(GOLD, 0.08) },
+              '&:focus-visible': focusRingSx,
               '&:active': { opacity: 0.7 },
             }}
           >
@@ -305,7 +313,7 @@ function SegmentChip({ label, value, warning }: { label: string; value: string; 
         p: 1.5,
         bgcolor: d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.03),
         borderRadius: 2,
-        border: warning ? `1px dashed ${alpha(GOLD, 0.5)}` : 'none',
+        border: warning ? `1px solid ${GOLD}` : 'none',
         textAlign: 'center',
       }}
     >
@@ -364,6 +372,7 @@ function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendati
 
   return (
     <Accordion
+      disableGutters
       defaultExpanded={false}
       sx={{
         '&:before': { display: 'none' },

@@ -132,7 +132,7 @@ import {
 } from '@phosphor-icons/react';
 import BottomNav from '@/components/BottomNav';
 import { useDark } from '@/hooks/useDark';
-import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, dialogPaperSx, goldFieldSx } from '@/lib/design-tokens';
+import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, dialogPaperSx, goldFieldSx, focusRingSx } from '@/lib/design-tokens';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
 // Format decimal: remove trailing zeros (110.00 -> 110, 34.20 -> 34.2, 82.75 -> 82.75)
@@ -490,7 +490,7 @@ function OverviewTab({
                 onClick={() => { triggerHaptic('light'); onEditLatest(); }}
                 sx={{
                   border: 'none', cursor: 'pointer',
-                  outline: 'none', '&:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 },
+                  outline: 'none', '&:focus-visible': focusRingSx,
                   display: 'flex', alignItems: 'center', gap: 0.5,
                   px: 1.5, py: 0.5, borderRadius: 99,
                   bgcolor: alpha(GOLD, 0.1),
@@ -505,7 +505,7 @@ function OverviewTab({
                 onClick={() => { triggerHaptic('light'); onAddMeasurement(); }}
                 sx={{
                   border: 'none', cursor: 'pointer',
-                  outline: 'none', '&:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 },
+                  outline: 'none', '&:focus-visible': focusRingSx,
                   display: 'flex', alignItems: 'center', gap: 0.5,
                   px: 1.5, py: 0.5, borderRadius: 99,
                   bgcolor: GOLD,

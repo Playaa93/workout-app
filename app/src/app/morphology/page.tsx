@@ -13,10 +13,10 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { ArrowLeft, Timer, Ruler, PersonArmsSpread, Barbell } from '@phosphor-icons/react';
 import { triggerHaptic } from '@/lib/haptic';
 import BottomNav from '@/components/BottomNav';
-import { GOLD, GOLD_CONTRAST, W, tc, card, surfaceBg } from '@/lib/design-tokens';
+import { GOLD, GOLD_CONTRAST, W, tc, card, surfaceBg, focusRingSx } from '@/lib/design-tokens';
 import { useDark } from '@/hooks/useDark';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
@@ -127,15 +127,16 @@ function MorphologyContent() {
               alignItems: 'center',
               color: tc.m(d),
               textDecoration: 'none',
+              '&:hover': { opacity: 0.85 },
+              '&:focus-visible': focusRingSx,
               '&:active': { opacity: 0.5 },
             }}
           >
             <ArrowLeft size={24} weight={W} />
           </Box>
-          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(d) }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(d), flex: 1, textAlign: 'center' }}>
             Analyse Morphologique
           </Typography>
-          <Box sx={{ width: 32 }} />
         </Stack>
       </Box>
 
@@ -180,13 +181,15 @@ function IntroView({ onStart }: { onStart: () => void }) {
       </Typography>
 
       <Stack spacing={1.5} sx={{ width: '100%', maxWidth: 360, mb: 4 }}>
-        <InfoCard emoji="⏱️" title="3-4 minutes" description="16 questions précises" />
-        <InfoCard emoji="📐" title="Proportions" description="Torse, bras, fémurs, valgus" />
-        <InfoCard emoji="🤸" title="Mobilité" description="Chevilles, poignets, souplesse" />
-        <InfoCard emoji="🏋️" title="Exercices" description="Squat, deadlift, bench, curls" />
+        <InfoCard icon={<Timer size={28} weight={W} color={GOLD} />} title="3-4 minutes" description="16 questions précises" />
+        <InfoCard icon={<Ruler size={28} weight={W} color={GOLD} />} title="Proportions" description="Torse, bras, fémurs, valgus" />
+        <InfoCard icon={<PersonArmsSpread size={28} weight={W} color={GOLD} />} title="Mobilité" description="Chevilles, poignets, souplesse" />
+        <InfoCard icon={<Barbell size={28} weight={W} color={GOLD} />} title="Exercices" description="Squat, deadlift, bench, curls" />
       </Stack>
 
       <Box
+        role="button"
+        tabIndex={0}
         onClick={() => {
           triggerHaptic('light');
           onStart();
@@ -201,6 +204,8 @@ function IntroView({ onStart }: { onStart: () => void }) {
           borderRadius: 2,
           fontWeight: 600,
           cursor: 'pointer',
+          '&:hover': { filter: 'brightness(1.1)' },
+          '&:focus-visible': focusRingSx,
           '&:active': { opacity: 0.8, transform: 'scale(0.98)' },
         }}
       >
@@ -211,18 +216,18 @@ function IntroView({ onStart }: { onStart: () => void }) {
 }
 
 function InfoCard({
-  emoji,
+  icon,
   title,
   description,
 }: {
-  emoji: string;
+  icon: React.ReactNode;
   title: string;
   description: string;
 }) {
   const d = useDark();
   return (
-    <Box sx={{ ...card(d), p: 2, textAlign: 'center' }}>
-      <Typography variant="h4" sx={{ mb: 0.5 }}>{emoji}</Typography>
+    <Box sx={{ ...card(d), p: 2.5, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <Box sx={{ mb: 0.5 }}>{icon}</Box>
       <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(d) }}>{title}</Typography>
       <Typography variant="body2" sx={{ color: tc.m(d) }}>{description}</Typography>
     </Box>

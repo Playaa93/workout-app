@@ -10,8 +10,9 @@ import Stack from '@mui/material/Stack';
 import LinearProgress from '@mui/material/LinearProgress';
 import CircularProgress from '@mui/material/CircularProgress';
 import { alpha } from '@mui/material/styles';
-import { GOLD, GOLD_LIGHT, W, tc, card } from '@/lib/design-tokens';
+import { GOLD, GOLD_LIGHT, W, tc, card, focusRingSx } from '@/lib/design-tokens';
 import { useDark } from '@/hooks/useDark';
+import { triggerHaptic } from '@/lib/haptic';
 
 type Props = {
   questions: MorphoQuestion[];
@@ -38,6 +39,7 @@ export function Questionnaire({ questions, onComplete }: Props) {
   const category = categoryInfo[currentQuestion?.category] || categoryInfo.proportions;
 
   const handleAnswer = async (value: string) => {
+    triggerHaptic('light');
     const newAnswers = { ...answers, [currentQuestion.questionKey]: value };
     setAnswers(newAnswers);
 
@@ -79,6 +81,7 @@ export function Questionnaire({ questions, onComplete }: Props) {
   };
 
   const handleBack = () => {
+    triggerHaptic('light');
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
@@ -111,12 +114,13 @@ export function Questionnaire({ questions, onComplete }: Props) {
             alignItems: 'center',
             px: 1.5,
             py: 0.5,
-            borderRadius: '8px',
+            borderRadius: 2,
             bgcolor: alpha(GOLD, 0.12),
             color: GOLD_LIGHT,
             fontWeight: 600,
             fontSize: '0.8rem',
             border: `1px solid ${alpha(GOLD, 0.25)}`,
+            transition: 'all 0.3s ease',
           }}
         >
           {category.emoji} {category.label}
@@ -137,7 +141,7 @@ export function Questionnaire({ questions, onComplete }: Props) {
           variant="determinate"
           value={progress}
           sx={{
-            height: 8,
+            height: 10,
             borderRadius: 4,
             bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.06),
             '& .MuiLinearProgress-bar': {
@@ -162,8 +166,8 @@ export function Questionnaire({ questions, onComplete }: Props) {
                   width: isCurrent ? 24 : 8,
                   height: 8,
                   borderRadius: 4,
-                  bgcolor: isComplete || isActive ? GOLD : d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
-                  opacity: isComplete || isActive ? 1 : 0.4,
+                  bgcolor: isComplete ? GOLD : isActive ? GOLD_LIGHT : d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+                  opacity: isComplete ? 1 : isActive ? 0.85 : 0.4,
                   transition: 'all 0.3s ease',
                 }}
               />
@@ -186,6 +190,9 @@ export function Questionnaire({ questions, onComplete }: Props) {
               return (
                 <Box
                   key={option.value}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={option.label}
                   onClick={() => handleAnswer(option.value)}
                   sx={{
                     ...card(d),
@@ -193,6 +200,8 @@ export function Questionnaire({ questions, onComplete }: Props) {
                     overflow: 'hidden',
                     cursor: 'pointer',
                     p: 2,
+                    '&:hover': { opacity: 0.85 },
+                    '&:focus-visible': focusRingSx,
                     '&:active': { opacity: 0.8 },
                     ...(isSelected && {
                       borderColor: GOLD,
@@ -227,6 +236,8 @@ export function Questionnaire({ questions, onComplete }: Props) {
       <Box sx={{ mt: 4 }}>
         {currentIndex > 0 && (
           <Box
+            role="button"
+            tabIndex={0}
             onClick={handleBack}
             sx={{
               display: 'inline-flex',
@@ -239,6 +250,8 @@ export function Questionnaire({ questions, onComplete }: Props) {
               cursor: 'pointer',
               fontWeight: 500,
               fontSize: '0.9rem',
+              '&:hover': { bgcolor: alpha(GOLD, 0.08) },
+              '&:focus-visible': focusRingSx,
               '&:active': { opacity: 0.7 },
             }}
           >
