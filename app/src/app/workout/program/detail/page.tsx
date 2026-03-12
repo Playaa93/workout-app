@@ -133,8 +133,18 @@ function ProgramDetailContent() {
 
   if (!template) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(d) }}>
+      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, bgcolor: surfaceBg(d) }}>
         <Typography sx={{ color: tc.m(d) }}>Programme introuvable</Typography>
+        <Box
+          onClick={() => router.push('/workout')}
+          sx={{
+            px: 3, py: 1, borderRadius: '12px', cursor: 'pointer',
+            bgcolor: GOLD, color: GOLD_CONTRAST, fontWeight: 600, fontSize: '0.85rem',
+            '&:active': { transform: 'scale(0.97)' },
+          }}
+        >
+          Retour
+        </Box>
       </Box>
     );
   }
