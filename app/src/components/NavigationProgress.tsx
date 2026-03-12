@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { GOLD } from '@/lib/design-tokens'
 
 export default function NavigationProgress() {
   const pathname = usePathname()
@@ -10,8 +11,8 @@ export default function NavigationProgress() {
 
   // Navigation complete → hide bar
   useEffect(() => {
-    setActive(false)
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    if (active) setActive(false)
+    clearTimeout(timeoutRef.current)
   }, [pathname])
 
   // Intercept internal link clicks → show bar
@@ -23,15 +24,17 @@ export default function NavigationProgress() {
       if (!href || href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto:')) return
       const url = new URL(href, location.origin)
       if (url.origin !== location.origin) return
-      if (url.pathname === pathname && !url.search) return
+      if (url.pathname === location.pathname && !url.search) return
       setActive(true)
-      // Safety: hide after 8s if navigation hangs
       timeoutRef.current = setTimeout(() => setActive(false), 8000)
     }
 
     document.addEventListener('click', onClick, true)
-    return () => document.removeEventListener('click', onClick, true)
-  }, [pathname])
+    return () => {
+      document.removeEventListener('click', onClick, true)
+      clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
   if (!active) return null
 
@@ -50,7 +53,7 @@ export default function NavigationProgress() {
       <div
         style={{
           height: '100%',
-          background: 'linear-gradient(90deg, transparent, #d4af37, transparent)',
+          background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
           animation: 'graal-bar 1.2s ease-in-out infinite',
         }}
       />
