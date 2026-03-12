@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useCallback } from 'react';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { alpha } from '@mui/material/styles';
 import type { Exercise } from '@/app/workout/types';
 import type { MorphotypeResult } from '@/app/morphology/types';
@@ -93,6 +94,8 @@ export function ExercisePicker({
   const [sortByScore, setSortByScore] = useState(true);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [visibleCount, setVisibleCount] = useState(50);
+
+  useBackHandler(!!detailExercise, () => setDetailExercise(null), 'picker-detail');
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const handleSearch = useCallback((value: string) => {

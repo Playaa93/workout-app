@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDark } from '@/hooks/useDark';
 import { useAuth } from '@/powersync/auth-context';
@@ -65,6 +66,8 @@ function CardioContent() {
   const [avgHr, setAvgHr] = useState(0);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
+
+  useBackHandler(showEndConfirm, () => setShowEndConfirm(false), 'cardio-end');
 
   // Split tracking
   const [splitStartTime, setSplitStartTime] = useState(0); // seconds at split start

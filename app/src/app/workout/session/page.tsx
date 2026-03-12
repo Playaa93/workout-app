@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, Suspense } from 'react';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useDark } from '@/hooks/useDark';
 import { alpha } from '@mui/material/styles';
@@ -216,6 +217,9 @@ function SessionDetailContent() {
   const [exportOpen, setExportOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+
+  useBackHandler(exportOpen, () => setExportOpen(false), 'session-export');
+  useBackHandler(deleteOpen, () => setDeleteOpen(false), 'session-delete');
 
   const handleDelete = async () => {
     await mutations.deleteSession(sessionId);

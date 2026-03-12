@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, Suspense } from 'react';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDark } from '@/hooks/useDark';
 import { useAuth } from '@/powersync/auth-context';
@@ -99,6 +100,8 @@ function ProgramDetailContent() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [starting, setStarting] = useState(false);
   const [detailExercise, setDetailExercise] = useState<ExerciseDetail | null>(null);
+
+  useBackHandler(confirmDelete, () => setConfirmDelete(false), 'detail-delete');
 
   const handleStart = async () => {
     setStarting(true);

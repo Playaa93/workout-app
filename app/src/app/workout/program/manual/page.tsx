@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDark } from '@/hooks/useDark';
 import type { Exercise } from '../../types';
@@ -86,6 +87,8 @@ function ManualProgramContent() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(!editId);
+
+  useBackHandler(showPicker, () => setShowPicker(false), 'manual-picker');
 
   // Populate form from existing template when editing
   useEffect(() => {

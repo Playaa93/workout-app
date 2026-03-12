@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import type {
   CravingData,
   FoodEntryData,
@@ -97,6 +98,11 @@ function DietContent() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeMealType, setActiveMealType] = useState<MealType>('snack');
+
+  // Back button → close overlay instead of navigating away
+  useBackHandler(view !== 'main', () => setView('main'), 'diet-view');
+  useBackHandler(sheetOpen, () => setSheetOpen(false), 'diet-sheet');
+  useBackHandler(settingsOpen, () => setSettingsOpen(false), 'diet-settings');
 
   // PowerSync reactive hooks
   const { data: cravingRows } = useCravings();

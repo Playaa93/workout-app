@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type {
   Exercise,
@@ -259,6 +260,13 @@ function ActiveWorkoutContent() {
   // Swap exercise state
   const [swapExerciseId, setSwapExerciseId] = useState<string | null>(null);
   const [similarExercises, setSimilarExercises] = useState<Exercise[]>([]);
+
+  // Back button → close overlay instead of navigating away
+  useBackHandler(showExercisePicker, () => setShowExercisePicker(false), 'exercise-picker');
+  useBackHandler(!!selectedExercise, () => setSelectedExercise(null), 'set-input');
+  useBackHandler(showEndConfirm, () => setShowEndConfirm(false), 'end-confirm');
+  useBackHandler(!!swapExerciseId, () => setSwapExerciseId(null), 'swap-exercise');
+  useBackHandler(!!infoExercise, () => setInfoExercise(null), 'exercise-info');
 
   // Elapsed time counter
   useEffect(() => {
@@ -1006,6 +1014,9 @@ function ExerciseCard({
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [forceEditNote, setForceEditNote] = useState(false);
   const [confirmDeleteLast, setConfirmDeleteLast] = useState(false);
+
+  useBackHandler(confirmDeleteLast, () => setConfirmDeleteLast(false), 'confirm-delete-last');
+  useBackHandler(machineSheetOpen, () => setMachineSheetOpen(false), 'machine-sheet');
 
   const { data: prevSetRows } = useLastSetsForExerciseOrMachine(exercise?.id || '', selectedMachineSetupId, 5);
   const previousSets = useMemo<WorkoutSet[]>(() => {
