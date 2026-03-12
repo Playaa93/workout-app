@@ -106,7 +106,7 @@ export default function MealSlotCard({
                     sx={{ fontSize: '0.8rem', fontWeight: 500, color: tc.h(d), flex: 1 }}
                     noWrap
                   >
-                    {entry.customName || 'Aliment'}
+                    {(entry.customName || 'Aliment').replace(/^./, c => c.toUpperCase())}
                   </Typography>
                   <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mr: 1.5 }}>
                     {time}
@@ -114,7 +114,7 @@ export default function MealSlotCard({
                   <Typography
                     sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.m(d), fontVariantNumeric: 'tabular-nums', mr: 0.5 }}
                   >
-                    {entry.calories ? Math.round(parseFloat(entry.calories)) : '--'}
+                    {entry.calories ? `${Math.round(parseFloat(entry.calories))} kcal` : '--'}
                   </Typography>
                   <IconButton
                     size="small"

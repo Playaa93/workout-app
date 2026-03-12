@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
@@ -14,8 +15,8 @@ import type { MealType, FoodEntryData } from './shared';
 export type SheetAction = 'search' | 'scanner' | 'photo' | 'cravings';
 
 const MAIN_ACTIONS = [
-  { action: 'search' as const, Icon: MagnifyingGlass, label: 'Chercher', desc: 'Recherche + IA' },
-  { action: 'photo' as const, Icon: Camera, label: 'Photo IA', desc: 'Reconnaissance' },
+  { action: 'search' as const, Icon: MagnifyingGlass, label: 'Chercher' },
+  { action: 'photo' as const, Icon: Camera, label: 'Photo IA' },
 ];
 
 export default function AddEntryBottomSheet({
@@ -35,6 +36,24 @@ export default function AddEntryBottomSheet({
 }) {
   const { resolvedTheme } = useTheme();
   const d = resolvedTheme !== 'light';
+
+  useEffect(() => {
+    if (!open) return;
+    const html = document.documentElement;
+    const body = document.body;
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.inset = '0';
+    body.style.width = '100%';
+    return () => {
+      html.style.overflow = '';
+      body.style.overflow = '';
+      body.style.position = '';
+      body.style.inset = '';
+      body.style.width = '';
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -61,6 +80,10 @@ export default function AddEntryBottomSheet({
           zIndex: 200,
           borderRadius: '20px 20px 0 0',
           maxWidth: 500,
+          maxHeight: '80vh',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
           mx: 'auto',
           bgcolor: panelBg(d),
           animation: 'slide-up 0.3s ease-out',
@@ -74,7 +97,7 @@ export default function AddEntryBottomSheet({
           <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }} />
         </Box>
 
-        <Box sx={{ px: 3, pt: 1.5, pb: 3 }}>
+        <Box sx={{ px: 3, pt: 1.5, pb: 'calc(env(safe-area-inset-bottom, 16px) + 24px)' }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(d) }}>
               Ajouter - {meal.label}
@@ -86,7 +109,7 @@ export default function AddEntryBottomSheet({
 
           {/* Two main actions */}
           <Stack direction="row" spacing={1.5} sx={{ mb: recentFoods.length > 0 ? 2 : 0 }}>
-            {MAIN_ACTIONS.map(({ action, Icon, label, desc }) => (
+            {MAIN_ACTIONS.map(({ action, Icon, label }) => (
               <Box
                 key={action}
                 onClick={() => { triggerHaptic('light'); onSelectAction(action); }}
@@ -108,14 +131,9 @@ export default function AddEntryBottomSheet({
                 }}>
                   <Icon size={20} weight={W} />
                 </Box>
-                <Box>
-                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d), lineHeight: 1.2 }}>
-                    {label}
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>
-                    {desc}
-                  </Typography>
-                </Box>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d) }}>
+                  {label}
+                </Typography>
               </Box>
             ))}
           </Stack>
