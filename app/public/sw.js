@@ -1,7 +1,9 @@
-const CACHE_NAME = 'workout-v2'
+const CACHE_NAME = 'aurum-v3'
+const OFFLINE_URL = '/offline.html'
 const urlsToCache = [
   '/',
   '/manifest.webmanifest',
+  OFFLINE_URL,
 ]
 
 // Install service worker
@@ -107,23 +109,38 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Network-first strategy
+// Network-first strategy with offline fallback
 self.addEventListener('fetch', (event) => {
+  const { request } = event
+
+  // Navigation requests → serve offline page on failure
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+          }
+          return response
+        })
+        .catch(() =>
+          caches.match(request).then((cached) => cached || caches.match(OFFLINE_URL))
+        )
+    )
+    return
+  }
+
+  // Sub-resources → network-first, cache fallback
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then((response) => {
-        // Clone and cache successful responses
         if (response.status === 200) {
-          const responseClone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone)
-          })
+          const clone = response.clone()
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
         }
         return response
       })
-      .catch(() => {
-        // Fallback to cache
-        return caches.match(event.request)
-      })
+      .catch(() => caches.match(request))
   )
 })

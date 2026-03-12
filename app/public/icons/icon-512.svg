@@ -1,4 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#7c3aed" rx="64"/>
-  <text x="256" y="320" font-size="200" text-anchor="middle" fill="white">💪</text>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8c54a"/>
+      <stop offset="100%" stop-color="#b8922a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#09090b"/>
+  <!-- Stylized "A" — Aurum brand mark -->
+  <path d="M256 88 L404 424 L344 424 L298 320 L214 320 L168 424 L108 424 Z" fill="url(#gold)"/>
+  <path d="M256 196 L226 288 L286 288 Z" fill="#09090b"/>
 </svg>

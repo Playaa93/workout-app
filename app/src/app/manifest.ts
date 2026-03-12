@@ -2,14 +2,16 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Workout - Fitness All-in-One',
-    short_name: 'Workout',
+    name: 'Aurum — Fitness Tracker',
+    short_name: 'Aurum',
     description: 'Suivi entraînement, mensurations et diète avec analyse morphologique',
     start_url: '/',
     display: 'standalone',
-    background_color: '#0a0a0a',
-    theme_color: '#0a0a0a',
+    display_override: ['standalone'],
+    background_color: '#09090b',
+    theme_color: '#09090b',
     orientation: 'portrait',
+    categories: ['fitness', 'health', 'lifestyle'],
     launch_handler: {
       client_mode: 'focus-existing',
     },
@@ -25,10 +27,30 @@ export default function manifest(): MetadataRoute.Manifest {
         type: 'image/svg+xml',
       },
       {
-        src: '/icons/icon-512.svg',
+        src: '/icons/maskable-512.svg',
         sizes: '512x512',
         type: 'image/svg+xml',
         purpose: 'maskable',
+      },
+    ],
+    shortcuts: [
+      {
+        name: 'Nouvelle séance',
+        short_name: 'Séance',
+        url: '/workout',
+        icons: [{ src: '/icons/icon-192.svg', sizes: '192x192' }],
+      },
+      {
+        name: 'Journal alimentaire',
+        short_name: 'Diète',
+        url: '/diet',
+        icons: [{ src: '/icons/icon-192.svg', sizes: '192x192' }],
+      },
+      {
+        name: 'Mensurations',
+        short_name: 'Mesures',
+        url: '/measurements',
+        icons: [{ src: '/icons/icon-192.svg', sizes: '192x192' }],
       },
     ],
   }

@@ -15,12 +15,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Workout",
+  title: "Aurum",
   description: "Suivi entraînement, mensurations et diète avec analyse morphologique",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Workout",
+    title: "Aurum",
   },
   formatDetection: {
     telephone: false,
