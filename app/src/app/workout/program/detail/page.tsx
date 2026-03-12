@@ -138,7 +138,7 @@ function ProgramDetailContent() {
         <Box
           onClick={() => router.push('/workout')}
           sx={{
-            px: 3, py: 1, borderRadius: '12px', cursor: 'pointer',
+            px: 3, py: 1, borderRadius: '14px', cursor: 'pointer',
             bgcolor: GOLD, color: GOLD_CONTRAST, fontWeight: 600, fontSize: '0.85rem',
             '&:active': { transform: 'scale(0.97)' },
           }}
