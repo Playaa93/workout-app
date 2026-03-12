@@ -15,7 +15,7 @@ export default function Loading() {
         width="64"
         height="64"
         viewBox="0 0 512 512"
-        style={{ animation: 'aurum-pulse 1.8s ease-in-out infinite' }}
+        style={{ animation: 'graal-pulse 1.8s ease-in-out infinite' }}
       >
         <defs>
           <linearGradient id="gold-loader" x1="0" y1="0" x2="0" y2="1">
@@ -38,10 +38,10 @@ export default function Loading() {
           textTransform: 'uppercase' as const,
         }}
       >
-        Aurum
+        Graal
       </span>
       <style>{`
-        @keyframes aurum-pulse {
+        @keyframes graal-pulse {
           0%, 100% { opacity: .55; transform: scale(1); }
           50% { opacity: 1; transform: scale(1.06); }
         }

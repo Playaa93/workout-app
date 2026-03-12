@@ -21,8 +21,8 @@ export default function FullScreenLoader() {
         height={56}
         viewBox="0 0 512 512"
         sx={{
-          animation: 'aurum-pulse 1.8s ease-in-out infinite',
-          '@keyframes aurum-pulse': {
+          animation: 'graal-pulse 1.8s ease-in-out infinite',
+          '@keyframes graal-pulse': {
             '0%, 100%': { opacity: 0.55, transform: 'scale(1)' },
             '50%': { opacity: 1, transform: 'scale(1.06)' },
           },
@@ -50,7 +50,7 @@ export default function FullScreenLoader() {
           textTransform: 'uppercase',
         }}
       >
-        Aurum
+        Graal
       </Box>
     </Box>
   )

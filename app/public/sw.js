@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aurum-v3'
+const CACHE_NAME = 'graal-v3'
 const OFFLINE_URL = '/offline.html'
 const urlsToCache = [
   '/',

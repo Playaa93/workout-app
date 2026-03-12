@@ -4,7 +4,7 @@ import { alpha } from '@mui/material/styles'
 export const GOLD = '#d4af37'
 export const GOLD_LIGHT = '#e8c860'
 export const GOLD_CONTRAST = '#1a1715'
-// Gradient stops for the Aurum "A" brand mark (also hardcoded in SVG icons + offline.html)
+// Gradient stops for the Graal "A" brand mark (also hardcoded in SVG icons + offline.html)
 export const GOLD_GRAD_START = '#e8c54a'
 export const GOLD_GRAD_END = '#b8922a'
 

@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Aurum — Fitness Tracker',
-    short_name: 'Aurum',
+    name: 'Graal — Fitness Tracker',
+    short_name: 'Graal',
     description: 'Suivi entraînement, mensurations et diète avec analyse morphologique',
     start_url: '/',
     display: 'standalone',
