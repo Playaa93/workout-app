@@ -384,15 +384,21 @@ function WorkoutContent() {
                 <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
               </Stack>
             ) : completedSessions.length === 0 ? (
-              <Box sx={card(d, { textAlign: 'center', py: 5 })}>
-                <Barbell size={48} weight={W} style={{ color: tc.f(d), marginBottom: 12 }} />
-                <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(d), mb: 0.5 }}>
+              <Stack alignItems="center" spacing={1} sx={{ py: 5 }}>
+                <Box sx={{
+                  width: 56, height: 56, borderRadius: '50%',
+                  bgcolor: alpha(GOLD, 0.1),
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Barbell size={26} weight={W} color={GOLD} />
+                </Box>
+                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(d) }}>
                   Pas encore de séance
                 </Typography>
-                <Typography sx={{ fontSize: '0.8rem', color: tc.m(d) }}>
+                <Typography sx={{ fontSize: '0.75rem', color: tc.f(d) }}>
                   Ta première séance t&apos;attend !
                 </Typography>
-              </Box>
+              </Stack>
             ) : (
               <Stack spacing={1}>
                 {completedSessions.map((session) => (
