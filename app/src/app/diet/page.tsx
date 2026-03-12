@@ -35,14 +35,13 @@ import type { SheetAction } from './components/AddEntryBottomSheet';
 import MainView from './components/MainView';
 import CravingsView from './components/CravingsView';
 import SearchView from './components/SearchView';
-import QuickEntryView from './components/QuickEntryView';
 import SettingsView from './components/SettingsView';
 import ScannerView from './components/ScannerView';
 import PhotoAIView from './components/PhotoAIView';
 import AddEntryBottomSheet from './components/AddEntryBottomSheet';
 import BottomNav from '@/components/BottomNav';
 
-type View = 'main' | 'cravings' | 'search' | 'quick' | 'scanner' | 'photo';
+type View = 'main' | 'cravings' | 'search' | 'scanner' | 'photo';
 
 function toFoodEntryData(e: any): FoodEntryData {
   return {
@@ -265,17 +264,6 @@ function DietContent() {
     triggerHaptic('medium');
   };
 
-  const handleAddQuick = async (name: string, calories: number, mealType: string) => {
-    await mutations.addFoodEntry({
-      customName: name,
-      mealType,
-      quantity: 1,
-      calories,
-    });
-    triggerHaptic('medium');
-    setView('main');
-  };
-
   const handleSaveProfile = async (data: {
     goal: string;
     activityLevel: string;
@@ -372,14 +360,6 @@ function DietContent() {
         <SearchView
           mealType={activeMealType}
           onAdd={handleAddFood}
-          onClose={handleBackToMain}
-        />
-      )}
-
-      {view === 'quick' && (
-        <QuickEntryView
-          mealType={activeMealType}
-          onAdd={handleAddQuick}
           onClose={handleBackToMain}
         />
       )}
