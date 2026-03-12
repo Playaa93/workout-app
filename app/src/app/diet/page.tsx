@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import type {
   CravingData,
@@ -421,6 +421,26 @@ function SettingsSheet({
   const { resolvedTheme } = useTheme();
   const d = resolvedTheme !== 'light';
 
+  useEffect(() => {
+    if (!open) return;
+    const scrollY = window.scrollY;
+    const html = document.documentElement;
+    const body = document.body;
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.inset = '0';
+    body.style.width = '100%';
+    return () => {
+      html.style.overflow = '';
+      body.style.overflow = '';
+      body.style.position = '';
+      body.style.inset = '';
+      body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -431,7 +451,7 @@ function SettingsSheet({
           position: 'fixed',
           inset: 0,
           bgcolor: 'rgba(0,0,0,0.4)',
-          zIndex: 299,
+          zIndex: 1300,
           backdropFilter: 'blur(4px)',
         }}
       />
@@ -442,7 +462,7 @@ function SettingsSheet({
           left: 0,
           right: 0,
           top: 48,
-          zIndex: 300,
+          zIndex: 1301,
           borderRadius: '20px 20px 0 0',
           maxWidth: 500,
           mx: 'auto',

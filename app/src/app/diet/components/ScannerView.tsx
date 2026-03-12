@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -34,11 +34,13 @@ export default function ScannerView({
   const [quantity, setQuantity] = useState('100');
   const [manualBarcode, setManualBarcode] = useState('');
   const [isLooking, setIsLooking] = useState(false);
+  const isLookingRef = useRef(false);
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<unknown>(null);
 
-  const handleBarcode = useCallback(async (barcode: string) => {
-    if (isLooking) return;
+  const handleBarcode = async (barcode: string) => {
+    if (isLookingRef.current) return;
+    isLookingRef.current = true;
     setIsLooking(true);
     triggerHaptic('medium');
 
@@ -53,21 +55,21 @@ export default function ScannerView({
     } catch {
       setState('not-found');
     } finally {
+      isLookingRef.current = false;
       setIsLooking(false);
     }
-  }, [isLooking]);
+  };
 
   useEffect(() => {
-    let scanner: { clear: () => Promise<void>; stop: () => Promise<void> } | null = null;
+    let cancelled = false;
 
     const startScanner = async () => {
       try {
         const { Html5Qrcode } = await import('html5-qrcode');
-        if (!scannerRef.current) return;
+        if (cancelled || !scannerRef.current) return;
 
         const qrScanner = new Html5Qrcode('scanner-region');
         html5QrCodeRef.current = qrScanner;
-        scanner = qrScanner as unknown as typeof scanner;
 
         await qrScanner.start(
           { facingMode: 'environment' },
@@ -88,11 +90,15 @@ export default function ScannerView({
     }
 
     return () => {
-      if (scanner) {
-        scanner.stop().catch(() => {});
+      cancelled = true;
+      const qr = html5QrCodeRef.current as { stop?: () => Promise<void> } | null;
+      if (qr?.stop) {
+        qr.stop().catch(() => {});
+        html5QrCodeRef.current = null;
       }
     };
-  }, [state, handleBarcode]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   const handleManualLookup = () => {
     if (manualBarcode.length >= 8) {

@@ -39,6 +39,7 @@ export default function AddEntryBottomSheet({
 
   useEffect(() => {
     if (!open) return;
+    const scrollY = window.scrollY;
     const html = document.documentElement;
     const body = document.body;
     html.style.overflow = 'hidden';
@@ -52,6 +53,7 @@ export default function AddEntryBottomSheet({
       body.style.position = '';
       body.style.inset = '';
       body.style.width = '';
+      window.scrollTo(0, scrollY);
     };
   }, [open]);
 
@@ -67,7 +69,7 @@ export default function AddEntryBottomSheet({
           position: 'fixed',
           inset: 0,
           bgcolor: 'rgba(0,0,0,0.4)',
-          zIndex: 199,
+          zIndex: 1300,
           backdropFilter: 'blur(4px)',
         }}
       />
@@ -77,7 +79,7 @@ export default function AddEntryBottomSheet({
           bottom: 0,
           left: 0,
           right: 0,
-          zIndex: 200,
+          zIndex: 1301,
           borderRadius: '20px 20px 0 0',
           maxWidth: 500,
           maxHeight: '80vh',
@@ -97,7 +99,7 @@ export default function AddEntryBottomSheet({
           <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }} />
         </Box>
 
-        <Box sx={{ px: 3, pt: 1.5, pb: 'calc(env(safe-area-inset-bottom, 16px) + 24px)' }}>
+        <Box sx={{ px: 3, pt: 1.5, pb: 'calc(env(safe-area-inset-bottom, 16px) + 48px)' }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(d) }}>
               Ajouter - {meal.label}
