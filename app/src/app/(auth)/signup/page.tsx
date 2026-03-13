@@ -33,6 +33,8 @@ export default function SignupPage() {
       const result = await signup(formData);
       if (result?.error) {
         setError(result.error);
+      } else {
+        window.location.href = '/';
       }
     });
   }

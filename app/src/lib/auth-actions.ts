@@ -45,7 +45,7 @@ export async function signup(formData: FormData): Promise<AuthResult> {
     .returning();
 
   await createSession(newUser.id, newUser.email, newUser.displayName ?? undefined);
-  redirect('/');
+  return {};
 }
 
 export async function login(formData: FormData): Promise<AuthResult> {
@@ -74,7 +74,7 @@ export async function login(formData: FormData): Promise<AuthResult> {
     .where(eq(users.id, user.id));
 
   await createSession(user.id, user.email, user.displayName ?? undefined);
-  redirect('/');
+  return {};
 }
 
 export async function logout(): Promise<void> {

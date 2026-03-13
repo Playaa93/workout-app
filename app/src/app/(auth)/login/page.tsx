@@ -32,6 +32,8 @@ export default function LoginPage() {
       const result = await login(formData);
       if (result?.error) {
         setError(result.error);
+      } else {
+        window.location.href = '/';
       }
     });
   }
