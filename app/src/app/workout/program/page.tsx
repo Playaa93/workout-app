@@ -18,11 +18,7 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Slider from '@mui/material/Slider';
 import CircularProgress from '@mui/material/CircularProgress';
-import {
-  generateProgram,
-  saveProgramAsTemplates,
-  type GeneratedProgram,
-} from './actions';
+import type { GeneratedProgram } from './actions';
 import {
   type ProgramGoal,
   type ProgramApproach,
@@ -58,6 +54,7 @@ export default function ProgramGeneratorPage() {
       // Generate program before preview
       setIsGenerating(true);
       try {
+        const { generateProgram } = await import('./actions');
         const program = await generateProgram(config);
         setGeneratedProgram(program);
         setActiveStep((prev) => prev + 1);
@@ -71,6 +68,7 @@ export default function ProgramGeneratorPage() {
       if (!generatedProgram) return;
       setIsSaving(true);
       try {
+        const { saveProgramAsTemplates } = await import('./actions');
         await saveProgramAsTemplates(generatedProgram);
         router.push('/workout?saved=true');
       } catch (error) {

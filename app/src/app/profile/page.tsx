@@ -3,10 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useThemeTokens } from '@/hooks/useDark';
-import {
-  getGroqApiKey,
-  saveGroqApiKey,
-} from './actions';
 import { useAuth } from '@/powersync/auth-context';
 import {
   useUserProfile,
@@ -615,7 +611,7 @@ function SettingsTab() {
   });
 
   useEffect(() => {
-    getGroqApiKey().then((key) => {
+    import('./actions').then(({ getGroqApiKey }) => getGroqApiKey()).then((key) => {
       if (key) setGroqKey(key);
       setGroqKeyLoaded(true);
     });
@@ -624,6 +620,7 @@ function SettingsTab() {
   const handleSaveGroqKey = async () => {
     setSavingGroqKey(true);
     try {
+      const { saveGroqApiKey } = await import('./actions');
       await saveGroqApiKey(groqKey.trim());
       setSnackbar({ open: true, message: 'Clé sauvegardée', severity: 'success' });
     } catch {
