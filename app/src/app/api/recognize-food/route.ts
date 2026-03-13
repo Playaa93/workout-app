@@ -1,12 +1,24 @@
 import { NextResponse } from 'next/server';
-import { getGroqContext, callGroqVision, extractImageFromRequest } from '@/lib/groq';
+import { getGroqContext, callGroqVision } from '@/lib/groq';
 
 export async function POST(request: Request) {
-  const [ctx, img] = await Promise.all([getGroqContext(), extractImageFromRequest(request)]);
+  type Body = { imageBase64?: string; hint?: string };
+  const [ctx, parsedBody] = await Promise.all([
+    getGroqContext(),
+    request.json().then((b: Body) => ({ ok: true as const, data: b }))
+      .catch(() => ({ ok: false as const })),
+  ]);
   if ('error' in ctx) return ctx.error;
-  if ('error' in img) return img.error;
+  if (!parsedBody.ok) return NextResponse.json({ error: 'Body invalide' }, { status: 400 });
 
-  const prompt = `Analyse cette photo de nourriture/repas et identifie chaque aliment visible.
+  const { imageBase64, hint } = parsedBody.data;
+  if (!imageBase64) {
+    return NextResponse.json({ error: 'Image manquante' }, { status: 400 });
+  }
+
+  const base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+
+  let prompt = `Analyse cette photo de nourriture/repas et identifie chaque aliment visible.
 
 Pour chaque aliment, estime:
 - Le nom en français
@@ -34,8 +46,15 @@ Réponds UNIQUEMENT avec du JSON valide, sans markdown, dans ce format exact:
 
 Si tu ne vois aucun aliment, réponds: {"foods": []}`;
 
+  if (hint) {
+    const sanitized = hint.slice(0, 200).replace(/["\n]/g, ' ').trim();
+    if (sanitized) {
+      prompt += `\n\nINDICE DE L'UTILISATEUR : L'utilisateur indique que ce plat contient ou ressemble à : "${sanitized}". Utilise cette information pour mieux identifier les aliments et ajuster tes estimations nutritionnelles en conséquence.`;
+    }
+  }
+
   try {
-    const parsed = await callGroqVision(ctx.apiKey, img.base64Data, prompt, 0.2);
+    const parsed = await callGroqVision(ctx.apiKey, base64Data, prompt, 0.2);
 
     if (!parsed.foods || !Array.isArray(parsed.foods)) {
       return NextResponse.json({ error: 'Format de réponse invalide' }, { status: 502 });

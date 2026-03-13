@@ -10,8 +10,10 @@ import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
+import InputBase from '@mui/material/InputBase';
+import IconButton from '@mui/material/IconButton';
 import Link from 'next/link';
-import { ArrowLeft, Camera, Key } from '@phosphor-icons/react';
+import { ArrowLeft, Camera, Key, PaperPlaneRight } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
 import { GOLD, W } from '@/lib/design-tokens';
 import { addAIFoodEntry } from '../actions';
@@ -66,6 +68,7 @@ export default function PhotoAIView({
   const [preview, setPreview] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [hint, setHint] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const meal = MEAL_CONFIG[mealType];
@@ -80,21 +83,15 @@ export default function PhotoAIView({
     return () => { mounted = false; };
   }, []);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const analyzeImage = async (base64: string, userHint?: string) => {
     setState('analyzing');
     triggerHaptic('light');
 
     try {
-      const base64 = await compressImage(file);
-      setPreview(base64);
-
       const res = await fetch('/api/recognize-food', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64 }),
+        body: JSON.stringify({ imageBase64: base64, ...(userHint && { hint: userHint }) }),
       });
 
       if (!res.ok) {
@@ -121,6 +118,20 @@ export default function PhotoAIView({
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const base64 = await compressImage(file);
+    setPreview(base64);
+    setHint('');
+    analyzeImage(base64);
+  };
+
+  const handleCorrect = () => {
+    if (!preview || !hint.trim() || state !== 'results' || isAdding) return;
+    analyzeImage(preview, hint.trim());
+  };
+
   const toggleFood = (idx: number) => {
     setFoods((prev) =>
       prev.map((f, i) => (i === idx ? { ...f, selected: !f.selected } : f))
@@ -129,6 +140,7 @@ export default function PhotoAIView({
 
   const selectedFoods = foods.filter((f) => f.selected);
   const totalCals = selectedFoods.reduce((s, f) => s + f.calories, 0);
+  const hasHint = !!hint.trim();
 
   const handleAddAll = async () => {
     setIsAdding(true);
@@ -360,6 +372,39 @@ export default function PhotoAIView({
               </CardContent>
             </Card>
 
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 3,
+                bgcolor: alpha(GOLD, 0.06),
+                border: '1px solid',
+                borderColor: alpha(GOLD, 0.2),
+              }}
+            >
+              <InputBase
+                placeholder="Pas exact ? ex. ragoût lentilles..."
+                value={hint}
+                onChange={(e) => setHint(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCorrect(); } }}
+                sx={{ flex: 1, fontSize: '0.85rem' }}
+              />
+              <IconButton
+                size="small"
+                disabled={!hasHint}
+                onClick={handleCorrect}
+                sx={{
+                  color: hasHint ? '#f59e0b' : 'text.disabled',
+                  transition: 'color 0.15s',
+                }}
+              >
+                <PaperPlaneRight size={20} weight={W} />
+              </IconButton>
+            </Box>
+
             <Stack direction="row" spacing={1}>
               <Button
                 variant="outlined"
@@ -367,6 +412,7 @@ export default function PhotoAIView({
                   setState('capture');
                   setFoods([]);
                   setPreview(null);
+                  setHint('');
                 }}
                 sx={{ flex: 1 }}
               >
