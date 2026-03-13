@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Tailwind v4 dark mode variant using data attribute (includes navy) */
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="navy"], [data-theme="navy"] *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="navy"], [data-theme="navy"] *, [data-theme="gray-dark"], [data-theme="gray-dark"] *, [data-theme="cream-dark"], [data-theme="cream-dark"] *));
 
 /* ============================================
    DESIGN TOKENS - 2026 Modern Fitness App
@@ -145,6 +145,47 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
 }
 
+[data-theme="navy-light"] {
+  /* Navy Light Theme - Soft blue, airy */
+  --background: #e8ecf4;
+  --background-secondary: #dde2ee;
+  --background-tertiary: #d0d6e4;
+
+  --foreground: #1a2340;
+  --foreground-secondary: #354060;
+  --foreground-muted: #4a5578;
+
+  --border: #d0d6e4;
+  --border-secondary: #c0c8da;
+
+  --card: #f0f3fa;
+  --card-hover: #e8ecf4;
+
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-foreground: #ffffff;
+
+  --success: #10b981;
+  --success-bg: #d1fae5;
+  --warning: #f59e0b;
+  --warning-bg: #fef3c7;
+  --error: #ef4444;
+  --error-bg: #fee2e2;
+  --info: #3b82f6;
+  --info-bg: #dbeafe;
+
+  --accent-xp: #c99a20;
+  --accent-pr: #c2185b;
+  --accent-streak: #e65100;
+
+  --glass-bg: rgba(240, 243, 250, 0.82);
+  --glass-border: rgba(240, 243, 250, 0.4);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
 [data-theme="gray"] {
   /* Gray Theme - Neutral, minimal, clean */
   --background: #f0f2f5;
@@ -186,6 +227,47 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
 }
 
+[data-theme="gray-dark"] {
+  /* Gray Dark Theme - Neutral, moody */
+  --background: #1a1c20;
+  --background-secondary: #25282e;
+  --background-tertiary: #33373e;
+
+  --foreground: #e4e6ea;
+  --foreground-secondary: #b8bcc6;
+  --foreground-muted: #8a8f9a;
+
+  --border: #33373e;
+  --border-secondary: #42474f;
+
+  --card: #25282e;
+  --card-hover: #33373e;
+
+  --primary: #8b9cf6;
+  --primary-hover: #a7b4fa;
+  --primary-foreground: #ffffff;
+
+  --success: #34d399;
+  --success-bg: rgba(16, 185, 129, 0.15);
+  --warning: #fbbf24;
+  --warning-bg: rgba(245, 158, 11, 0.15);
+  --error: #f87171;
+  --error-bg: rgba(239, 68, 68, 0.15);
+  --info: #60a5fa;
+  --info-bg: rgba(59, 130, 246, 0.15);
+
+  --accent-xp: #facc15;
+  --accent-pr: #f472b6;
+  --accent-streak: #fb923c;
+
+  --glass-bg: rgba(37, 40, 46, 0.8);
+  --glass-border: rgba(66, 71, 79, 0.5);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.55);
+}
+
 [data-theme="cream"] {
   /* Cream Theme - Warm, elegant, paper-like */
   --background: #f5f0e6;
@@ -225,6 +307,47 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="cream-dark"] {
+  /* Cream Dark Theme - Warm, cozy, dark */
+  --background: #1a1610;
+  --background-secondary: #252018;
+  --background-tertiary: #362e22;
+
+  --foreground: #f0e8d8;
+  --foreground-secondary: #c8bea8;
+  --foreground-muted: #9a8e78;
+
+  --border: #362e22;
+  --border-secondary: #4a3f30;
+
+  --card: #252018;
+  --card-hover: #362e22;
+
+  --primary: #c9a030;
+  --primary-hover: #ddb540;
+  --primary-foreground: #ffffff;
+
+  --success: #34d399;
+  --success-bg: rgba(16, 185, 129, 0.15);
+  --warning: #fbbf24;
+  --warning-bg: rgba(245, 158, 11, 0.15);
+  --error: #f87171;
+  --error-bg: rgba(239, 68, 68, 0.15);
+  --info: #60a5fa;
+  --info-bg: rgba(59, 130, 246, 0.15);
+
+  --accent-xp: #facc15;
+  --accent-pr: #f472b6;
+  --accent-streak: #fb923c;
+
+  --glass-bg: rgba(37, 32, 24, 0.8);
+  --glass-border: rgba(74, 63, 48, 0.5);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.55);
 }
 
 /* ============================================
@@ -275,12 +398,15 @@ html {
 }
 
 html[data-theme="dark"],
-html[data-theme="navy"] {
+html[data-theme="navy"],
+html[data-theme="gray-dark"],
+html[data-theme="cream-dark"] {
   color-scheme: dark;
 }
 
 html[data-theme="gray"],
-html[data-theme="cream"] {
+html[data-theme="cream"],
+html[data-theme="navy-light"] {
   color-scheme: light;
 }
 

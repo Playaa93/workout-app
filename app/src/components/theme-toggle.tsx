@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
+import { useState } from 'react';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
 import { keyframes, styled } from '@mui/material/styles';
-import { DARK_THEMES, type ThemeId } from '@/lib/theme-presets';
+import { useThemeFamily } from '@/hooks/useThemeFamily';
 
 // Animations
 const sunRise = keyframes`
@@ -137,13 +136,8 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ compact = false }: ThemeToggleProps) {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const { d: isDark, toggleMode, mounted } = useThemeFamily();
   const [isAnimating, setIsAnimating] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) {
     return (
@@ -158,11 +152,9 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
     );
   }
 
-  const isDark = DARK_THEMES.has(resolvedTheme as ThemeId);
-
   const handleToggle = () => {
     setIsAnimating(true);
-    setTheme(isDark ? 'light' : 'dark');
+    toggleMode();
     setTimeout(() => setIsAnimating(false), 400);
   };
 

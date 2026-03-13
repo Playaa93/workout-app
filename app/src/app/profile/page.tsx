@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useTheme } from 'next-themes';
 import { useThemeTokens } from '@/hooks/useDark';
 import {
   getGroqApiKey,
@@ -48,9 +47,6 @@ import {
   Sun,
   Moon,
   Monitor,
-  Anchor,
-  CloudSun,
-  Coffee,
   Check,
   SignOut,
   Key,
@@ -62,7 +58,8 @@ import { triggerHaptic } from '@/lib/haptic';
 import { calculateLevel, xpReasonLabel } from '@/lib/xp-utils';
 import { parseJson, parseJsonArray } from '@/powersync/helpers';
 import { GOLD, GOLD_LIGHT, tc, card, surfaceBg } from '@/lib/design-tokens';
-import { DARK_THEMES, THEME_PRESETS, type ThemeId } from '@/lib/theme-presets';
+import { DARK_THEMES, THEME_PRESETS, THEME_FAMILIES, ALL_FAMILY_IDS, type ThemeId } from '@/lib/theme-presets';
+import { useThemeFamily, type ThemeMode } from '@/hooks/useThemeFamily';
 import BottomNav from '@/components/BottomNav';
 
 const W = 'light' as const; // Phosphor weight
@@ -606,21 +603,9 @@ const GOLD_FIELD_SX = {
   '& .MuiInputLabel-root.Mui-focused': { color: GOLD },
 };
 
-const THEME_OPTIONS = [
-  { value: 'system', label: 'Système', desc: 'Suit ton appareil', Icon: Monitor, preview: null },
-  { value: 'light', label: 'Clair', desc: 'Lumineux et aéré', Icon: Sun, preview: THEME_PRESETS.light },
-  { value: 'dark', label: 'Sombre', desc: 'Sombre pour les yeux', Icon: Moon, preview: THEME_PRESETS.dark },
-  { value: 'navy', label: 'Bleu Marine', desc: 'Premium et profond', Icon: Anchor, preview: THEME_PRESETS.navy },
-  { value: 'gray', label: 'Gris Clair', desc: 'Minimal et épuré', Icon: CloudSun, preview: THEME_PRESETS.gray },
-  { value: 'cream', label: 'Crème', desc: 'Chaleureux et élégant', Icon: Coffee, preview: THEME_PRESETS.cream },
-];
-
 /* ── Settings tab ── */
 function SettingsTab() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const t = (resolvedTheme as ThemeId) || 'dark';
-  const d = DARK_THEMES.has(t);
-  const [mounted, setMounted] = useState(false);
+  const { family, mode, setFamily, setMode, t, d, mounted } = useThemeFamily();
   const [groqKey, setGroqKey] = useState('');
   const [groqKeyLoaded, setGroqKeyLoaded] = useState(false);
   const [showGroqKey, setShowGroqKey] = useState(false);
@@ -630,7 +615,6 @@ function SettingsTab() {
   });
 
   useEffect(() => {
-    setMounted(true);
     getGroqApiKey().then((key) => {
       if (key) setGroqKey(key);
       setGroqKeyLoaded(true);
@@ -664,62 +648,103 @@ function SettingsTab() {
         <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(t), mb: 1.5, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           Apparence
         </Typography>
-        <Stack spacing={0.75}>
-          {THEME_OPTIONS.map((option) => {
-            const sel = theme === option.value;
+
+        {/* Mode selector — Système / Jour / Nuit */}
+        <Box sx={{
+          display: 'flex', borderRadius: '10px', overflow: 'hidden', mb: 1.5,
+          border: '1px solid', borderColor: alpha(tc.f(t), 0.12),
+          bgcolor: alpha(tc.f(t), 0.04),
+        }}>
+          {([
+            { value: 'system' as ThemeMode, label: 'Auto', Icon: Monitor },
+            { value: 'light' as ThemeMode, label: 'Jour', Icon: Sun },
+            { value: 'dark' as ThemeMode, label: 'Nuit', Icon: Moon },
+          ]).map((opt) => {
+            const sel = mode === opt.value;
             return (
               <Box
-                key={option.value}
-                onClick={() => setTheme(option.value)}
-                sx={card(t, {
-                  p: 0, overflow: 'hidden', cursor: 'pointer',
-                  borderColor: sel ? GOLD : undefined,
+                key={opt.value}
+                onClick={() => { triggerHaptic('light'); setMode(opt.value); }}
+                sx={{
+                  flex: 1, py: 0.8, cursor: 'pointer', textAlign: 'center',
+                  bgcolor: sel ? alpha(GOLD, 0.15) : 'transparent',
+                  borderRight: opt.value !== 'dark' ? `1px solid ${alpha(tc.f(t), 0.08)}` : 'none',
                   transition: 'all 0.2s ease',
-                })}
+                  '&:active': { opacity: 0.7 },
+                }}
               >
-                <Stack direction="row" alignItems="stretch">
-                  <Box sx={{
-                    width: 4,
-                    bgcolor: sel ? GOLD : 'transparent',
-                    borderRadius: '4px 0 0 4px',
-                    transition: 'background-color 0.2s ease',
-                  }} />
-                  <Box sx={{ py: 1.5, px: 2, flex: 1 }}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Box sx={{ display: 'flex', color: sel ? GOLD : tc.f(t) }}>
-                        <option.Icon size={22} weight={W} />
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: sel ? GOLD : tc.h(t) }}>
-                          {option.label}
-                        </Typography>
-                        <Typography sx={{ fontSize: '0.6rem', color: tc.f(t) }}>{option.desc}</Typography>
-                      </Box>
-                      {option.preview && (
-                        <Stack direction="row" spacing={0.5} sx={{ mr: 1 }}>
-                          {[option.preview.previewBg, option.preview.previewCard, option.preview.previewText].map((c, i) => (
-                            <Box key={i} sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: c, border: '1px solid', borderColor: alpha('#888', 0.3) }} />
-                          ))}
-                        </Stack>
-                      )}
-                      {sel && <Check size={18} weight="bold" color={GOLD} />}
-                    </Stack>
-                  </Box>
+                <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5}>
+                  <opt.Icon size={14} weight={sel ? 'fill' : W} color={sel ? GOLD : tc.f(t)} />
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: sel ? 700 : 500, color: sel ? GOLD : tc.m(t) }}>
+                    {opt.label}
+                  </Typography>
                 </Stack>
               </Box>
             );
           })}
-        </Stack>
-        {theme === 'system' && (
-          <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), mt: 1.5 }}>
-            Mode actuel : {resolvedTheme === 'dark' ? 'Sombre' : 'Clair'}
-          </Typography>
-        )}
-        {theme !== 'system' && theme !== 'light' && theme !== 'dark' && (
-          <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), mt: 1.5 }}>
-            Base : {DARK_THEMES.has(theme as ThemeId) ? 'sombre' : 'clair'}
-          </Typography>
-        )}
+        </Box>
+
+        {/* Palette grid — 4 families, each showing light+dark preview */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+          {ALL_FAMILY_IDS.map((fam) => {
+            const def = THEME_FAMILIES[fam];
+            const sel = family === fam;
+            const lightP = THEME_PRESETS[def.light];
+            const darkP = THEME_PRESETS[def.dark];
+            return (
+              <Box
+                key={fam}
+                onClick={() => { triggerHaptic('light'); setFamily(fam); }}
+                sx={{
+                  cursor: 'pointer',
+                  borderRadius: '12px',
+                  border: '2px solid',
+                  borderColor: sel ? GOLD : alpha(tc.f(t), 0.12),
+                  overflow: 'hidden',
+                  transition: 'all 0.2s ease',
+                  '&:active': { transform: 'scale(0.97)' },
+                }}
+              >
+                {/* Split preview: light | dark side by side */}
+                <Box sx={{ display: 'flex', height: 52 }}>
+                  {/* Light half */}
+                  <Box sx={{
+                    flex: 1, bgcolor: lightP.previewBg, position: 'relative',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
+                  }}>
+                    <Box sx={{ width: '60%', height: 6, borderRadius: '3px', bgcolor: lightP.previewCard, border: '0.5px solid', borderColor: alpha('#000', 0.06) }} />
+                    <Box sx={{ width: '45%', height: 6, borderRadius: '3px', bgcolor: lightP.previewCard, border: '0.5px solid', borderColor: alpha('#000', 0.06) }} />
+                    <Box sx={{ position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', bgcolor: GOLD }} />
+                  </Box>
+                  {/* Divider */}
+                  <Box sx={{ width: '1px', bgcolor: alpha(tc.f(t), 0.1) }} />
+                  {/* Dark half */}
+                  <Box sx={{
+                    flex: 1, bgcolor: darkP.previewBg, position: 'relative',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
+                  }}>
+                    <Box sx={{ width: '60%', height: 6, borderRadius: '3px', bgcolor: darkP.previewCard }} />
+                    <Box sx={{ width: '45%', height: 6, borderRadius: '3px', bgcolor: darkP.previewCard }} />
+                    <Box sx={{ position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', bgcolor: GOLD }} />
+                  </Box>
+                </Box>
+                {/* Label */}
+                <Box sx={{
+                  py: 0.6, textAlign: 'center',
+                  bgcolor: sel ? alpha(GOLD, 0.08) : 'transparent',
+                  borderTop: '1px solid', borderColor: alpha(tc.f(t), 0.06),
+                }}>
+                  <Typography sx={{
+                    fontSize: '0.7rem', fontWeight: sel ? 700 : 500,
+                    color: sel ? GOLD : tc.h(t), lineHeight: 1.2,
+                  }}>
+                    {def.label}
+                  </Typography>
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
       </Box>
 
       {/* Intelligence IA */}

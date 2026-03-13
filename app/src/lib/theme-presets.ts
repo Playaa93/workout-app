@@ -1,6 +1,6 @@
-export type ThemeId = 'light' | 'dark' | 'navy' | 'gray' | 'cream'
-export const DARK_THEMES = new Set<ThemeId>(['dark', 'navy'])
-export const ALL_THEME_IDS: ThemeId[] = ['light', 'dark', 'navy', 'gray', 'cream']
+export type ThemeId = 'light' | 'dark' | 'navy' | 'navy-light' | 'gray' | 'gray-dark' | 'cream' | 'cream-dark'
+export const DARK_THEMES = new Set<ThemeId>(['dark', 'navy', 'gray-dark', 'cream-dark'])
+export const ALL_THEME_IDS: ThemeId[] = ['light', 'dark', 'navy', 'navy-light', 'gray', 'gray-dark', 'cream', 'cream-dark']
 
 export interface ThemePreset {
   id: ThemeId
@@ -106,6 +106,30 @@ export const THEME_PRESETS: Record<ThemeId, ThemePreset> = {
     previewCard: '#131d33',
     previewText: '#e8eaf0',
   },
+  'navy-light': {
+    id: 'navy-light',
+    label: 'Marine Clair',
+    description: 'Marine lumineux et doux',
+    isDark: false,
+    surfaceBg: '#e8ecf4',
+    panelBg: '#f0f3fa',
+    textHeading: '#1a2340',
+    textMedium: '#4a5578',
+    textFaint: '#7882a0',
+    glassBase: '#f0f3fa',
+    glassBorderAlpha: 0.20,
+    cardBg: '#f0f3fa',
+    cardBorder: 'rgba(0,0,0,0.07)',
+    meshTint: '#e4e8f2',
+    muiBackground: '#e8ecf4',
+    muiPaper: '#f0f3fa',
+    muiDivider: '#d0d6e4',
+    muiTextPrimary: '#1a2340',
+    muiTextSecondary: '#4a5578',
+    previewBg: '#e8ecf4',
+    previewCard: '#f0f3fa',
+    previewText: '#1a2340',
+  },
   gray: {
     id: 'gray',
     label: 'Gris Clair',
@@ -129,6 +153,30 @@ export const THEME_PRESETS: Record<ThemeId, ThemePreset> = {
     previewBg: '#f0f2f5',
     previewCard: '#ffffff',
     previewText: '#1a1c20',
+  },
+  'gray-dark': {
+    id: 'gray-dark',
+    label: 'Gris Sombre',
+    description: 'Sombre et neutre',
+    isDark: true,
+    surfaceBg: '#1a1c20',
+    panelBg: '#25282e',
+    textHeading: '#e4e6ea',
+    textMedium: '#8a8f9a',
+    textFaint: '#5c6170',
+    glassBase: '#25282e',
+    glassBorderAlpha: 0.14,
+    cardBg: 'rgba(255,255,255,0.06)',
+    cardBorder: 'rgba(255,255,255,0.08)',
+    meshTint: '#181a1e',
+    muiBackground: '#1a1c20',
+    muiPaper: '#25282e',
+    muiDivider: '#33373e',
+    muiTextPrimary: '#e4e6ea',
+    muiTextSecondary: '#8a8f9a',
+    previewBg: '#1a1c20',
+    previewCard: '#25282e',
+    previewText: '#e4e6ea',
   },
   cream: {
     id: 'cream',
@@ -154,4 +202,48 @@ export const THEME_PRESETS: Record<ThemeId, ThemePreset> = {
     previewCard: '#fffdf7',
     previewText: '#2d2418',
   },
+  'cream-dark': {
+    id: 'cream-dark',
+    label: 'Crème Sombre',
+    description: 'Chaleureux et profond',
+    isDark: true,
+    surfaceBg: '#1a1610',
+    panelBg: '#252018',
+    textHeading: '#f0e8d8',
+    textMedium: '#9a8e78',
+    textFaint: '#6b6050',
+    glassBase: '#252018',
+    glassBorderAlpha: 0.14,
+    cardBg: 'rgba(255,255,255,0.06)',
+    cardBorder: 'rgba(255,255,255,0.08)',
+    meshTint: '#181410',
+    muiBackground: '#1a1610',
+    muiPaper: '#252018',
+    muiDivider: '#362e22',
+    muiTextPrimary: '#f0e8d8',
+    muiTextSecondary: '#9a8e78',
+    previewBg: '#1a1610',
+    previewCard: '#252018',
+    previewText: '#f0e8d8',
+  },
+}
+
+/* ── Theme Families ─────────────────────────────────────────────── */
+
+export type ThemeFamilyId = 'default' | 'navy' | 'gray' | 'cream'
+export const THEME_FAMILIES: Record<ThemeFamilyId, { label: string; light: ThemeId; dark: ThemeId }> = {
+  default: { label: 'Défaut', light: 'light', dark: 'dark' },
+  navy: { label: 'Marine', light: 'navy-light', dark: 'navy' },
+  gray: { label: 'Gris', light: 'gray', dark: 'gray-dark' },
+  cream: { label: 'Crème', light: 'cream', dark: 'cream-dark' },
+}
+
+export const ALL_FAMILY_IDS: ThemeFamilyId[] = ['default', 'navy', 'gray', 'cream']
+
+/** Given a resolved ThemeId, find which family it belongs to */
+export function themeFamily(id: ThemeId): ThemeFamilyId {
+  for (const [fam, def] of Object.entries(THEME_FAMILIES)) {
+    if (def.light === id || def.dark === id) return fam as ThemeFamilyId
+  }
+  return 'default'
 }
