@@ -7,7 +7,6 @@ import type {
   WorkoutSession,
   WorkoutTemplate,
 } from './types';
-import { importCardioSession } from './cardio-actions';
 import { useAuth } from '@/powersync/auth-context';
 import {
   useRecentSessions,
@@ -215,6 +214,7 @@ function WorkoutContent() {
     if (!importData || !importData.durationMinutes) return;
     setImportSaving(true);
     try {
+      const { importCardioSession } = await import('./cardio-actions');
       const result = await importCardioSession({
         activity: importData.activity as CardioActivity,
         durationMinutes: importData.durationMinutes,

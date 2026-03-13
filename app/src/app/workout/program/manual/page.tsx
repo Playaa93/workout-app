@@ -94,7 +94,7 @@ function ManualProgramContent() {
   useEffect(() => {
     if (!editId || initialized) return;
     const t = templateRows?.[0] as Record<string, unknown> | undefined;
-    if (!t || templateExRows.length === 0 || exercises.length === 0) return;
+    if (!t || exercises.length === 0) return;
 
     const exerciseMap = new Map<string, Exercise>();
     for (const e of exercises) exerciseMap.set(e.id, e);
