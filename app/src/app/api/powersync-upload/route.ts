@@ -72,6 +72,36 @@ const ARRAY_COLUMNS = new Set([
   'strengths', 'weaknesses', 'recommended_exercises', 'exercises_to_avoid',
 ]);
 
+// Column name validation — prevents SQL injection via sql.raw()
+const VALID_COLUMN_NAME = /^[a-z][a-z0-9_]*$/;
+const FORBIDDEN_COLUMNS = new Set(['password_hash', 'gemini_api_key', 'groq_api_key']);
+
+// Child tables → parent ownership config
+const CHILD_TABLE_CONFIG: Record<string, { parentTable: string; foreignKey: string }> = {
+  workout_sets: { parentTable: 'workout_sessions', foreignKey: 'session_id' },
+  workout_template_exercises: { parentTable: 'workout_templates', foreignKey: 'template_id' },
+  cardio_intervals: { parentTable: 'workout_sessions', foreignKey: 'session_id' },
+};
+
+function validateColumnNames(data: Record<string, unknown>): void {
+  for (const key of Object.keys(data)) {
+    if (!VALID_COLUMN_NAME.test(key) || FORBIDDEN_COLUMNS.has(key)) {
+      throw new Error(`Invalid column name: ${key}`);
+    }
+  }
+}
+
+async function verifyParentOwnership(table: string, data: Record<string, unknown>, userId: string): Promise<void> {
+  const config = CHILD_TABLE_CONFIG[table];
+  if (!config) return;
+  const parentId = data[config.foreignKey] as string | undefined;
+  if (!parentId) throw new Error(`Missing foreign key ${config.foreignKey}`);
+  const result = await db.execute(
+    sql`SELECT id FROM ${sql.raw(`"${config.parentTable}"`)} WHERE id = ${parentId} AND user_id = ${userId}`
+  );
+  if (!result.rows?.length) throw new Error('Parent resource not owned by user');
+}
+
 function convertValue(key: string, value: unknown): unknown {
   if (value === null || value === undefined) return null;
   if (BOOLEAN_COLUMNS.has(key)) return value === 1 || value === true;
@@ -167,16 +197,35 @@ export async function POST(request: Request) {
       switch (op.op) {
         case 'PUT': {
           if (!op.data) break;
+          validateColumnNames(op.data);
+          if (CHILD_TABLE_CONFIG[op.table]) {
+            await verifyParentOwnership(op.table, op.data, userId);
+          }
           await db.execute(buildUpsertSql(op.table, op.id, op.data));
           break;
         }
         case 'PATCH': {
           if (!op.data || Object.keys(op.data).length === 0) break;
+          validateColumnNames(op.data);
+          if (CHILD_TABLE_CONFIG[op.table]) {
+            await verifyParentOwnership(op.table, op.data, userId);
+          }
           await db.execute(buildUpdateSql(op.table, op.id, op.data));
           break;
         }
         case 'DELETE': {
-          await db.execute(sql`DELETE FROM ${sql.raw(`"${op.table}"`)} WHERE id = ${op.id}`);
+          if (USER_OWNED_TABLES.has(op.table)) {
+            await db.execute(sql`DELETE FROM ${sql.raw(`"${op.table}"`)} WHERE id = ${op.id} AND user_id = ${userId}`);
+          } else if (CHILD_TABLE_CONFIG[op.table]) {
+            const config = CHILD_TABLE_CONFIG[op.table];
+            await db.execute(
+              sql`DELETE FROM ${sql.raw(`"${op.table}"`)} WHERE id = ${op.id} AND ${sql.raw(`"${config.foreignKey}"`)} IN (SELECT id FROM ${sql.raw(`"${config.parentTable}"`)} WHERE user_id = ${userId})`
+            );
+          } else if (op.table === 'exercises' || op.table === 'foods') {
+            await db.execute(sql`DELETE FROM ${sql.raw(`"${op.table}"`)} WHERE id = ${op.id} AND created_by = ${userId}`);
+          } else {
+            await db.execute(sql`DELETE FROM ${sql.raw(`"${op.table}"`)} WHERE id = ${op.id}`);
+          }
           break;
         }
       }

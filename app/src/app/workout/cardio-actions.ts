@@ -56,12 +56,13 @@ export type CardioSessionData = {
 };
 
 export async function getCardioSession(sessionId: string): Promise<CardioSessionData | null> {
+  const userId = await requireUserId();
   const [session] = await db
     .select()
     .from(workoutSessions)
     .where(eq(workoutSessions.id, sessionId));
 
-  if (!session || session.sessionType !== 'cardio') return null;
+  if (!session || session.sessionType !== 'cardio' || session.userId !== userId) return null;
 
   const intervals = await db
     .select()
@@ -104,6 +105,13 @@ export async function addCardioInterval(
     heartRate?: number;
   }
 ): Promise<string> {
+  const userId = await requireUserId();
+  const [session] = await db
+    .select({ userId: workoutSessions.userId })
+    .from(workoutSessions)
+    .where(eq(workoutSessions.id, sessionId));
+  if (!session || session.userId !== userId) throw new Error('Session not found');
+
   const [interval] = await db
     .insert(cardioIntervals)
     .values({
@@ -143,6 +151,7 @@ export async function endCardioSession(
   if (!session) throw new Error('Session not found');
 
   const userId = await requireUserId();
+  if (session.userId !== userId) throw new Error('Session not found');
   const endTime = new Date();
   const startTime = new Date(session.startedAt!);
   const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);

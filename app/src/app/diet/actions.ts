@@ -375,7 +375,7 @@ export async function addQuickEntry(
 // Delete entry
 export async function deleteEntry(entryId: string): Promise<void> {
   const userId = await requireUserId();
-  await db.delete(foodEntries).where(eq(foodEntries.id, entryId));
+  await db.delete(foodEntries).where(and(eq(foodEntries.id, entryId), eq(foodEntries.userId, userId)));
   await updateDailySummary(userId);
 }
 
