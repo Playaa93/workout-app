@@ -148,7 +148,7 @@ function CardioContent() {
       });
       const activity = session?.cardioActivity || 'other';
       router.push(
-        `/workout/summary?type=cardio&activity=${activity}&duration=${result.duration}&distance=${result.distanceMeters}&pace=${result.avgPaceSecondsPerKm}&calories=${result.caloriesBurned}&xp=${result.xpEarned}`
+        `/workout/summary?sessionId=${sessionId}&type=cardio&activity=${activity}&duration=${result.duration}&distance=${result.distanceMeters}&pace=${result.avgPaceSecondsPerKm}&calories=${result.caloriesBurned}&xp=${result.xpEarned}`
       );
     } catch (error) {
       console.error('Error ending cardio session:', error);

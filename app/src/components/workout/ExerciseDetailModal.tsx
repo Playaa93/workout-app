@@ -12,89 +12,8 @@ import Drawer from '@mui/material/Drawer';
 import { X, ArrowLeft, Barbell } from '@phosphor-icons/react';
 import { getExerciseImages } from '@/lib/exercise-images';
 import { GOLD, GOLD_CONTRAST, W, tc, card, panelBg, goldBtnSx } from '@/lib/design-tokens';
+import { MUSCLE_MAPPING, MUSCLE_LABELS, ANTERIOR_MUSCLES, POSTERIOR_MUSCLES, getMappedMuscles } from '@/lib/muscle-mapping';
 import { useDark } from '@/hooks/useDark';
-
-// Mapping from our muscle names to react-body-highlighter muscle names
-const MUSCLE_MAPPING: Record<string, string[]> = {
-  // Pectoraux
-  pec_major_sternal: ['chest'],
-  pec_major_clavicular: ['chest'],
-  pec_major_abdominal: ['chest'],
-  chest: ['chest'],
-
-  // Dos
-  latissimus_dorsi: ['upper-back'],
-  teres_major: ['upper-back'],
-  rhomboids: ['upper-back'],
-  trapezius_mid: ['trapezius'],
-  trapezius_upper: ['trapezius'],
-  erector_spinae: ['lower-back'],
-  back: ['upper-back', 'lower-back'],
-
-  // Épaules
-  anterior_delt: ['front-deltoids'],
-  lateral_delt: ['front-deltoids'], // Visible principalement de face
-  posterior_delt: ['back-deltoids'],
-  infraspinatus: ['back-deltoids'],
-  teres_minor: ['back-deltoids'], // Coiffe des rotateurs
-  shoulders: ['front-deltoids', 'back-deltoids'],
-
-  // Bras
-  biceps_long_head: ['biceps'],
-  biceps_short_head: ['biceps'],
-  brachialis: ['biceps'],
-  brachioradialis: ['forearm'],
-  triceps_long_head: ['triceps'],
-  triceps_lateral_head: ['triceps'],
-  triceps_medial_head: ['triceps'],
-  forearm_flexors: ['forearm'],
-  forearm_extensors: ['forearm'],
-  arms: ['biceps', 'triceps', 'forearm'],
-
-  // Jambes
-  quadriceps_rectus_femoris: ['quadriceps'],
-  quadriceps_vastus_lateralis: ['quadriceps'],
-  quadriceps_vastus_medialis: ['quadriceps'],
-  gluteus_maximus: ['gluteal'],
-  gluteus_medius: ['gluteal'],
-  hamstrings_biceps_femoris: ['hamstring'],
-  hamstrings_semitendinosus: ['hamstring'],
-  calves_gastrocnemius: ['calves'],
-  calves_soleus: ['calves'],
-  hip_flexors: ['quadriceps'], // Inclut le rectus femoris
-  tensor_fasciae_latae: ['gluteal'], // TFL - cote de la hanche
-  adductors: ['adductor'],
-  legs: ['quadriceps', 'hamstring', 'gluteal', 'calves'],
-
-  // Core
-  rectus_abdominis: ['abs'],
-  obliques: ['obliques'],
-  obliques_external: ['obliques'],
-  obliques_internal: ['obliques'],
-  transverse_abdominis: ['abs'],
-  serratus_anterior: ['obliques'], // Dentele - cote du torse
-  core: ['abs', 'obliques'],
-};
-
-// Muscle group labels for display
-const MUSCLE_LABELS: Record<string, string> = {
-  chest: 'Pectoraux',
-  'upper-back': 'Haut du dos',
-  'lower-back': 'Lombaires',
-  trapezius: 'Trapèzes',
-  'front-deltoids': 'Épaules avant',
-  'back-deltoids': 'Épaules arrière',
-  biceps: 'Biceps',
-  triceps: 'Triceps',
-  forearm: 'Avant-bras',
-  abs: 'Abdominaux',
-  obliques: 'Obliques',
-  quadriceps: 'Quadriceps',
-  hamstring: 'Ischio-jambiers',
-  gluteal: 'Fessiers',
-  calves: 'Mollets',
-  adductor: 'Adducteurs',
-};
 
 // Equipment labels for display
 const EQUIPMENT_LABELS: Record<string, string> = {
@@ -116,23 +35,6 @@ const EQUIPMENT_LABELS: Record<string, string> = {
   stability_ball: 'Swiss ball',
   other: 'Autre',
 };
-
-// Static lists for body view auto-selection
-const ANTERIOR_MUSCLES = ['chest', 'abs', 'obliques', 'quadriceps', 'biceps', 'forearm', 'front-deltoids', 'adductor'];
-const POSTERIOR_MUSCLES = ['upper-back', 'lower-back', 'trapezius', 'back-deltoids', 'triceps', 'hamstring', 'gluteal', 'calves'];
-
-// Convert our muscle names to react-body-highlighter format
-function getMappedMuscles(muscles: string[] | null): string[] {
-  if (!muscles) return [];
-  const mapped = new Set<string>();
-  muscles.forEach(muscle => {
-    const mappings = MUSCLE_MAPPING[muscle] || MUSCLE_MAPPING[muscle.toLowerCase()];
-    if (mappings) {
-      mappings.forEach(m => mapped.add(m));
-    }
-  });
-  return Array.from(mapped);
-}
 
 export type ExerciseDetail = {
   id: string;

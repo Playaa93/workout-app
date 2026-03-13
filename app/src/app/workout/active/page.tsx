@@ -290,7 +290,7 @@ function ActiveWorkoutContent() {
     if (!sessionId) return;
     try {
       const result = await mutations.endWorkoutSession(sessionId);
-      router.push(`/workout/summary?xp=${result.xpEarned}&volume=${result.totalVolume}&duration=${result.duration}&prs=${result.prCount}`);
+      router.push(`/workout/summary?sessionId=${sessionId}&xp=${result.xpEarned}&volume=${result.totalVolume}&duration=${result.duration}&prs=${result.prCount}`);
     } catch (error) {
       console.error('Error ending workout:', error);
     }
