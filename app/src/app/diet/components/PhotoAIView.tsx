@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
@@ -10,12 +10,14 @@ import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
-import { ArrowLeft, Camera } from '@phosphor-icons/react';
+import Link from 'next/link';
+import { ArrowLeft, Camera, Key } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
 import { GOLD, W } from '@/lib/design-tokens';
 import { addAIFoodEntry } from '../actions';
 import { compressImage } from '@/lib/image-utils';
 import { triggerHaptic, MEAL_CONFIG } from './shared';
+import { hasGroqApiKey } from '@/app/profile/actions';
 import type { MealType } from './shared';
 
 type RecognizedFood = {
@@ -29,7 +31,26 @@ type RecognizedFood = {
   selected: boolean;
 };
 
-type AIState = 'capture' | 'analyzing' | 'results' | 'error';
+type AIState = 'loading' | 'setup' | 'capture' | 'analyzing' | 'results' | 'error';
+
+const iconCircleSx = {
+  width: 100,
+  height: 100,
+  borderRadius: '50%',
+  bgcolor: 'rgba(245,158,11,0.1)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+} as const;
+
+const gradientBtnSx = {
+  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+  color: 'white',
+  px: 4,
+  py: 1.5,
+  borderRadius: 3,
+  fontWeight: 600,
+} as const;
 
 export default function PhotoAIView({
   mealType,
@@ -40,7 +61,7 @@ export default function PhotoAIView({
   onDone: () => Promise<void>;
   onClose: () => void;
 }) {
-  const [state, setState] = useState<AIState>('capture');
+  const [state, setState] = useState<AIState>('loading');
   const [foods, setFoods] = useState<RecognizedFood[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -48,6 +69,16 @@ export default function PhotoAIView({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const meal = MEAL_CONFIG[mealType];
+
+  useEffect(() => {
+    let mounted = true;
+    hasGroqApiKey().then((has) => {
+      if (mounted) setState(has ? 'capture' : 'setup');
+    }).catch(() => {
+      if (mounted) setState('capture');
+    });
+    return () => { mounted = false; };
+  }, []);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -162,19 +193,48 @@ export default function PhotoAIView({
           style={{ display: 'none' }}
         />
 
+        {state === 'loading' && (
+          <Stack spacing={3} sx={{ alignItems: 'center', py: 6 }}>
+            <CircularProgress sx={{ color: '#f59e0b' }} />
+          </Stack>
+        )}
+
+        {state === 'setup' && (
+          <Stack spacing={3} sx={{ alignItems: 'center', py: 4 }}>
+            <Box sx={iconCircleSx}>
+              <Key size={48} weight={W} color="#f59e0b" />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>
+              Configuration requise
+            </Typography>
+            <Typography variant="body2" color="text.secondary" textAlign="center">
+              Pour utiliser la reconnaissance photo, configure ta clé API Groq dans les paramètres de ton profil.
+            </Typography>
+            <Button
+              component={Link}
+              href="/profile"
+              variant="contained"
+              size="large"
+              sx={gradientBtnSx}
+            >
+              Aller aux paramètres
+            </Button>
+            <Typography
+              component="a"
+              href="https://console.groq.com/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="body2"
+              sx={{ color: '#f59e0b', textDecoration: 'underline', cursor: 'pointer' }}
+            >
+              Obtenir une clé gratuite
+            </Typography>
+          </Stack>
+        )}
+
         {state === 'capture' && (
           <Stack spacing={3} sx={{ alignItems: 'center', py: 4 }}>
-            <Box
-              sx={{
-                width: 100,
-                height: 100,
-                borderRadius: '50%',
-                bgcolor: 'rgba(245,158,11,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <Box sx={iconCircleSx}>
               <Camera size={48} weight={W} color="#f59e0b" />
             </Box>
             <Typography variant="h6" fontWeight={600}>
@@ -192,14 +252,7 @@ export default function PhotoAIView({
                 triggerHaptic('light');
                 fileRef.current?.click();
               }}
-              sx={{
-                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                color: 'white',
-                px: 4,
-                py: 1.5,
-                borderRadius: 3,
-                fontWeight: 600,
-              }}
+              sx={gradientBtnSx}
             >
               Prendre une photo
             </Button>

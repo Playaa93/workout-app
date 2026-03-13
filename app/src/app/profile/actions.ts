@@ -539,6 +539,11 @@ export async function getGroqApiKey(): Promise<string | null> {
   return settings?.groqApiKey || null;
 }
 
+export async function hasGroqApiKey(): Promise<boolean> {
+  if (process.env.GROQ_API_KEY) return true;
+  return !!(await getGroqApiKey());
+}
+
 export async function saveGroqApiKey(apiKey: string): Promise<void> {
   const userId = await requireUserId();
   await db
