@@ -9,8 +9,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Snackbar from '@mui/material/Snackbar';
 import { ArrowLeft, MagnifyingGlass, Sparkle } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
-import { useTheme } from 'next-themes';
 import { tc, card, GOLD, W } from '@/lib/design-tokens';
+import { useThemeTokens } from '@/hooks/useDark';
 import { triggerHaptic, MACRO_COLORS } from './shared';
 import { searchFoods, searchOpenFoodFacts, cacheFoodProduct, addFoodEntry } from '../actions';
 import type { FoodData, MealType } from './shared';
@@ -71,8 +71,7 @@ export default function SearchView({
   onAdd: (data: Parameters<typeof addFoodEntry>[0]) => void;
   onClose: () => void;
 }) {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
 
   const [query, setQuery] = useState('');
   const [localResults, setLocalResults] = useState<FoodData[]>([]);
@@ -225,24 +224,24 @@ export default function SearchView({
       {/* Header */}
       <Box sx={{ px: 2, pt: 1, pb: 1.5 }}>
         <Stack direction="row" alignItems="center" sx={{ mb: 1.5 }}>
-          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(d), mr: 1 }}>
+          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(t), mr: 1 }}>
             <ArrowLeft size={20} weight={W} />
           </IconButton>
-          <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(d) }}>
+          <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(t) }}>
             Rechercher
           </Typography>
         </Stack>
 
         {/* Search input */}
         <Box
-          sx={card(d, {
+          sx={card(t, {
             display: 'flex',
             alignItems: 'center',
             px: 1.5,
             py: 0.25,
           })}
         >
-          <MagnifyingGlass size={18} weight={W} style={{ color: tc.f(d), marginRight: 8, flexShrink: 0 }} />
+          <MagnifyingGlass size={18} weight={W} style={{ color: tc.f(t), marginRight: 8, flexShrink: 0 }} />
           <Box
             component="input"
             type="text"
@@ -255,11 +254,11 @@ export default function SearchView({
               py: 1,
               border: 'none',
               bgcolor: 'transparent',
-              color: tc.h(d),
+              color: tc.h(t),
               fontSize: '0.85rem',
               fontFamily: 'inherit',
               outline: 'none',
-              '&::placeholder': { color: tc.f(d) },
+              '&::placeholder': { color: tc.f(t) },
             }}
           />
           {isSearching && <CircularProgress size={16} sx={{ color: GOLD, ml: 1 }} />}
@@ -269,13 +268,13 @@ export default function SearchView({
       {/* Results */}
       <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 12 }}>
         {query.length < 2 && !isSearching ? (
-          <Typography sx={{ textAlign: 'center', color: tc.f(d), fontSize: '0.8rem', py: 6 }}>
+          <Typography sx={{ textAlign: 'center', color: tc.f(t), fontSize: '0.8rem', py: 6 }}>
             Tape au moins 2 caracteres
           </Typography>
         ) : (
           <>
             {results.length > 0 && (
-              <Box sx={card(d, { overflow: 'hidden' })}>
+              <Box sx={card(t, { overflow: 'hidden' })}>
                 {results.map((food, i) => (
                   <Box
                     key={food.id}
@@ -300,7 +299,7 @@ export default function SearchView({
                         <Typography sx={{
                           fontSize: '0.8rem',
                           fontWeight: 500,
-                          color: tc.h(d),
+                          color: tc.h(t),
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -309,12 +308,12 @@ export default function SearchView({
                         </Typography>
                         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.2 }}>
                           {food.calories && (
-                            <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), fontVariantNumeric: 'tabular-nums' }}>
+                            <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), fontVariantNumeric: 'tabular-nums' }}>
                               {Math.round(parseFloat(food.calories))} kcal/100g
                             </Typography>
                           )}
                           {food.brand && (
-                            <Typography sx={{ fontSize: '0.65rem', color: tc.f(d) }}>
+                            <Typography sx={{ fontSize: '0.65rem', color: tc.f(t) }}>
                               {food.brand}
                             </Typography>
                           )}
@@ -345,7 +344,7 @@ export default function SearchView({
             {isSearchingOff && (
               <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ py: 3 }}>
                 <CircularProgress size={14} sx={{ color: GOLD }} />
-                <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
+                <Typography sx={{ fontSize: '0.7rem', color: tc.f(t) }}>
                   Open Food Facts...
                 </Typography>
               </Stack>
@@ -393,11 +392,11 @@ export default function SearchView({
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Box sx={{
-          ...card(d, { px: 2.5, py: 1.5 }),
+          ...card(t, { px: 2.5, py: 1.5 }),
           bgcolor: d ? alpha('#ffffff', 0.12) : '#ffffff',
           boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
         }}>
-          <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d) }}>
+          <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(t) }}>
             {addedSnackbar}
           </Typography>
         </Box>

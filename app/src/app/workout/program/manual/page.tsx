@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 import type { Exercise } from '../../types';
 import { useAuth } from '@/powersync/auth-context';
 import { useExercises, useTemplateExercises } from '@/powersync/queries/workout-queries';
@@ -57,7 +57,7 @@ function ManualProgramContent() {
   const editId = searchParams.get('id');
   const mutations = useWorkoutMutations();
   const { data: exerciseRows } = useExercises();
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   // Load existing template if editing
   const { data: templateRows } = useQuery(
@@ -183,21 +183,21 @@ function ManualProgramContent() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(d), display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(t), display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <Box
         sx={{
           position: 'sticky', top: 0, zIndex: 10,
           borderBottom: '1px solid',
           borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
-          bgcolor: panelBg(d),
+          bgcolor: panelBg(t),
         }}
       >
         <Stack direction="row" alignItems="center" sx={{ px: 2, py: 1.5 }}>
           <IconButton onClick={() => router.back()} size="small" sx={{ mr: 1 }}>
-            <ArrowLeft weight={W} size={22} color={tc.h(d)} />
+            <ArrowLeft weight={W} size={22} color={tc.h(t)} />
           </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(d) }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(t) }}>
             {isEdit ? 'Modifier le programme' : 'Nouveau programme'}
           </Typography>
         </Stack>
@@ -215,7 +215,7 @@ function ManualProgramContent() {
             required
             size="small"
             placeholder="Ex: Push Day, Full Body..."
-            sx={goldFieldSx(d)}
+            sx={goldFieldSx(t)}
           />
 
           {/* Description */}
@@ -229,12 +229,12 @@ function ManualProgramContent() {
             maxRows={4}
             size="small"
             placeholder="Notes sur ce programme..."
-            sx={goldFieldSx(d)}
+            sx={goldFieldSx(t)}
           />
 
           {/* Exercise List */}
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: tc.m(d) }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, color: tc.m(t) }}>
               Exercices ({selectedExercises.length})
             </Typography>
 
@@ -246,7 +246,7 @@ function ManualProgramContent() {
                 py: 4,
                 textAlign: 'center',
               }}>
-                <Typography variant="body2" sx={{ color: tc.f(d) }}>
+                <Typography variant="body2" sx={{ color: tc.f(t) }}>
                   Aucun exercice ajouté
                 </Typography>
               </Box>
@@ -255,7 +255,7 @@ function ManualProgramContent() {
                 {selectedExercises.map((ex, index) => (
                   <Box
                     key={`${ex.exerciseId}-${index}`}
-                    sx={card(d, { overflow: 'hidden' })}
+                    sx={card(t, { overflow: 'hidden' })}
                   >
                     {/* Exercise header row */}
                     <Box
@@ -279,7 +279,7 @@ function ManualProgramContent() {
                           onClick={(e) => { e.stopPropagation(); handleMoveExercise(index, 'up'); }}
                           sx={{ p: 0 }}
                         >
-                          <CaretUp weight={W} size={18} color={index === 0 ? tc.f(d) : tc.m(d)} />
+                          <CaretUp weight={W} size={18} color={index === 0 ? tc.f(t) : tc.m(t)} />
                         </IconButton>
                         <IconButton
                           size="small"
@@ -287,13 +287,13 @@ function ManualProgramContent() {
                           onClick={(e) => { e.stopPropagation(); handleMoveExercise(index, 'down'); }}
                           sx={{ p: 0 }}
                         >
-                          <CaretDown weight={W} size={18} color={index === selectedExercises.length - 1 ? tc.f(d) : tc.m(d)} />
+                          <CaretDown weight={W} size={18} color={index === selectedExercises.length - 1 ? tc.f(t) : tc.m(t)} />
                         </IconButton>
                       </Stack>
 
                       {/* Exercise info */}
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 500, fontSize: '0.95rem', color: tc.h(d) }} noWrap>
+                        <Typography sx={{ fontWeight: 500, fontSize: '0.95rem', color: tc.h(t) }} noWrap>
                           {ex.exerciseName}
                         </Typography>
                         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.25 }}>
@@ -303,11 +303,11 @@ function ManualProgramContent() {
                             sx={{
                               height: 18,
                               fontSize: '0.65rem',
-                              color: tc.m(d),
+                              color: tc.m(t),
                               bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
                             }}
                           />
-                          <Typography variant="caption" sx={{ color: tc.f(d) }}>
+                          <Typography variant="caption" sx={{ color: tc.f(t) }}>
                             {ex.targetSets}x{ex.targetReps} · {ex.restSeconds}s
                           </Typography>
                         </Stack>
@@ -317,7 +317,7 @@ function ManualProgramContent() {
                       <CaretDownIcon
                         weight={W}
                         size={20}
-                        color={tc.f(d)}
+                        color={tc.f(t)}
                         style={{
                           transition: 'transform 0.2s',
                           transform: expandedIndex === index ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -329,7 +329,7 @@ function ManualProgramContent() {
                       <IconButton
                         size="small"
                         onClick={(e) => { e.stopPropagation(); handleRemoveExercise(index); }}
-                        sx={{ color: tc.f(d) }}
+                        sx={{ color: tc.f(t) }}
                       >
                         <X weight={W} size={18} />
                       </IconButton>
@@ -346,7 +346,7 @@ function ManualProgramContent() {
                             value={ex.targetSets}
                             onChange={(e) => handleUpdateExercise(index, 'targetSets', Math.max(1, parseInt(e.target.value) || 1))}
                             slotProps={{ htmlInput: { min: 1, max: 20 } }}
-                            sx={{ width: 80, ...goldFieldSx(d) }}
+                            sx={{ width: 80, ...goldFieldSx(t) }}
                           />
                           <TextField
                             label="Reps"
@@ -354,7 +354,7 @@ function ManualProgramContent() {
                             value={ex.targetReps}
                             onChange={(e) => handleUpdateExercise(index, 'targetReps', e.target.value)}
                             placeholder="8-12"
-                            sx={{ width: 90, ...goldFieldSx(d) }}
+                            sx={{ width: 90, ...goldFieldSx(t) }}
                           />
                           <TextField
                             label="Repos (s)"
@@ -363,7 +363,7 @@ function ManualProgramContent() {
                             value={ex.restSeconds}
                             onChange={(e) => handleUpdateExercise(index, 'restSeconds', Math.max(0, parseInt(e.target.value) || 0))}
                             slotProps={{ htmlInput: { min: 0, max: 600, step: 15 } }}
-                            sx={{ width: 100, ...goldFieldSx(d) }}
+                            sx={{ width: 100, ...goldFieldSx(t) }}
                           />
                         </Stack>
                       </Box>
@@ -394,7 +394,7 @@ function ManualProgramContent() {
           p: 2, pb: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
           borderTop: '1px solid',
           borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
-          bgcolor: panelBg(d),
+          bgcolor: panelBg(t),
           zIndex: 10,
         }}
       >
@@ -415,7 +415,7 @@ function ManualProgramContent() {
         open={showPicker}
         onClose={() => setShowPicker(false)}
         PaperProps={{
-          sx: { height: '90vh', borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: surfaceBg(d) },
+          sx: { height: '90vh', borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: surfaceBg(t) },
         }}
       >
         <ExercisePicker

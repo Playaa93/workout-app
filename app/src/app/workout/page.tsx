@@ -50,7 +50,7 @@ import {
   PencilSimple,
   Sparkle,
 } from '@phosphor-icons/react';
-import { useTheme } from 'next-themes';
+import { useThemeTokens } from '@/hooks/useDark';
 import { alpha } from '@mui/material/styles';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import { parseJsonArray } from '@/powersync/helpers';
@@ -75,8 +75,7 @@ export default function WorkoutPage() {
 function WorkoutContent() {
   const router = useRouter();
   const mutations = useWorkoutMutations();
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
 
   // PowerSync reactive hooks
   const { data: sessionRows, isLoading: sessionsLoading } = useRecentSessions();
@@ -103,14 +102,14 @@ function WorkoutContent() {
 
   // Map templates
   const templates = useMemo<WorkoutTemplate[]>(() => {
-    return templateRows.map((t: any) => ({
-      id: t.id,
-      name: t.name,
-      description: t.description,
-      targetMuscles: parseJsonArray<string>(t.target_muscles),
-      estimatedDuration: t.estimated_duration,
+    return templateRows.map((tpl: any) => ({
+      id: tpl.id,
+      name: tpl.name,
+      description: tpl.description,
+      targetMuscles: parseJsonArray<string>(tpl.target_muscles),
+      estimatedDuration: tpl.estimated_duration,
       exercises: [],
-      createdAt: new Date(t.created_at),
+      createdAt: new Date(tpl.created_at),
     }));
   }, [templateRows]);
 
@@ -241,10 +240,10 @@ function WorkoutContent() {
   const completedSessions = sessions.filter(s => !!s.endedAt);
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(t) }}>
       {/* Header */}
       <Box sx={{ px: 3, pt: 3, pb: 2.5 }}>
-        <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: tc.h(d), letterSpacing: '-0.02em' }}>
+        <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: tc.h(t), letterSpacing: '-0.02em' }}>
           Entraînement
         </Typography>
       </Box>
@@ -277,16 +276,16 @@ function WorkoutContent() {
               ? CARDIO_ACTIVITIES[session.cardioActivity as CardioActivity]
               : null;
             return (
-              <Box key={session.id} sx={card(d, {
+              <Box key={session.id} sx={card(t, {
                 borderRadius: '16px', borderColor: alpha(GOLD, 0.3), p: 2.5,
               })}>
                 <Stack direction="row" alignItems="center" spacing={2}>
                   <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: GOLD, boxShadow: `0 0 8px ${alpha(GOLD, 0.5)}`, flexShrink: 0 }} />
                   <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(d) }}>
+                    <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(t) }}>
                       {isCardio ? `Cardio en cours — ${activityInfo?.label || 'Cardio'}` : 'Séance en cours'}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.75rem', color: tc.m(d) }}>
+                    <Typography sx={{ fontSize: '0.75rem', color: tc.m(t) }}>
                       Depuis {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </Typography>
                   </Box>
@@ -298,7 +297,7 @@ function WorkoutContent() {
                   >
                     Reprendre
                   </Button>
-                  <IconButton size="small" onClick={() => handleDeleteClick(session.id)} sx={{ color: tc.f(d) }}>
+                  <IconButton size="small" onClick={() => handleDeleteClick(session.id)} sx={{ color: tc.f(t) }}>
                     <Trash size={18} weight={W} />
                   </IconButton>
                 </Stack>
@@ -315,7 +314,7 @@ function WorkoutContent() {
           ) : templates.length > 0 && (
             <Box>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(d) }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(t) }}>
                   Programmes
                 </Typography>
                 <Button
@@ -328,24 +327,24 @@ function WorkoutContent() {
                 </Button>
               </Stack>
               <Stack spacing={1}>
-                {templates.map((t) => (
+                {templates.map((tpl) => (
                   <Box
-                    key={t.id}
+                    key={tpl.id}
                     component={Link}
-                    href={`/workout/program/detail?id=${t.id}`}
-                    sx={card(d, {
+                    href={`/workout/program/detail?id=${tpl.id}`}
+                    sx={card(t, {
                       p: 2, textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.8 },
                     })}
                   >
                     <Stack direction="row" alignItems="center" spacing={2}>
                       <Barbell size={20} weight={W} color={GOLD} />
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(d) }} noWrap>{t.name}</Typography>
-                        <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.3 }}>
-                          {t.targetMuscles.map((m) => MUSCLE_LABELS[m] || m).join(' · ')}
+                        <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(t) }} noWrap>{tpl.name}</Typography>
+                        <Typography sx={{ fontSize: '0.7rem', color: tc.m(t), mt: 0.3 }}>
+                          {tpl.targetMuscles.map((m) => MUSCLE_LABELS[m] || m).join(' · ')}
                         </Typography>
                       </Box>
-                      <CaretRight size={18} weight={W} style={{ color: tc.f(d) }} />
+                      <CaretRight size={18} weight={W} style={{ color: tc.f(t) }} />
                     </Stack>
                   </Box>
                 ))}
@@ -365,7 +364,7 @@ function WorkoutContent() {
             >
               <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
                 <Plus size={20} weight={W} color={GOLD} />
-                <Typography sx={{ fontSize: '0.85rem', color: tc.m(d), fontWeight: 500 }}>
+                <Typography sx={{ fontSize: '0.85rem', color: tc.m(t), fontWeight: 500 }}>
                   Créer un programme
                 </Typography>
               </Stack>
@@ -374,7 +373,7 @@ function WorkoutContent() {
 
           {/* Historique */}
           <Box sx={{ pb: 4 }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(d), mb: 1.5 }}>
+            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(t), mb: 1.5 }}>
               Récent
             </Typography>
 
@@ -392,17 +391,17 @@ function WorkoutContent() {
                 }}>
                   <Barbell size={26} weight={W} color={GOLD} />
                 </Box>
-                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(d) }}>
+                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t) }}>
                   Pas encore de séance
                 </Typography>
-                <Typography sx={{ fontSize: '0.75rem', color: tc.f(d) }}>
+                <Typography sx={{ fontSize: '0.75rem', color: tc.f(t) }}>
                   Ta première séance t&apos;attend !
                 </Typography>
               </Stack>
             ) : (
               <Stack spacing={1}>
                 {completedSessions.map((session) => (
-                  <SessionCard key={session.id} session={session} isDark={d} />
+                  <SessionCard key={session.id} session={session} />
                 ))}
               </Stack>
             )}
@@ -417,7 +416,7 @@ function WorkoutContent() {
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
-        PaperProps={{ sx: { borderRadius: '16px', bgcolor: panelBg(d) } }}
+        PaperProps={{ sx: { borderRadius: '16px', bgcolor: panelBg(t) } }}
       >
         <DialogTitle>Supprimer la séance ?</DialogTitle>
         <DialogContent>
@@ -441,12 +440,12 @@ function WorkoutContent() {
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
         PaperProps={{
-          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: panelBg(d) },
+          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: panelBg(t) },
         }}
       >
         <Box sx={{ p: 2 }}>
-          <Box sx={{ width: 40, height: 4, borderRadius: 2, bgcolor: tc.f(d), opacity: 0.3, mx: 'auto', mb: 2 }} />
-          <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(d), mb: 1.5 }}>
+          <Box sx={{ width: 40, height: 4, borderRadius: 2, bgcolor: tc.f(t), opacity: 0.3, mx: 'auto', mb: 2 }} />
+          <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(t), mb: 1.5 }}>
             Créer un programme
           </Typography>
           <List disablePadding>
@@ -460,8 +459,8 @@ function WorkoutContent() {
               <ListItemText
                 primary="Créer manuellement"
                 secondary="Choisis tes exercices et configure"
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem', color: tc.h(d) }}
-                secondaryTypographyProps={{ fontSize: '0.8rem', color: tc.m(d) }}
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem', color: tc.h(t) }}
+                secondaryTypographyProps={{ fontSize: '0.8rem', color: tc.m(t) }}
               />
             </ListItemButton>
             <ListItemButton
@@ -474,8 +473,8 @@ function WorkoutContent() {
               <ListItemText
                 primary="Générer avec l'IA"
                 secondary="Programme personnalisé en 5 étapes"
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem', color: tc.h(d) }}
-                secondaryTypographyProps={{ fontSize: '0.8rem', color: tc.m(d) }}
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem', color: tc.h(t) }}
+                secondaryTypographyProps={{ fontSize: '0.8rem', color: tc.m(t) }}
               />
             </ListItemButton>
           </List>
@@ -488,7 +487,7 @@ function WorkoutContent() {
         open={showNewSessionDrawer}
         onClose={() => { setShowNewSessionDrawer(false); setDrawerView('main'); }}
         PaperProps={{
-          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: panelBg(d), maxHeight: '70vh' },
+          sx: { borderTopLeftRadius: 24, borderTopRightRadius: 24, bgcolor: panelBg(t), maxHeight: '70vh' },
         }}
       >
         <Box sx={{ p: 2 }}>
@@ -539,7 +538,7 @@ function WorkoutContent() {
                   primary="Séance libre"
                   secondary="Choisis tes exercices au fur et à mesure"
                 />
-                <CaretRight size={18} weight={W} style={{ color: tc.f(d) }} />
+                <CaretRight size={18} weight={W} style={{ color: tc.f(t) }} />
               </ListItemButton>
               <ListItemButton
                 onClick={() => setDrawerView('cardio')}
@@ -557,7 +556,7 @@ function WorkoutContent() {
                   primary="Séance cardio"
                   secondary="Course, vélo, rameur..."
                 />
-                <CaretRight size={18} weight={W} style={{ color: tc.f(d) }} />
+                <CaretRight size={18} weight={W} style={{ color: tc.f(t) }} />
               </ListItemButton>
             </List>
           ) : (
@@ -572,7 +571,7 @@ function WorkoutContent() {
                     >
                       <Typography sx={{ fontSize: '1.3rem', mr: 2 }}>{emoji}</Typography>
                       <ListItemText primary={label} />
-                      <CaretRight size={18} weight={W} style={{ color: tc.f(d) }} />
+                      <CaretRight size={18} weight={W} style={{ color: tc.f(t) }} />
                     </ListItemButton>
                   )
                 )}
@@ -711,8 +710,9 @@ function WorkoutContent() {
 }
 
 
-function SessionCard({ session, isDark: d }: { session: WorkoutSession; isDark: boolean }) {
+function SessionCard({ session }: { session: WorkoutSession }) {
   const router = useRouter();
+  const { t, d } = useThemeTokens();
   const date = new Date(session.startedAt);
   const formattedDate = date.toLocaleDateString('fr-FR', {
     weekday: 'short',
@@ -747,7 +747,7 @@ function SessionCard({ session, isDark: d }: { session: WorkoutSession; isDark: 
   return (
     <Box
       onClick={() => router.push(`/workout/session?id=${session.id}`)}
-      sx={card(d, { px: 2, py: 1.8, cursor: 'pointer', '&:active': { opacity: 0.85 } })}
+      sx={card(t, { px: 2, py: 1.8, cursor: 'pointer', '&:active': { opacity: 0.85 } })}
     >
       <Stack direction="row" alignItems="center">
         <Box sx={{ flex: 1 }}>
@@ -755,18 +755,18 @@ function SessionCard({ session, isDark: d }: { session: WorkoutSession; isDark: 
             {isCardio && activityInfo && (
               <Typography component="span" sx={{ fontSize: '0.95rem' }}>{activityInfo.emoji}</Typography>
             )}
-            <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(d), textTransform: 'capitalize' }}>
+            <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t), textTransform: 'capitalize' }}>
               {isCardio && activityInfo ? activityInfo.label : formattedDate}
             </Typography>
-            <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
+            <Typography sx={{ fontSize: '0.7rem', color: tc.f(t) }}>
               {isCardio ? formattedDate : formattedTime}
             </Typography>
           </Stack>
-          <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.2 }}>
+          <Typography sx={{ fontSize: '0.7rem', color: tc.m(t), mt: 0.2 }}>
             {stats.join(' · ')}
           </Typography>
         </Box>
-        <CaretRight size={18} weight={W} style={{ color: tc.f(d) }} />
+        <CaretRight size={18} weight={W} style={{ color: tc.f(t) }} />
       </Stack>
     </Box>
   );

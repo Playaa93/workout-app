@@ -5,8 +5,8 @@ import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import { TrendUp } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
-import { useTheme } from 'next-themes';
 import { tc, card, GOLD, W } from '@/lib/design-tokens';
+import { useThemeTokens } from '@/hooks/useDark';
 import type { DailySummaryData } from './shared';
 
 export default function WeekChart({
@@ -16,8 +16,7 @@ export default function WeekChart({
   weekHistory: DailySummaryData[];
   targetCalories: number;
 }) {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
 
   if (weekHistory.length < 2) return null;
 
@@ -27,14 +26,14 @@ export default function WeekChart({
   );
 
   return (
-    <Box sx={card(d, { p: 2.5 })}>
+    <Box sx={card(t, { p: 2.5 })}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(d) }}>
+        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(t) }}>
           Cette semaine
         </Typography>
         <Stack direction="row" alignItems="center" spacing={0.5}>
           <TrendUp size={14} weight={W} color={GOLD} />
-          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.h(d) }}>
+          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.h(t) }}>
             Moy: {avg} kcal
           </Typography>
         </Stack>
@@ -49,7 +48,7 @@ export default function WeekChart({
 
           return (
             <Box key={i} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-              <Typography sx={{ fontSize: '0.55rem', fontWeight: 600, color: tc.f(d), fontVariantNumeric: 'tabular-nums' }}>
+              <Typography sx={{ fontSize: '0.55rem', fontWeight: 600, color: tc.f(t), fontVariantNumeric: 'tabular-nums' }}>
                 {day.totalCalories > 0 ? Math.round(day.totalCalories) : ''}
               </Typography>
               <Box
@@ -74,7 +73,7 @@ export default function WeekChart({
                 sx={{
                   fontSize: '0.6rem',
                   fontWeight: isToday ? 700 : 500,
-                  color: isToday ? GOLD : tc.f(d),
+                  color: isToday ? GOLD : tc.f(t),
                   textTransform: 'capitalize',
                 }}
               >
@@ -87,7 +86,7 @@ export default function WeekChart({
 
       {targetCalories > 0 && (
         <Box sx={{ mt: 1, borderTop: '1px dashed', borderColor: d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06), pt: 0.5 }}>
-          <Typography sx={{ fontSize: '0.6rem', color: tc.f(d), textAlign: 'right' }}>
+          <Typography sx={{ fontSize: '0.6rem', color: tc.f(t), textAlign: 'right' }}>
             Objectif: {targetCalories} kcal/j
           </Typography>
         </Box>

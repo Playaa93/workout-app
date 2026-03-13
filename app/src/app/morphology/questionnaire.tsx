@@ -11,7 +11,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import CircularProgress from '@mui/material/CircularProgress';
 import { alpha } from '@mui/material/styles';
 import { GOLD, GOLD_LIGHT, W, tc, card, focusRingSx } from '@/lib/design-tokens';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 import { triggerHaptic } from '@/lib/haptic';
 
 type Props = {
@@ -28,7 +28,7 @@ const categoryInfo: Record<string, { label: string; emoji: string }> = {
 };
 
 export function Questionnaire({ questions, onComplete }: Props) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isCalculating, setIsCalculating] = useState(false);
@@ -91,8 +91,8 @@ export function Questionnaire({ questions, onComplete }: Props) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 2 }}>
         <CircularProgress size={64} sx={{ color: GOLD }} />
-        <Typography sx={{ color: tc.m(d) }}>Analyse en cours...</Typography>
-        <Typography variant="caption" sx={{ maxWidth: 280, textAlign: 'center', color: tc.f(d) }}>
+        <Typography sx={{ color: tc.m(t) }}>Analyse en cours...</Typography>
+        <Typography variant="caption" sx={{ maxWidth: 280, textAlign: 'center', color: tc.f(t) }}>
           Calcul de ton morphotype, proportions et potentiel musculaire
         </Typography>
       </Box>
@@ -130,10 +130,10 @@ export function Questionnaire({ questions, onComplete }: Props) {
       {/* Progress bar */}
       <Box sx={{ mb: 3 }}>
         <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-          <Typography variant="body2" sx={{ color: tc.m(d) }}>
+          <Typography variant="body2" sx={{ color: tc.m(t) }}>
             Question {currentIndex + 1}/{questions.length}
           </Typography>
-          <Typography variant="body2" sx={{ color: tc.m(d) }}>
+          <Typography variant="body2" sx={{ color: tc.m(t) }}>
             {Math.round(progress)}%
           </Typography>
         </Stack>
@@ -178,7 +178,7 @@ export function Questionnaire({ questions, onComplete }: Props) {
 
       {/* Question */}
       <Box sx={{ flex: 1 }}>
-        <Typography variant="h6" fontWeight={600} sx={{ mb: 3, lineHeight: 1.6, color: tc.h(d) }}>
+        <Typography variant="h6" fontWeight={600} sx={{ mb: 3, lineHeight: 1.6, color: tc.h(t) }}>
           {currentQuestion.questionTextFr}
         </Typography>
 
@@ -195,7 +195,7 @@ export function Questionnaire({ questions, onComplete }: Props) {
                   aria-label={option.label}
                   onClick={() => handleAnswer(option.value)}
                   sx={{
-                    ...card(d),
+                    ...card(t),
                     position: 'relative',
                     overflow: 'hidden',
                     cursor: 'pointer',
@@ -223,7 +223,7 @@ export function Questionnaire({ questions, onComplete }: Props) {
                       }}
                     />
                   )}
-                  <Typography variant="body1" sx={{ color: tc.h(d), pl: isSelected ? 1 : 0 }}>
+                  <Typography variant="body1" sx={{ color: tc.h(t), pl: isSelected ? 1 : 0 }}>
                     {option.label}
                   </Typography>
                 </Box>

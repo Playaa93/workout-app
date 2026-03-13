@@ -25,7 +25,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import { alpha } from '@mui/material/styles';
-import { useTheme } from 'next-themes';
+import { useThemeTokens } from '@/hooks/useDark';
 import { surfaceBg, panelBg, tc, GOLD } from '@/lib/design-tokens';
 import { getLocalDateStr } from '@/lib/date-utils';
 import { triggerHaptic } from './components/shared';
@@ -87,8 +87,7 @@ export default function DietPage() {
 }
 
 function DietContent() {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
   const [view, setView] = useState<View>('main');
   const [segment, setSegment] = useState<Segment>('today');
   const [selectedDate, setSelectedDate] = useState(getLocalDateStr);
@@ -318,12 +317,12 @@ function DietContent() {
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: surfaceBg(d),
+        bgcolor: surfaceBg(t),
       }}
     >
       {/* Header */}
       <Box sx={{ px: 3, pt: 3, pb: 1 }}>
-        <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: tc.h(d), letterSpacing: '-0.02em' }}>
+        <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: tc.h(t), letterSpacing: '-0.02em' }}>
           Journal
         </Typography>
       </Box>
@@ -418,8 +417,7 @@ function SettingsSheet({
   onSave: Parameters<typeof SettingsView>[0]['onSave'];
   onClose: () => void;
 }) {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
 
   useEffect(() => {
     if (!open) return;
@@ -466,7 +464,7 @@ function SettingsSheet({
           borderRadius: '20px 20px 0 0',
           maxWidth: 500,
           mx: 'auto',
-          bgcolor: panelBg(d),
+          bgcolor: panelBg(t),
           display: 'flex',
           flexDirection: 'column',
           animation: 'settings-slide-up 0.3s ease-out',

@@ -7,8 +7,8 @@ import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
-import { useTheme } from 'next-themes';
 import { tc, GOLD, W } from '@/lib/design-tokens';
+import { useThemeTokens } from '@/hooks/useDark';
 import { getLocalDateStr, addDays } from '@/lib/date-utils';
 import { triggerHaptic } from './shared';
 
@@ -22,8 +22,7 @@ export default function DateStrip({
   selectedDate: string;
   onDateChange: (date: string) => void;
 }) {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
   const today = getLocalDateStr();
   const isToday = selectedDate === today;
 
@@ -65,11 +64,11 @@ export default function DateStrip({
 
   return (
     <Box>
-      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.h(d), textAlign: 'center', mb: 0.5 }}>
+      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.h(t), textAlign: 'center', mb: 0.5 }}>
         {monthLabel}
       </Typography>
       <Stack direction="row" alignItems="center" spacing={0.5}>
-        <IconButton size="small" onClick={handlePrev} sx={{ color: tc.m(d), p: 0.5 }}>
+        <IconButton size="small" onClick={handlePrev} sx={{ color: tc.m(t), p: 0.5 }}>
           <CaretLeft size={20} weight={W} />
         </IconButton>
 
@@ -104,7 +103,7 @@ export default function DateStrip({
                 <Typography sx={{
                   fontSize: '0.55rem',
                   fontWeight: 500,
-                  color: isSelected ? GOLD : tc.f(d),
+                  color: isSelected ? GOLD : tc.f(t),
                   textTransform: 'capitalize',
                   lineHeight: 1,
                 }}>
@@ -113,7 +112,7 @@ export default function DateStrip({
                 <Typography sx={{
                   fontSize: '0.85rem',
                   fontWeight: isSelected ? 700 : 500,
-                  color: isSelected ? GOLD : isDayToday ? tc.h(d) : tc.m(d),
+                  color: isSelected ? GOLD : isDayToday ? tc.h(t) : tc.m(t),
                   lineHeight: 1,
                 }}>
                   {dayNum}
@@ -135,7 +134,7 @@ export default function DateStrip({
           size="small"
           onClick={handleNext}
           disabled={selectedDate >= today}
-          sx={{ color: selectedDate >= today ? tc.f(d) : tc.m(d), p: 0.5 }}
+          sx={{ color: selectedDate >= today ? tc.f(t) : tc.m(t), p: 0.5 }}
         >
           <CaretRight size={20} weight={W} />
         </IconButton>

@@ -7,8 +7,8 @@ import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import { Plus } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
-import { useTheme } from 'next-themes';
 import { tc, card, GOLD, W } from '@/lib/design-tokens';
+import { useThemeTokens } from '@/hooks/useDark';
 import { getLocalDateStr } from '@/lib/date-utils';
 import { DEFAULT_MEALS, EXTRA_MEALS, MEAL_CONFIG, MACRO_COLORS, triggerHaptic } from './shared';
 import DateStrip from './DateStrip';
@@ -54,8 +54,7 @@ export default function MainView({
   onOpenSettings: () => void;
   onDeleteEntry: (id: string) => void;
 }) {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
   const viewingToday = selectedDate === getLocalDateStr();
   const [showExtraPicker, setShowExtraPicker] = useState(false);
 
@@ -122,17 +121,17 @@ export default function MainView({
             {!profile && viewingToday && (
               <Box
                 onClick={onOpenSettings}
-                sx={card(d, {
+                sx={card(t, {
                   p: 2,
                   cursor: 'pointer',
                   borderColor: alpha(GOLD, 0.2),
                   '&:hover': { borderColor: alpha(GOLD, 0.4) },
                 })}
               >
-                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(d) }}>
+                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t) }}>
                   Configure ton profil
                 </Typography>
-                <Typography sx={{ fontSize: '0.7rem', color: tc.m(d) }}>
+                <Typography sx={{ fontSize: '0.7rem', color: tc.m(t) }}>
                   On calcule tes besoins pour t&apos;aider à atteindre ton objectif
                 </Typography>
               </Box>
@@ -166,22 +165,22 @@ export default function MainView({
                     }}
                   >
                     <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.75}>
-                      <Plus size={16} weight={W} style={{ color: tc.f(d) }} />
-                      <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
+                      <Plus size={16} weight={W} style={{ color: tc.f(t) }} />
+                      <Typography sx={{ fontSize: '0.7rem', color: tc.f(t) }}>
                         Ajouter un repas
                       </Typography>
                     </Stack>
                   </Box>
                 ) : (
-                  <Box sx={card(d, { p: 1.5 })}>
+                  <Box sx={card(t, { p: 1.5 })}>
                     <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-                      <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(d) }}>
+                      <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(t) }}>
                         Quel repas ?
                       </Typography>
                       <IconButton
                         size="small"
                         onClick={() => setShowExtraPicker(false)}
-                        sx={{ p: 0.25, color: tc.f(d) }}
+                        sx={{ p: 0.25, color: tc.f(t) }}
                       >
                         <Plus size={14} weight={W} style={{ transform: 'rotate(45deg)' }} />
                       </IconButton>
@@ -210,7 +209,7 @@ export default function MainView({
                           >
                             <Stack direction="row" alignItems="center" spacing={0.75}>
                               <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: cfg.color, flexShrink: 0 }} />
-                              <Typography sx={{ fontSize: '0.65rem', fontWeight: 500, color: tc.h(d), whiteSpace: 'nowrap' }}>
+                              <Typography sx={{ fontSize: '0.65rem', fontWeight: 500, color: tc.h(t), whiteSpace: 'nowrap' }}>
                                 {cfg.label}
                               </Typography>
                             </Stack>

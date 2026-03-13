@@ -4,8 +4,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
-import { useTheme } from 'next-themes';
 import { tc, card, GOLD } from '@/lib/design-tokens';
+import { useThemeTokens } from '@/hooks/useDark';
 import { MacroPill, MACRO_COLORS } from './shared';
 import type { DailySummaryData, NutritionProfileData } from './shared';
 
@@ -42,8 +42,7 @@ export default function SummaryBanner({
   workoutCalories: number;
   onTap?: () => void;
 }) {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
 
   const targetCals = profile?.targetCalories
     ? profile.targetCalories + workoutCalories
@@ -55,7 +54,7 @@ export default function SummaryBanner({
   return (
     <Box
       onClick={onTap}
-      sx={card(d, {
+      sx={card(t, {
         p: 2.5,
         cursor: onTap ? 'pointer' : 'default',
         transition: 'all 0.15s ease',
@@ -65,10 +64,10 @@ export default function SummaryBanner({
       <Stack direction="row" alignItems="center" spacing={2.5}>
         <CalorieRing size={72} stroke={6} pct={pct} d={d} />
         <Box sx={{ flex: 1 }}>
-          <Typography sx={{ fontSize: '1.8rem', fontWeight: 800, color: tc.h(d), lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          <Typography sx={{ fontSize: '1.8rem', fontWeight: 800, color: tc.h(t), lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
             {consumed}
           </Typography>
-          <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.3 }}>
+          <Typography sx={{ fontSize: '0.7rem', color: tc.m(t), mt: 0.3 }}>
             sur {targetCals} kcal · reste {remaining}
           </Typography>
         </Box>

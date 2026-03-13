@@ -26,7 +26,8 @@ import { GOLD, GOLD_DARK, GOLD_MID, GOLD_CONTRAST, GOLD_LIGHT, W, tc, card, mesh
 import { alpha } from '@mui/material/styles';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
 import type { CardioActivity } from '@/db/schema';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
+import type { ThemeId } from '@/lib/theme-presets';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { MUSCLE_LABELS, getMappedMuscles, getBestView, buildExerciseModelData, buildGlobalModelData } from '@/lib/muscle-mapping';
 import { useSessionSets, useExercises } from '@/powersync/queries/workout-queries';
@@ -147,7 +148,7 @@ function formatRest(seconds: number): string {
 
 function SummaryContent() {
   const searchParams = useSearchParams();
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   const sessionId = searchParams.get('sessionId');
   const type = searchParams.get('type') || 'strength';
@@ -228,6 +229,7 @@ function SummaryContent() {
         data={recapData}
         xp={xp}
         prs={prs}
+        t={t}
         d={d}
       />
     );
@@ -236,6 +238,7 @@ function SummaryContent() {
   // Fallback: original celebration screen (empty/minimal/cardio/no session data)
   return (
     <FallbackSummary
+      t={t}
       d={d}
       isCardio={isCardio}
       activityInfo={activityInfo}
@@ -256,11 +259,13 @@ function StrengthRecap({
   data,
   xp,
   prs,
+  t,
   d,
 }: {
   data: RecapData;
   xp: number;
   prs: number;
+  t: ThemeId;
   d: boolean;
 }) {
   const globalModelData = useMemo(() => buildGlobalModelData(data.muscleFrequency), [data.muscleFrequency]);
@@ -283,7 +288,7 @@ function StrengthRecap({
   };
 
   return (
-    <Box sx={{ background: meshBg(d), minHeight: '100dvh', pb: 4 }}>
+    <Box sx={{ background: meshBg(t), minHeight: '100dvh', pb: 4 }}>
       {/* Header */}
       <Stack direction="row" alignItems="center" sx={{
         px: 1.5, pt: 1.5, pb: 1,
@@ -293,11 +298,11 @@ function StrengthRecap({
         WebkitBackdropFilter: 'blur(12px)',
       }}>
         <Link href="/workout" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
-          <Box sx={{ color: tc.h(d), mr: 1, display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ color: tc.h(t), mr: 1, display: 'flex', alignItems: 'center' }}>
             <ArrowLeft size={22} weight={W} />
           </Box>
         </Link>
-        <Typography sx={{ fontSize: '1.15rem', fontWeight: 700, color: tc.h(d) }}>
+        <Typography sx={{ fontSize: '1.15rem', fontWeight: 700, color: tc.h(t) }}>
           Récapitulatif de la séance
         </Typography>
       </Stack>
@@ -308,7 +313,7 @@ function StrengthRecap({
           {data.sessionName}
         </Typography>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.25 }}>
-          <Typography sx={{ fontSize: '0.75rem', color: tc.f(d) }}>
+          <Typography sx={{ fontSize: '0.75rem', color: tc.f(t) }}>
             {data.date}
           </Typography>
           {xp > 0 && (
@@ -338,7 +343,7 @@ function StrengthRecap({
         </Typography>
 
         {/* Body maps */}
-        <Box sx={{ ...card(d, { borderColor: sectionBorder }), p: 2, mb: 2 }}>
+        <Box sx={{ ...card(t, { borderColor: sectionBorder }), p: 2, mb: 2 }}>
           <Stack direction="row" justifyContent="center" spacing={0}>
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', '& svg': { maxHeight: 280 } }}>
               <Model
@@ -362,11 +367,11 @@ function StrengthRecap({
           <Stack direction="row" justifyContent="center" spacing={3} sx={{ mt: 1 }}>
             <Stack direction="row" alignItems="center" spacing={0.75}>
               <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: accent }} />
-              <Typography sx={{ fontSize: '0.65rem', color: tc.m(d) }}>Principal</Typography>
+              <Typography sx={{ fontSize: '0.65rem', color: tc.m(t) }}>Principal</Typography>
             </Stack>
             <Stack direction="row" alignItems="center" spacing={0.75}>
               <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: highlightSecondary }} />
-              <Typography sx={{ fontSize: '0.65rem', color: tc.m(d) }}>Secondaire</Typography>
+              <Typography sx={{ fontSize: '0.65rem', color: tc.m(t) }}>Secondaire</Typography>
             </Stack>
           </Stack>
         </Box>
@@ -385,7 +390,7 @@ function StrengthRecap({
       </Box>
 
       {/* ── STATS GRID 2×3 ── */}
-      <Box sx={{ mx: 2, mb: 3, ...card(d, { borderColor: sectionBorder }), overflow: 'hidden' }}>
+      <Box sx={{ mx: 2, mb: 3, ...card(t, { borderColor: sectionBorder }), overflow: 'hidden' }}>
         {[
           [
             { icon: <Timer size={22} weight={W} color={accent} />, val: formatDuration(data.duration), unit: '', label: 'durée de la séance' },
@@ -410,16 +415,16 @@ function StrengthRecap({
               }}>
                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.25 }}>
                   {stat.icon}
-                  <Typography sx={{ fontSize: '1.6rem', fontWeight: 700, color: tc.h(d), lineHeight: 1 }}>
+                  <Typography sx={{ fontSize: '1.6rem', fontWeight: 700, color: tc.h(t), lineHeight: 1 }}>
                     {stat.val}
                     {stat.unit && (
-                      <Typography component="span" sx={{ fontSize: '0.8rem', fontWeight: 400, color: tc.m(d) }}>
+                      <Typography component="span" sx={{ fontSize: '0.8rem', fontWeight: 400, color: tc.m(t) }}>
                         {stat.unit}
                       </Typography>
                     )}
                   </Typography>
                 </Stack>
-                <Typography sx={{ fontSize: '0.7rem', color: tc.f(d), pl: 4.5 }}>
+                <Typography sx={{ fontSize: '0.7rem', color: tc.f(t), pl: 4.5 }}>
                   {stat.label}
                 </Typography>
               </Box>
@@ -449,7 +454,7 @@ function StrengthRecap({
             const vol = workSets.reduce((sum, s) => sum + (s.reps || 0) * parseFloat(s.weight || '0'), 0);
 
             return (
-              <Box key={g.exercise.id} sx={{ ...card(d, { borderColor: sectionBorder }), p: 2 }}>
+              <Box key={g.exercise.id} sx={{ ...card(t, { borderColor: sectionBorder }), p: 2 }}>
                 {/* Exercise header */}
                 <Stack direction="row" spacing={1.5} sx={{ mb: 1.5 }}>
                   <Box sx={{
@@ -469,10 +474,10 @@ function StrengthRecap({
                     <Typography sx={{ fontSize: '0.7rem', color: accent }}>
                       Exercice {idx + 1} sur {data.exerciseGroups.length}
                     </Typography>
-                    <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(d), lineHeight: 1.25 }}>
+                    <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(t), lineHeight: 1.25 }}>
                       {g.exercise.nameFr}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.7rem', color: tc.f(d), mt: 0.25 }}>
+                    <Typography sx={{ fontSize: '0.7rem', color: tc.f(t), mt: 0.25 }}>
                       {workSets.length} séries · {Math.round(vol)} kg
                     </Typography>
                   </Box>
@@ -510,7 +515,7 @@ function StrengthRecap({
                         }}>
                           <Typography sx={{
                             fontSize: '0.9rem', fontWeight: s.isWarmup ? 400 : 600,
-                            color: s.isWarmup ? tc.f(d) : tc.h(d),
+                            color: s.isWarmup ? tc.f(t) : tc.h(t),
                             fontStyle: s.isWarmup && ci === 0 ? 'italic' : 'normal',
                           }}>
                             {cell.val}
@@ -556,7 +561,7 @@ function StrengthRecap({
           sx={{
             py: 1.5,
             borderColor: alpha(GOLD, 0.4),
-            color: tc.h(d),
+            color: tc.h(t),
             borderRadius: '14px',
             '&:hover': {
               borderColor: GOLD,
@@ -574,6 +579,7 @@ function StrengthRecap({
 // ─── Fallback Summary (cardio / empty / minimal / no session data) ───
 
 function FallbackSummary({
+  t,
   d,
   isCardio,
   activityInfo,
@@ -585,6 +591,7 @@ function FallbackSummary({
   pace,
   calories,
 }: {
+  t: ThemeId;
   d: boolean;
   isCardio: boolean;
   activityInfo: { emoji: string; label: string } | null;
@@ -610,7 +617,7 @@ function FallbackSummary({
         alignItems: 'center',
         justifyContent: 'center',
         p: 3,
-        bgcolor: meshBg(d),
+        bgcolor: meshBg(t),
         textAlign: 'center',
       }}
     >
@@ -622,10 +629,10 @@ function FallbackSummary({
               <Typography variant="h1" sx={{ mb: 2, fontSize: '4.5rem' }}>
                 💤
               </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ mb: 1, color: tc.h(d) }}>
+              <Typography variant="h4" fontWeight={700} sx={{ mb: 1, color: tc.h(t) }}>
                 Séance annulée
               </Typography>
-              <Typography sx={{ color: tc.m(d) }}>
+              <Typography sx={{ color: tc.m(t) }}>
                 Aucun exercice effectué, pas d&apos;XP cette fois
               </Typography>
             </>
@@ -634,10 +641,10 @@ function FallbackSummary({
               <Typography variant="h1" sx={{ mb: 2, fontSize: '4.5rem' }}>
                 🤏
               </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ mb: 1, color: tc.h(d) }}>
+              <Typography variant="h4" fontWeight={700} sx={{ mb: 1, color: tc.h(t) }}>
                 Séance trop courte
               </Typography>
-              <Typography sx={{ color: tc.m(d) }}>
+              <Typography sx={{ color: tc.m(t) }}>
                 Ajoute des exercices la prochaine fois pour gagner de l&apos;XP
               </Typography>
             </>
@@ -646,10 +653,10 @@ function FallbackSummary({
               <Typography variant="h1" sx={{ mb: 2, fontSize: '4.5rem' }}>
                 {isCardio && activityInfo ? activityInfo.emoji : '🎉'}
               </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ mb: 1, color: tc.h(d) }}>
+              <Typography variant="h4" fontWeight={700} sx={{ mb: 1, color: tc.h(t) }}>
                 {isCardio ? 'Séance cardio terminée !' : 'Séance terminée !'}
               </Typography>
-              <Typography sx={{ color: tc.m(d) }}>
+              <Typography sx={{ color: tc.m(t) }}>
                 Bravo, continue comme ça
               </Typography>
             </>
@@ -659,25 +666,25 @@ function FallbackSummary({
 
       {noXpEarned ? (
         <Grow in timeout={700}>
-          <Box sx={{ ...card(d), mb: 3, width: '100%', maxWidth: 360 }}>
+          <Box sx={{ ...card(t), mb: 3, width: '100%', maxWidth: 360 }}>
             <Box sx={{ py: 3, px: 2.5 }}>
               <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 2 }}>
                 <Barbell weight={W} size={22} color={GOLD} />
-                <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(d) }}>
+                <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(t) }}>
                   Pour gagner de l&apos;XP :
                 </Typography>
               </Stack>
               <Stack spacing={1.5} sx={{ textAlign: 'left' }}>
-                <Typography variant="body2" sx={{ color: tc.m(d) }}>
+                <Typography variant="body2" sx={{ color: tc.m(t) }}>
                   &#x2022; Ajoute au moins 1 exercice et fais une série
                 </Typography>
-                <Typography variant="body2" sx={{ color: tc.m(d) }}>
+                <Typography variant="body2" sx={{ color: tc.m(t) }}>
                   &#x2022; +50 XP de base par séance complétée
                 </Typography>
-                <Typography variant="body2" sx={{ color: tc.m(d) }}>
+                <Typography variant="body2" sx={{ color: tc.m(t) }}>
                   &#x2022; +10 XP par tonne de volume soulevé
                 </Typography>
-                <Typography variant="body2" sx={{ color: tc.m(d) }}>
+                <Typography variant="body2" sx={{ color: tc.m(t) }}>
                   &#x2022; +25 XP par record personnel battu
                 </Typography>
               </Stack>
@@ -721,7 +728,7 @@ function FallbackSummary({
             <Grow in timeout={900}>
               <Box
                 sx={{
-                  ...card(d, {
+                  ...card(t, {
                     background: d
                       ? `linear-gradient(135deg, ${alpha(GOLD, 0.18)} 0%, ${alpha(GOLD, 0.08)} 100%)`
                       : `linear-gradient(135deg, ${alpha(GOLD, 0.15)} 0%, ${alpha(GOLD, 0.06)} 100%)`,
@@ -748,7 +755,7 @@ function FallbackSummary({
             <Grow in timeout={1100}>
               <Box
                 sx={{
-                  ...card(d, {
+                  ...card(t, {
                     background: d
                       ? `linear-gradient(135deg, ${alpha(GOLD_LIGHT, 0.2)} 0%, ${alpha(GOLD, 0.12)} 100%)`
                       : `linear-gradient(135deg, ${alpha(GOLD_LIGHT, 0.25)} 0%, ${alpha(GOLD, 0.15)} 100%)`,
@@ -805,7 +812,7 @@ function FallbackSummary({
             sx={{
               py: 1.5,
               borderColor: alpha(GOLD, 0.4),
-              color: tc.h(d),
+              color: tc.h(t),
               borderRadius: '14px',
               '&:hover': {
                 borderColor: GOLD,
@@ -834,11 +841,11 @@ function FallbackStatCard({
   value: string;
   highlight?: boolean;
 }) {
-  const dark = useDark();
+  const { t, d: dark } = useThemeTokens();
   return (
     <Box
       sx={{
-        ...card(dark, {
+        ...card(t, {
           textAlign: 'center',
           py: 2,
           ...(highlight ? {
@@ -849,8 +856,8 @@ function FallbackStatCard({
       }}
     >
       <Typography variant="h5" sx={{ mb: 1 }}>{icon}</Typography>
-      <Typography variant="caption" sx={{ color: tc.m(dark) }}>{label}</Typography>
-      <Typography variant="h5" fontWeight={700} sx={{ color: highlight ? GOLD : tc.h(dark) }}>
+      <Typography variant="caption" sx={{ color: tc.m(t) }}>{label}</Typography>
+      <Typography variant="h5" fontWeight={700} sx={{ color: highlight ? GOLD : tc.h(t) }}>
         {value}
       </Typography>
     </Box>

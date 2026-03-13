@@ -15,13 +15,13 @@ import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Eye, EyeSlash } from '@phosphor-icons/react';
 import { GOLD, GOLD_CONTRAST, W, tc, glass, meshBg, goldFieldSx, goldBtnSx } from '@/lib/design-tokens';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
-  const d = useDark();
+  const { t } = useThemeTokens();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -46,10 +46,10 @@ export default function LoginPage() {
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
-        background: meshBg(d),
+        background: meshBg(t),
       }}
     >
-      <Box sx={{ width: '100%', maxWidth: 400, ...glass(d, { p: 4 }) }}>
+      <Box sx={{ width: '100%', maxWidth: 400, ...glass(t, { p: 4 }) }}>
         <Stack spacing={3}>
           <Box textAlign="center">
             <Typography
@@ -62,7 +62,7 @@ export default function LoginPage() {
             >
               Workout
             </Typography>
-            <Typography variant="body2" sx={{ mt: 0.5, color: tc.m(d) }}>
+            <Typography variant="body2" sx={{ mt: 0.5, color: tc.m(t) }}>
               Connecte-toi pour continuer
             </Typography>
           </Box>
@@ -79,7 +79,7 @@ export default function LoginPage() {
                 fullWidth
                 autoComplete="email"
                 autoFocus
-                sx={goldFieldSx(d)}
+                sx={goldFieldSx(t)}
               />
               <TextField
                 name="password"
@@ -88,7 +88,7 @@ export default function LoginPage() {
                 required
                 fullWidth
                 autoComplete="current-password"
-                sx={goldFieldSx(d)}
+                sx={goldFieldSx(t)}
                 slotProps={{
                   input: {
                     endAdornment: (
@@ -97,7 +97,7 @@ export default function LoginPage() {
                           onClick={() => setShowPassword(!showPassword)}
                           edge="end"
                           size="small"
-                          sx={{ color: tc.f(d) }}
+                          sx={{ color: tc.f(t) }}
                         >
                           {showPassword
                             ? <EyeSlash size={20} weight={W} />
@@ -127,7 +127,7 @@ export default function LoginPage() {
             </Stack>
           </form>
 
-          <Typography variant="body2" textAlign="center" sx={{ color: tc.m(d) }}>
+          <Typography variant="body2" textAlign="center" sx={{ color: tc.m(t) }}>
             Pas encore de compte ?{' '}
             <Link href="/signup" style={{ color: GOLD, fontWeight: 600 }}>
               Créer un compte

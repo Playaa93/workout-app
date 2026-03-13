@@ -18,7 +18,7 @@ import {
   type ExerciseScore,
 } from '@/lib/morpho-exercise-scoring';
 import { GOLD, tc } from '@/lib/design-tokens';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 
 type Props = {
   exerciseName: string;
@@ -37,7 +37,7 @@ export function MorphoTipsPanel({
   expanded = false,
   compact = false,
 }: Props) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   const score = useMemo<ExerciseScore | null>(() => {
     if (!morphotype) return null;
@@ -67,10 +67,10 @@ export function MorphoTipsPanel({
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: expanded ? 1.5 : 0 }}>
         <MorphoScoreBadge score={score.score} />
         <Box sx={{ flex: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600, color: tc.h(d) }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: tc.h(t) }}>
             Compatibilité morpho
           </Typography>
-          <Typography variant="caption" sx={{ color: tc.m(d) }}>
+          <Typography variant="caption" sx={{ color: tc.m(t) }}>
             {scoreLabel}
           </Typography>
         </Box>
@@ -151,7 +151,7 @@ export function MorphoTipsPanel({
               </Typography>
               <Stack spacing={0.25}>
                 {score.modifications.map((mod, i) => (
-                  <Typography key={i} variant="caption" sx={{ color: tc.m(d) }}>
+                  <Typography key={i} variant="caption" sx={{ color: tc.m(t) }}>
                     - {mod}
                   </Typography>
                 ))}
@@ -167,7 +167,7 @@ export function MorphoTipsPanel({
               </Typography>
               <Stack spacing={0.25}>
                 {score.cues.map((cue, i) => (
-                  <Typography key={i} variant="caption" sx={{ color: tc.m(d) }}>
+                  <Typography key={i} variant="caption" sx={{ color: tc.m(t) }}>
                     - {cue}
                   </Typography>
                 ))}

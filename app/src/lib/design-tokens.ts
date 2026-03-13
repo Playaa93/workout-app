@@ -1,4 +1,5 @@
 import { alpha } from '@mui/material/styles'
+import { THEME_PRESETS, type ThemeId } from './theme-presets'
 
 // Brand colors — Black & Gold
 export const GOLD = '#d4af37'
@@ -14,59 +15,76 @@ export const GOLD_GRAD_END = '#b8922a'
 // Phosphor Icons weight
 export const W = 'light' as const
 
+function resolvePreset(d: boolean | ThemeId) {
+  if (typeof d === 'boolean') return d ? THEME_PRESETS.dark : THEME_PRESETS.light
+  return THEME_PRESETS[d] ?? THEME_PRESETS.dark
+}
+
 // Explicit text color tokens (independent of MUI theme)
 export const tc = {
-  h: (dark: boolean) => dark ? '#f5f0e6' : '#1a1715',
-  m: (dark: boolean) => dark ? '#9a9488' : '#7a7468',
-  f: (dark: boolean) => dark ? '#6b655c' : '#a09888',
+  h: (dark: boolean | ThemeId) => resolvePreset(dark).textHeading,
+  m: (dark: boolean | ThemeId) => resolvePreset(dark).textMedium,
+  f: (dark: boolean | ThemeId) => resolvePreset(dark).textFaint,
 }
 
 // Glassmorphism card style
-export const glass = (isDark: boolean, extra?: object) => ({
-  backdropFilter: 'blur(24px)',
-  WebkitBackdropFilter: 'blur(24px)',
-  bgcolor: isDark ? alpha('#1c1a14', 0.65) : alpha('#ffffff', 0.72),
-  border: '1px solid',
-  borderColor: isDark ? alpha(GOLD, 0.12) : alpha(GOLD, 0.18),
-  borderRadius: '20px',
-  boxShadow: isDark
-    ? `0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 ${alpha('#ffffff', 0.04)}`
-    : `0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 ${alpha('#ffffff', 0.6)}`,
-  ...extra,
-})
+export const glass = (isDark: boolean | ThemeId, extra?: object) => {
+  const p = resolvePreset(isDark)
+  return {
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
+    bgcolor: alpha(p.glassBase, p.isDark ? 0.65 : 0.72),
+    border: '1px solid',
+    borderColor: alpha(GOLD, p.glassBorderAlpha),
+    borderRadius: '20px',
+    boxShadow: p.isDark
+      ? `0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 ${alpha('#ffffff', 0.04)}`
+      : `0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 ${alpha('#ffffff', 0.6)}`,
+    ...extra,
+  }
+}
 
 // Minimal card style (flat, subtle border)
-export const card = (isDark: boolean, extra?: object) => ({
-  bgcolor: isDark ? alpha('#ffffff', 0.07) : '#ffffff',
-  borderRadius: '14px',
-  border: '1px solid',
-  borderColor: isDark ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
-  ...extra,
-})
+export const card = (isDark: boolean | ThemeId, extra?: object) => {
+  const p = resolvePreset(isDark)
+  return {
+    bgcolor: p.cardBg,
+    borderRadius: '14px',
+    border: '1px solid',
+    borderColor: p.cardBorder,
+    ...extra,
+  }
+}
 
 // Surface background (page-level)
-export const surfaceBg = (isDark: boolean) => isDark ? '#0a0a09' : '#f3f1ec'
+export const surfaceBg = (isDark: boolean | ThemeId) => resolvePreset(isDark).surfaceBg
 
 // Drawer / dialog background
-export const panelBg = (isDark: boolean) => isDark ? '#1c1a14' : '#ffffff'
+export const panelBg = (isDark: boolean | ThemeId) => resolvePreset(isDark).panelBg
 
 // Mesh gradient background
-export const meshBg = (isDark: boolean) => isDark
-  ? `radial-gradient(ellipse at 30% 20%, ${alpha(GOLD, 0.1)} 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, ${alpha(GOLD, 0.06)} 0%, transparent 50%), #0a0a0a`
-  : `radial-gradient(ellipse at 30% 20%, ${alpha(GOLD, 0.08)} 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, ${alpha(GOLD, 0.05)} 0%, transparent 50%), #f5f3ef`
+export const meshBg = (isDark: boolean | ThemeId) => {
+  const p = resolvePreset(isDark)
+  return p.isDark
+    ? `radial-gradient(ellipse at 30% 20%, ${alpha(GOLD, 0.1)} 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, ${alpha(GOLD, 0.06)} 0%, transparent 50%), ${p.meshTint}`
+    : `radial-gradient(ellipse at 30% 20%, ${alpha(GOLD, 0.08)} 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, ${alpha(GOLD, 0.05)} 0%, transparent 50%), ${p.meshTint}`
+}
 
 // Gold-themed TextField focus styling
-export const goldFieldSx = (isDark: boolean) => ({
-  '& .MuiOutlinedInput-root': {
-    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: GOLD },
-  },
-  '& .MuiInputLabel-root.Mui-focused': { color: GOLD },
-  '& .MuiInputLabel-root': { color: tc.m(isDark) },
-  '& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
-    borderColor: isDark ? alpha('#ffffff', 0.12) : alpha('#000000', 0.15),
-  },
-  '& .MuiInputBase-input': { color: tc.h(isDark) },
-})
+export const goldFieldSx = (isDark: boolean | ThemeId) => {
+  const p = resolvePreset(isDark)
+  return {
+    '& .MuiOutlinedInput-root': {
+      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: GOLD },
+    },
+    '& .MuiInputLabel-root.Mui-focused': { color: GOLD },
+    '& .MuiInputLabel-root': { color: p.textMedium },
+    '& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
+      borderColor: p.isDark ? alpha('#ffffff', 0.12) : alpha('#000000', 0.15),
+    },
+    '& .MuiInputBase-input': { color: p.textHeading },
+  }
+}
 
 // Gold primary button sx
 export const goldBtnSx = {
@@ -94,7 +112,7 @@ export const goldOutlinedBtnSx = {
 export const focusRingSx = { outline: `2px solid ${GOLD}`, outlineOffset: 2 } as const
 
 // Dialog PaperProps sx
-export const dialogPaperSx = (isDark: boolean) => ({
+export const dialogPaperSx = (isDark: boolean | ThemeId) => ({
   bgcolor: panelBg(isDark),
   borderRadius: '14px',
 })

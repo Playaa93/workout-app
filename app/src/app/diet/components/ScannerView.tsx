@@ -8,8 +8,8 @@ import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import { ArrowLeft, Barcode, MagnifyingGlass } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
-import { useTheme } from 'next-themes';
 import { tc, card, GOLD, GOLD_CONTRAST, W } from '@/lib/design-tokens';
+import { useThemeTokens } from '@/hooks/useDark';
 import { lookupBarcode, addFoodEntry } from '../actions';
 import { triggerHaptic, MACRO_COLORS } from './shared';
 import type { FoodData, MealType } from './shared';
@@ -27,8 +27,7 @@ export default function ScannerView({
   onClose: () => void;
   onSwitchToSearch: () => void;
 }) {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
 
   const [state, setState] = useState<ScanState>('scanning');
   const [food, setFood] = useState<FoodData | null>(null);
@@ -130,10 +129,10 @@ export default function ScannerView({
       {/* Header */}
       <Box sx={{ px: 2, pt: 1, pb: 1.5 }}>
         <Stack direction="row" alignItems="center">
-          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(d), mr: 1 }}>
+          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(t), mr: 1 }}>
             <ArrowLeft size={20} weight={W} />
           </IconButton>
-          <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(d) }}>
+          <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(t) }}>
             Scanner
           </Typography>
         </Stack>
@@ -161,26 +160,26 @@ export default function ScannerView({
             {isLooking && (
               <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ py: 1 }}>
                 <CircularProgress size={16} sx={{ color: GOLD }} />
-                <Typography sx={{ fontSize: '0.75rem', color: tc.f(d) }}>
+                <Typography sx={{ fontSize: '0.75rem', color: tc.f(t) }}>
                   Recherche...
                 </Typography>
               </Stack>
             )}
 
             {!isLooking && (
-              <Typography sx={{ textAlign: 'center', color: tc.f(d), fontSize: '0.75rem' }}>
+              <Typography sx={{ textAlign: 'center', color: tc.f(t), fontSize: '0.75rem' }}>
                 Place le code-barres devant la camera
               </Typography>
             )}
 
             {/* Manual input */}
-            <Box sx={card(d, { p: 2, mt: 1 })}>
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.f(d), mb: 1, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+            <Box sx={card(t, { p: 2, mt: 1 })}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.f(t), mb: 1, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
                 Saisie manuelle
               </Typography>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Box sx={{ position: 'relative', flex: 1 }}>
-                  <Barcode size={16} weight={W} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: tc.f(d) }} />
+                  <Barcode size={16} weight={W} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: tc.f(t) }} />
                   <Box
                     component="input"
                     type="text"
@@ -198,14 +197,14 @@ export default function ScannerView({
                       border: '1px solid',
                       borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
                       bgcolor: 'transparent',
-                      color: tc.h(d),
+                      color: tc.h(t),
                       fontSize: '0.85rem',
                       fontFamily: 'inherit',
                       fontVariantNumeric: 'tabular-nums',
                       outline: 'none',
                       transition: 'border-color 0.2s',
                       '&:focus': { borderColor: GOLD },
-                      '&::placeholder': { color: tc.f(d) },
+                      '&::placeholder': { color: tc.f(t) },
                     }}
                   />
                 </Box>
@@ -216,7 +215,7 @@ export default function ScannerView({
                     py: 1.2,
                     borderRadius: '10px',
                     bgcolor: canSubmitBarcode ? GOLD : (d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06)),
-                    color: canSubmitBarcode ? GOLD_CONTRAST : tc.f(d),
+                    color: canSubmitBarcode ? GOLD_CONTRAST : tc.f(t),
                     fontWeight: 600,
                     fontSize: '0.8rem',
                     cursor: canSubmitBarcode ? 'pointer' : 'default',
@@ -235,11 +234,11 @@ export default function ScannerView({
           <Stack spacing={2}>
             {/* Food name + brand */}
             <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(d) }}>
+              <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(t) }}>
                 {food.nameFr}
               </Typography>
               {food.brand && (
-                <Typography sx={{ fontSize: '0.7rem', color: tc.f(d), mt: 0.25 }}>
+                <Typography sx={{ fontSize: '0.7rem', color: tc.f(t), mt: 0.25 }}>
                   {food.brand}
                 </Typography>
               )}
@@ -253,7 +252,7 @@ export default function ScannerView({
               const carbs = food.carbohydrates ? parseFloat(food.carbohydrates) * multiplier : 0;
               const fat = food.fat ? parseFloat(food.fat) * multiplier : 0;
               return (
-                <Box sx={card(d, { p: 2.5, textAlign: 'center' })}>
+                <Box sx={card(t, { p: 2.5, textAlign: 'center' })}>
                   <Typography sx={{
                     fontSize: '2.4rem',
                     fontWeight: 800,
@@ -263,7 +262,7 @@ export default function ScannerView({
                   }}>
                     {Math.round(cal)}
                   </Typography>
-                  <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.5 }}>
+                  <Typography sx={{ fontSize: '0.7rem', color: tc.m(t), mt: 0.5 }}>
                     kcal pour {quantity || 0}g
                   </Typography>
 
@@ -275,10 +274,10 @@ export default function ScannerView({
                     ].map((m) => (
                       <Stack key={m.label} direction="row" alignItems="center" spacing={0.5}>
                         <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: m.color, flexShrink: 0 }} />
-                        <Typography sx={{ fontSize: '0.65rem', color: tc.m(d) }}>
+                        <Typography sx={{ fontSize: '0.65rem', color: tc.m(t) }}>
                           {m.label}
                         </Typography>
-                        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.h(d), fontVariantNumeric: 'tabular-nums' }}>
+                        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.h(t), fontVariantNumeric: 'tabular-nums' }}>
                           {m.value}g
                         </Typography>
                       </Stack>
@@ -289,7 +288,7 @@ export default function ScannerView({
             })()}
 
             {/* Quantity input */}
-            <Box sx={card(d, { p: 2 })}>
+            <Box sx={card(t, { p: 2 })}>
               <Box sx={{ position: 'relative' }}>
                 <Box
                   component="input"
@@ -306,7 +305,7 @@ export default function ScannerView({
                     border: '1px solid',
                     borderColor: quantity ? (d ? alpha('#ffffff', 0.12) : alpha('#000000', 0.1)) : (d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.04)),
                     bgcolor: 'transparent',
-                    color: tc.h(d),
+                    color: tc.h(t),
                     fontSize: '1.2rem',
                     fontWeight: 700,
                     fontFamily: 'inherit',
@@ -314,7 +313,7 @@ export default function ScannerView({
                     outline: 'none',
                     transition: 'border-color 0.2s',
                     '&:focus': { borderColor: GOLD },
-                    '&::placeholder': { color: tc.f(d), fontWeight: 400, fontSize: '0.8rem' },
+                    '&::placeholder': { color: tc.f(t), fontWeight: 400, fontSize: '0.8rem' },
                     '&::-webkit-inner-spin-button, &::-webkit-outer-spin-button': { WebkitAppearance: 'none', margin: 0 },
                     MozAppearance: 'textfield',
                   }}
@@ -326,7 +325,7 @@ export default function ScannerView({
                   top: '50%',
                   transform: 'translateY(-50%)',
                   fontSize: '0.7rem',
-                  color: tc.f(d),
+                  color: tc.f(t),
                   pointerEvents: 'none',
                 }}>
                   g
@@ -392,10 +391,10 @@ export default function ScannerView({
               <Barcode size={28} weight={W} color={GOLD} />
             </Box>
             <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: tc.h(d), mb: 0.5 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: tc.h(t), mb: 0.5 }}>
                 Produit non trouve
               </Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: tc.f(d) }}>
+              <Typography sx={{ fontSize: '0.75rem', color: tc.f(t) }}>
                 Ce code-barres n&apos;est pas dans notre base.
               </Typography>
             </Box>

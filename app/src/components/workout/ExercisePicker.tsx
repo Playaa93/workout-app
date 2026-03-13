@@ -15,7 +15,7 @@ import ExerciseDetailModal from '@/components/workout/ExerciseDetailModal';
 import { triggerHaptic } from '@/lib/haptic';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import { GOLD, W, tc, card, surfaceBg } from '@/lib/design-tokens';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
@@ -85,7 +85,7 @@ export function ExercisePicker({
   onSelect: (exercise: Exercise) => void;
   onClose: () => void;
 }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -173,7 +173,7 @@ export function ExercisePicker({
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: surfaceBg(d) }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: surfaceBg(t) }}>
       {/* Header */}
       <Box sx={{ pt: 1.5, pb: 1, px: 2 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -184,13 +184,13 @@ export function ExercisePicker({
               p: 0.5,
               display: 'flex',
               alignItems: 'center',
-              color: tc.m(d),
+              color: tc.m(t),
               '&:active': { opacity: 0.5 },
             }}
           >
             <X size={24} weight={W} />
           </Box>
-          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(d) }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(t) }}>
             Exercices
           </Typography>
           <Box sx={{ width: 32 }} />
@@ -214,7 +214,7 @@ export function ExercisePicker({
             },
           }}
         >
-          <Box sx={{ display: 'flex', mr: 1, color: tc.f(d) }}>
+          <Box sx={{ display: 'flex', mr: 1, color: tc.f(t) }}>
             <MagnifyingGlass size={20} weight={W} />
           </Box>
           <input
@@ -244,7 +244,7 @@ export function ExercisePicker({
               cursor: 'pointer',
               fontSize: '0.9rem',
               fontWeight: !selectedMuscle ? 600 : 400,
-              color: !selectedMuscle ? tc.h(d) : tc.f(d),
+              color: !selectedMuscle ? tc.h(t) : tc.f(t),
               whiteSpace: 'nowrap',
               '&:active': { opacity: 0.5 },
             }}
@@ -259,7 +259,7 @@ export function ExercisePicker({
                 cursor: 'pointer',
                 fontSize: '0.9rem',
                 fontWeight: selectedMuscle === muscle ? 600 : 400,
-                color: selectedMuscle === muscle ? tc.h(d) : tc.f(d),
+                color: selectedMuscle === muscle ? tc.h(t) : tc.f(t),
                 whiteSpace: 'nowrap',
                 '&:active': { opacity: 0.5 },
               }}
@@ -284,7 +284,7 @@ export function ExercisePicker({
                 cursor: 'pointer',
                 fontSize: '0.8rem',
                 fontWeight: !selectedSubcategory ? 600 : 400,
-                color: !selectedSubcategory ? GOLD : tc.f(d),
+                color: !selectedSubcategory ? GOLD : tc.f(t),
                 whiteSpace: 'nowrap',
               }}
             >
@@ -302,7 +302,7 @@ export function ExercisePicker({
                   cursor: 'pointer',
                   fontSize: '0.8rem',
                   fontWeight: selectedSubcategory === sub ? 600 : 400,
-                  color: selectedSubcategory === sub ? GOLD : tc.f(d),
+                  color: selectedSubcategory === sub ? GOLD : tc.f(t),
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -316,7 +316,7 @@ export function ExercisePicker({
       {/* Count + Sort */}
       <Box sx={{ px: 2, py: 1, borderBottom: '1px solid', borderColor: d ? alpha('#ffffff', 0.08) : alpha('#000000', 0.06) }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography variant="caption" sx={{ color: tc.f(d) }}>
+          <Typography variant="caption" sx={{ color: tc.f(t) }}>
             {filteredExercises.length} exercices
           </Typography>
           {morphotype && (
@@ -328,7 +328,7 @@ export function ExercisePicker({
               sx={{
                 cursor: 'pointer',
                 fontSize: '0.75rem',
-                color: sortByScore ? GOLD : tc.f(d),
+                color: sortByScore ? GOLD : tc.f(t),
                 fontWeight: sortByScore ? 600 : 400,
               }}
             >
@@ -349,7 +349,7 @@ export function ExercisePicker({
                 onSelect(exercise);
               }}
               sx={{
-                ...card(d),
+                ...card(t),
                 px: 2,
                 py: 1.5,
                 cursor: 'pointer',
@@ -369,7 +369,7 @@ export function ExercisePicker({
                   sx={{
                     fontWeight: 500,
                     fontSize: '0.95rem',
-                    color: tc.h(d),
+                    color: tc.h(t),
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -380,7 +380,7 @@ export function ExercisePicker({
                 <Typography
                   sx={{
                     fontSize: '0.8rem',
-                    color: tc.f(d),
+                    color: tc.f(t),
                     mt: 0.25,
                   }}
                 >
@@ -398,14 +398,14 @@ export function ExercisePicker({
                   p: 0.75,
                   mr: 0.5,
                   borderRadius: 1,
-                  color: tc.f(d),
+                  color: tc.f(t),
                   '&:active': { bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.05) },
                 }}
               >
                 <Info size={18} weight={W} />
               </Box>
 
-              <Box sx={{ color: tc.f(d), opacity: 0.5, display: 'flex' }}>
+              <Box sx={{ color: tc.f(t), opacity: 0.5, display: 'flex' }}>
                 <CaretRight size={20} weight={W} />
               </Box>
             </Box>

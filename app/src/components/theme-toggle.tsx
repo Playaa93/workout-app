@@ -6,6 +6,7 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
 import { keyframes, styled } from '@mui/material/styles';
+import { DARK_THEMES, type ThemeId } from '@/lib/theme-presets';
 
 // Animations
 const sunRise = keyframes`
@@ -157,7 +158,7 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
     );
   }
 
-  const isDark = resolvedTheme === 'dark';
+  const isDark = DARK_THEMES.has(resolvedTheme as ThemeId);
 
   const handleToggle = () => {
     setIsAnimating(true);

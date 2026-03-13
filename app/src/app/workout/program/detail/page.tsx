@@ -3,7 +3,7 @@
 import { useState, useMemo, Suspense } from 'react';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 import { useAuth } from '@/powersync/auth-context';
 import { useQuery } from '@powersync/react';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
@@ -65,7 +65,7 @@ function ProgramDetailContent() {
   const searchParams = useSearchParams();
   const templateId = searchParams.get('id') ?? '';
   const mutations = useWorkoutMutations();
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   const { data: templateRows, isLoading } = useQuery(
     templateId
@@ -121,8 +121,8 @@ function ProgramDetailContent() {
 
   if (!templateId) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(d) }}>
-        <Typography sx={{ color: tc.m(d) }}>ID manquant</Typography>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(t) }}>
+        <Typography sx={{ color: tc.m(t) }}>ID manquant</Typography>
       </Box>
     );
   }
@@ -133,8 +133,8 @@ function ProgramDetailContent() {
 
   if (!template) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, bgcolor: surfaceBg(d) }}>
-        <Typography sx={{ color: tc.m(d) }}>Programme introuvable</Typography>
+      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, bgcolor: surfaceBg(t) }}>
+        <Typography sx={{ color: tc.m(t) }}>Programme introuvable</Typography>
         <Box
           onClick={() => router.push('/workout')}
           sx={{
@@ -150,7 +150,7 @@ function ProgramDetailContent() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(d) }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(t) }}>
       {/* Header */}
       <Box
         sx={{
@@ -159,18 +159,18 @@ function ProgramDetailContent() {
           borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
           borderRadius: 0,
           position: 'sticky', top: 0, zIndex: 10,
-          bgcolor: panelBg(d),
+          bgcolor: panelBg(t),
         }}
       >
         <Stack direction="row" alignItems="center" spacing={1}>
           <IconButton onClick={() => router.back()} edge="start">
-            <ArrowLeft weight={W} size={22} color={tc.h(d)} />
+            <ArrowLeft weight={W} size={22} color={tc.h(t)} />
           </IconButton>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, flex: 1, color: tc.h(d) }} noWrap>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, flex: 1, color: tc.h(t) }} noWrap>
             {template.name}
           </Typography>
           <IconButton onClick={() => router.push(`/workout/program/manual?id=${templateId}`)} size="small">
-            <PencilSimple weight={W} size={20} color={tc.m(d)} />
+            <PencilSimple weight={W} size={20} color={tc.m(t)} />
           </IconButton>
         </Stack>
       </Box>
@@ -179,7 +179,7 @@ function ProgramDetailContent() {
         {/* Info */}
         <Box sx={{ mb: 3 }}>
           {template.description && (
-            <Typography variant="body2" sx={{ mb: 1.5, color: tc.m(d) }}>
+            <Typography variant="body2" sx={{ mb: 1.5, color: tc.m(t) }}>
               {template.description}
             </Typography>
           )}
@@ -192,7 +192,7 @@ function ProgramDetailContent() {
                 sx={{
                   height: 24,
                   fontSize: '0.7rem',
-                  color: tc.m(d),
+                  color: tc.m(t),
                   bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
                 }}
               />
@@ -200,8 +200,8 @@ function ProgramDetailContent() {
           </Stack>
           {template.estimatedDuration && (
             <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1 }}>
-              <Timer weight={W} size={16} color={tc.m(d)} />
-              <Typography variant="caption" sx={{ color: tc.m(d) }}>
+              <Timer weight={W} size={16} color={tc.m(t)} />
+              <Typography variant="caption" sx={{ color: tc.m(t) }}>
                 ~{template.estimatedDuration} min
               </Typography>
             </Stack>
@@ -209,7 +209,7 @@ function ProgramDetailContent() {
         </Box>
 
         {/* Exercises */}
-        <Typography variant="subtitle2" sx={{ mb: 1.5, color: tc.m(d) }}>
+        <Typography variant="subtitle2" sx={{ mb: 1.5, color: tc.m(t) }}>
           {exerciseRows.length} exercice{exerciseRows.length > 1 ? 's' : ''}
         </Typography>
 
@@ -217,27 +217,27 @@ function ProgramDetailContent() {
           {exerciseRows.map((ex, i) => (
             <Box
               key={ex.id}
-              sx={card(d, { px: 2, py: 1.5 })}
+              sx={card(t, { px: 2, py: 1.5 })}
             >
               <Stack direction="row" alignItems="center" spacing={1.5}>
                 <Box sx={{
                   width: 28, height: 28, borderRadius: '50%',
                   bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.8rem', fontWeight: 600, color: tc.m(d), flexShrink: 0,
+                  fontSize: '0.8rem', fontWeight: 600, color: tc.m(t), flexShrink: 0,
                 }}>
                   {i + 1}
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: tc.h(d) }} noWrap>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: tc.h(t) }} noWrap>
                     {ex.exercise_name}
                   </Typography>
                   <Stack direction="row" spacing={1.5} sx={{ mt: 0.25 }}>
-                    <Typography variant="caption" sx={{ color: tc.m(d) }}>
+                    <Typography variant="caption" sx={{ color: tc.m(t) }}>
                       {ex.target_sets} × {ex.target_reps}
                     </Typography>
                     {(ex.rest_seconds ?? 0) > 0 && (
-                      <Typography variant="caption" sx={{ color: tc.f(d) }}>
+                      <Typography variant="caption" sx={{ color: tc.f(t) }}>
                         repos {formatRestTime(ex.rest_seconds!)}
                       </Typography>
                     )}
@@ -246,13 +246,13 @@ function ProgramDetailContent() {
                 <IconButton
                   size="small"
                   onClick={() => setDetailExercise(toExerciseDetail(ex))}
-                  sx={{ color: tc.f(d), flexShrink: 0 }}
+                  sx={{ color: tc.f(t), flexShrink: 0 }}
                 >
                   <Info weight={W} size={18} />
                 </IconButton>
               </Stack>
               {ex.notes && (
-                <Typography variant="caption" sx={{ mt: 0.5, display: 'block', pl: 5.5, fontStyle: 'italic', color: tc.f(d) }}>
+                <Typography variant="caption" sx={{ mt: 0.5, display: 'block', pl: 5.5, fontStyle: 'italic', color: tc.f(t) }}>
                   {ex.notes}
                 </Typography>
               )}
@@ -279,7 +279,7 @@ function ProgramDetailContent() {
             fullWidth
             startIcon={<Trash weight={W} size={18} />}
             onClick={() => setConfirmDelete(true)}
-            sx={{ opacity: 0.5, fontSize: '0.8rem', color: tc.f(d) }}
+            sx={{ opacity: 0.5, fontSize: '0.8rem', color: tc.f(t) }}
           >
             Supprimer ce programme
           </Button>
@@ -298,11 +298,11 @@ function ProgramDetailContent() {
         onClose={() => setConfirmDelete(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: dialogPaperSx(d) }}
+        PaperProps={{ sx: dialogPaperSx(t) }}
       >
-        <DialogTitle sx={{ color: tc.h(d) }}>Supprimer ce programme ?</DialogTitle>
+        <DialogTitle sx={{ color: tc.h(t) }}>Supprimer ce programme ?</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ color: tc.m(d) }}>
+          <DialogContentText sx={{ color: tc.m(t) }}>
             Les séances déjà effectuées ne seront pas affectées.
           </DialogContentText>
         </DialogContent>
@@ -310,7 +310,7 @@ function ProgramDetailContent() {
           <Button
             onClick={() => setConfirmDelete(false)}
             variant="outlined"
-            sx={{ ...goldOutlinedBtnSx, color: tc.m(d) }}
+            sx={{ ...goldOutlinedBtnSx, color: tc.m(t) }}
           >
             Annuler
           </Button>

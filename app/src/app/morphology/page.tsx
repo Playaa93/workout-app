@@ -17,7 +17,7 @@ import { ArrowLeft, Timer, Ruler, PersonArmsSpread, Barbell } from '@phosphor-ic
 import { triggerHaptic } from '@/lib/haptic';
 import BottomNav from '@/components/BottomNav';
 import { GOLD, GOLD_CONTRAST, W, tc, card, surfaceBg, focusRingSx } from '@/lib/design-tokens';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
 type ViewState = 'intro' | 'questionnaire' | 'results';
@@ -33,7 +33,7 @@ export default function MorphologyPage() {
 }
 
 function MorphologyContent() {
-  const d = useDark();
+  const { t } = useThemeTokens();
   const { data: profileRows, isLoading: profileLoading } = useMorphoProfile();
   const [view, setView] = useState<ViewState | null>(null);
   const [result, setResult] = useState<MorphotypeResult | null>(null);
@@ -113,7 +113,7 @@ function MorphologyContent() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(t) }}>
       {/* Header - minimal */}
       <Box sx={{ pt: 1.5, pb: 1, px: 2 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -125,7 +125,7 @@ function MorphologyContent() {
               p: 0.5,
               display: 'flex',
               alignItems: 'center',
-              color: tc.m(d),
+              color: tc.m(t),
               textDecoration: 'none',
               '&:hover': { opacity: 0.85 },
               '&:focus-visible': focusRingSx,
@@ -134,7 +134,7 @@ function MorphologyContent() {
           >
             <ArrowLeft size={24} weight={W} />
           </Box>
-          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(d), flex: 1, textAlign: 'center' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(t), flex: 1, textAlign: 'center' }}>
             Analyse Morphologique
           </Typography>
         </Stack>
@@ -168,15 +168,15 @@ function MorphologyContent() {
 }
 
 function IntroView({ onStart }: { onStart: () => void }) {
-  const d = useDark();
+  const { t } = useThemeTokens();
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', py: 4 }}>
       <Typography variant="h1" sx={{ mb: 3, fontSize: '4rem' }}>🧬</Typography>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 2, color: tc.h(d) }}>Analyse Morpho-Anatomique</Typography>
-      <Typography sx={{ mb: 4, maxWidth: 360, lineHeight: 1.7, color: tc.m(d) }}>
-        Basé sur les travaux de <strong style={{ color: tc.h(d) }}>Delavier</strong>,{' '}
-        <strong style={{ color: tc.h(d) }}>Gundill</strong> et{' '}
-        <strong style={{ color: tc.h(d) }}>Rudy Coia</strong>, ce questionnaire analyse tes
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 2, color: tc.h(t) }}>Analyse Morpho-Anatomique</Typography>
+      <Typography sx={{ mb: 4, maxWidth: 360, lineHeight: 1.7, color: tc.m(t) }}>
+        Basé sur les travaux de <strong style={{ color: tc.h(t) }}>Delavier</strong>,{' '}
+        <strong style={{ color: tc.h(t) }}>Gundill</strong> et{' '}
+        <strong style={{ color: tc.h(t) }}>Rudy Coia</strong>, ce questionnaire analyse tes
         proportions et insertions musculaires pour des recommandations vraiment personnalisées.
       </Typography>
 
@@ -224,12 +224,12 @@ function InfoCard({
   title: string;
   description: string;
 }) {
-  const d = useDark();
+  const { t } = useThemeTokens();
   return (
-    <Box sx={{ ...card(d), p: 2.5, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <Box sx={{ ...card(t), p: 2.5, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <Box sx={{ mb: 0.5 }}>{icon}</Box>
-      <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(d) }}>{title}</Typography>
-      <Typography variant="body2" sx={{ color: tc.m(d) }}>{description}</Typography>
+      <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(t) }}>{title}</Typography>
+      <Typography variant="body2" sx={{ color: tc.m(t) }}>{description}</Typography>
     </Box>
   );
 }

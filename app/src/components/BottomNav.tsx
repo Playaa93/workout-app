@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useTheme } from 'next-themes';
+import { useThemeTokens } from '@/hooks/useDark';
 import { GOLD, W } from '@/lib/design-tokens';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -19,8 +19,7 @@ const NAV_ITEMS = [
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme !== 'light';
+  const { t, d: isDark } = useThemeTokens();
 
   const activeKey = NAV_ITEMS.find((item) =>
     item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)

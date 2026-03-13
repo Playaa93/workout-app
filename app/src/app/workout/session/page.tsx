@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 import { alpha } from '@mui/material/styles';
 import type { ActiveSession, WorkoutSet, Exercise, MachineSettingEntry } from '../types';
 import { useAuth } from '@/powersync/auth-context';
@@ -51,7 +51,7 @@ function formatRestTime(seconds: number): string {
 }
 
 function SessionExportDrawer({ open, onClose, data }: { open: boolean; onClose: () => void; data: ActiveSession }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const { session, sets } = data;
   const dateStr = fmtDateFR(session.startedAt);
   const slug = dateStr.replace(/\//g, '-');
@@ -182,26 +182,26 @@ ${session.notes ? `<p style="margin-top:12px;font-size:13px;"><strong>Notes :</s
       onClose={onClose}
       onOpen={() => {}}
       disableSwipeToOpen
-      PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(d) } }}
+      PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(t) } }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
         <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12) }} />
       </Box>
       <Box sx={{ px: 1, pb: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1, color: tc.h(d) }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1, color: tc.h(t) }}>
           Exporter cette séance
         </Typography>
         <ListItemButton onClick={exportExcel} sx={{ borderRadius: 2 }}>
           <ListItemIcon sx={{ minWidth: 40 }}><FileXls size={22} weight={W} color="#4caf50" /></ListItemIcon>
-          <ListItemText primary="Excel (.xlsx)" secondary="Fichier Excel avec colonnes formatées" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }} secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }} />
+          <ListItemText primary="Excel (.xlsx)" secondary="Fichier Excel avec colonnes formatées" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(t) }} secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(t) }} />
         </ListItemButton>
         <ListItemButton onClick={exportJSON} sx={{ borderRadius: 2 }}>
           <ListItemIcon sx={{ minWidth: 40 }}><BracketsCurly size={22} weight={W} color="#ff9800" /></ListItemIcon>
-          <ListItemText primary="JSON" secondary="Format brut pour traitement de données" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }} secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }} />
+          <ListItemText primary="JSON" secondary="Format brut pour traitement de données" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(t) }} secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(t) }} />
         </ListItemButton>
         <ListItemButton onClick={exportPDF} sx={{ borderRadius: 2 }}>
           <ListItemIcon sx={{ minWidth: 40 }}><FilePdf size={22} weight={W} color="#f44336" /></ListItemIcon>
-          <ListItemText primary="PDF" secondary="Fiche détaillée imprimable" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }} secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }} />
+          <ListItemText primary="PDF" secondary="Fiche détaillée imprimable" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(t) }} secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(t) }} />
         </ListItemButton>
       </Box>
     </SwipeableDrawer>
@@ -211,7 +211,7 @@ ${session.notes ? `<p style="margin-top:12px;font-size:13px;"><strong>Notes :</s
 function SessionDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const sessionId = searchParams.get('id') ?? '';
   const mutations = useWorkoutMutations();
   const [exportOpen, setExportOpen] = useState(false);
@@ -292,8 +292,8 @@ function SessionDetailContent() {
 
   if (!data) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, bgcolor: surfaceBg(d) }}>
-        <Typography sx={{ color: tc.m(d) }}>Séance introuvable</Typography>
+      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, bgcolor: surfaceBg(t) }}>
+        <Typography sx={{ color: tc.m(t) }}>Séance introuvable</Typography>
         <Box
           onClick={() => router.push('/workout')}
           sx={{
@@ -340,28 +340,28 @@ function SessionDetailContent() {
   });
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(d) }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(t) }}>
       {/* Header */}
       <Box sx={{ px: 2, pt: 2, pb: 1 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
-            <IconButton onClick={() => router.back()} size="small" sx={{ color: tc.h(d) }}>
+            <IconButton onClick={() => router.back()} size="small" sx={{ color: tc.h(t) }}>
               <ArrowLeft size={22} weight={W} />
             </IconButton>
             <Box>
-              <Typography variant="h6" fontWeight={700} sx={{ color: tc.h(d) }}>
+              <Typography variant="h6" fontWeight={700} sx={{ color: tc.h(t) }}>
                 {isCardio && activityInfo
                   ? `${activityInfo.emoji} ${activityInfo.label}`
                   : date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
                 }
               </Typography>
-              <Typography variant="body2" sx={{ color: tc.m(d) }}>
+              <Typography variant="body2" sx={{ color: tc.m(t) }}>
                 {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 {mins > 0 && ` · ${formatDuration(mins)}`}
               </Typography>
             </Box>
           </Stack>
-          <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} size="small" sx={{ color: tc.m(d) }}>
+          <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} size="small" sx={{ color: tc.m(t) }}>
             <DotsThreeVertical size={22} weight={W} />
           </IconButton>
           <Menu
@@ -370,10 +370,10 @@ function SessionDetailContent() {
             onClose={() => setMenuAnchor(null)}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 180, bgcolor: panelBg(d) } } }}
+            slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 180, bgcolor: panelBg(t) } } }}
           >
-            <MenuItem onClick={() => { setMenuAnchor(null); setExportOpen(true); }} sx={{ color: tc.h(d) }}>
-              <DownloadSimple size={18} weight={W} style={{ marginRight: 12, color: tc.m(d) }} />
+            <MenuItem onClick={() => { setMenuAnchor(null); setExportOpen(true); }} sx={{ color: tc.h(t) }}>
+              <DownloadSimple size={18} weight={W} style={{ marginRight: 12, color: tc.m(t) }} />
               Exporter
             </MenuItem>
             <MenuItem onClick={() => { setMenuAnchor(null); setDeleteOpen(true); }} sx={{ color: '#ef5350' }}>
@@ -384,37 +384,37 @@ function SessionDetailContent() {
         </Stack>
 
         {/* Stats pills bar */}
-        <Box sx={card(d, { p: 2, mb: 2 })}>
+        <Box sx={card(t, { p: 2, mb: 2 })}>
           <Stack direction="row" spacing={1.5} justifyContent="center">
             {isCardio ? (
               <>
                 <Box sx={{ textAlign: 'center' }}>
                   <Box sx={pillSx(GOLD)}>{distanceM > 0 ? formatDistance(distanceM) : '—'}</Box>
-                  <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Distance</Typography>
+                  <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Distance</Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
                   <Box sx={pillSx(GOLD_LIGHT)}>{session.avgPaceSecondsPerKm ? formatPace(session.avgPaceSecondsPerKm) : '—'}</Box>
-                  <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Allure</Typography>
+                  <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Allure</Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
                   <Box sx={pillSx('#ff9800')}>{session.caloriesBurned != null ? String(session.caloriesBurned) : '—'}</Box>
-                  <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>kcal</Typography>
+                  <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>kcal</Typography>
                 </Box>
               </>
             ) : (
               <>
                 <Box sx={{ textAlign: 'center' }}>
                   <Box sx={pillSx(GOLD)}>{volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`}</Box>
-                  <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Volume</Typography>
+                  <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Volume</Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
                   <Box sx={pillSx(GOLD_LIGHT)}>{String(sets.filter(s => !s.isWarmup).length)}</Box>
-                  <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Séries</Typography>
+                  <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Séries</Typography>
                 </Box>
                 {session.caloriesBurned != null && session.caloriesBurned > 0 && (
                   <Box sx={{ textAlign: 'center' }}>
                     <Box sx={pillSx('#ff9800')}>{String(session.caloriesBurned)}</Box>
-                    <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>kcal</Typography>
+                    <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>kcal</Typography>
                   </Box>
                 )}
               </>
@@ -432,15 +432,15 @@ function SessionDetailContent() {
             const exVolume = workingSets.reduce((sum, s) => sum + (s.reps || 0) * parseFloat(s.weight || '0'), 0);
 
             return (
-              <Box key={exerciseId} sx={card(d, { p: 2 })}>
+              <Box key={exerciseId} sx={card(t, { p: 2 })}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
                   <Stack direction="row" alignItems="center" spacing={1}>
-                    <Barbell size={18} weight={W} color={tc.f(d)} />
-                    <Typography variant="subtitle2" fontWeight={600} sx={{ color: tc.h(d) }}>
+                    <Barbell size={18} weight={W} color={tc.f(t)} />
+                    <Typography variant="subtitle2" fontWeight={600} sx={{ color: tc.h(t) }}>
                       {exercise?.nameFr || exSets[0]?.exerciseName || 'Exercice'}
                     </Typography>
                   </Stack>
-                  <Typography variant="caption" sx={{ color: tc.m(d) }}>
+                  <Typography variant="caption" sx={{ color: tc.m(t) }}>
                     {exVolume > 0 && `${exVolume.toLocaleString()}kg`}
                   </Typography>
                 </Stack>
@@ -464,23 +464,23 @@ function SessionDetailContent() {
                             width: 26, height: 26, borderRadius: '50%',
                             bgcolor: d ? alpha('#ffffff', 0.08) : alpha('#000000', 0.05),
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '0.75rem', fontWeight: 500, color: tc.m(d),
+                            fontSize: '0.75rem', fontWeight: 500, color: tc.m(t),
                           }}
                         >
                           {set.isWarmup ? 'W' : set.setNumber}
                         </Box>
                         <Typography variant="body2">
-                          <Typography component="span" fontWeight={500} sx={{ color: tc.h(d) }}>{set.reps}</Typography>
-                          <Typography component="span" sx={{ mx: 0.5, color: tc.f(d) }}>x</Typography>
-                          <Typography component="span" fontWeight={500} sx={{ color: tc.h(d) }}>{set.weight}kg</Typography>
+                          <Typography component="span" fontWeight={500} sx={{ color: tc.h(t) }}>{set.reps}</Typography>
+                          <Typography component="span" sx={{ mx: 0.5, color: tc.f(t) }}>x</Typography>
+                          <Typography component="span" fontWeight={500} sx={{ color: tc.h(t) }}>{set.weight}kg</Typography>
                         </Typography>
                         {set.rpe && (
-                          <Typography variant="caption" sx={{ color: tc.m(d) }}>RPE {set.rpe}</Typography>
+                          <Typography variant="caption" sx={{ color: tc.m(t) }}>RPE {set.rpe}</Typography>
                         )}
                       </Stack>
                       <Stack direction="row" alignItems="center" spacing={0.5}>
                         {set.restTaken && (
-                          <Typography variant="caption" sx={{ color: tc.f(d) }}>
+                          <Typography variant="caption" sx={{ color: tc.f(t) }}>
                             {formatRestTime(set.restTaken)}
                           </Typography>
                         )}
@@ -499,8 +499,8 @@ function SessionDetailContent() {
                     </Stack>
                     {set.notes && (
                       <Stack direction="row" alignItems="center" spacing={0.5} sx={{ pl: 5, mt: 0.25 }}>
-                        <NoteBlank size={12} weight={W} color={tc.f(d)} />
-                        <Typography variant="caption" sx={{ fontStyle: 'italic', lineHeight: 1.3, color: tc.f(d) }}>
+                        <NoteBlank size={12} weight={W} color={tc.f(t)} />
+                        <Typography variant="caption" sx={{ fontStyle: 'italic', lineHeight: 1.3, color: tc.f(t) }}>
                           {set.notes}
                         </Typography>
                       </Stack>
@@ -517,15 +517,15 @@ function SessionDetailContent() {
 
       <SessionExportDrawer open={exportOpen} onClose={() => setExportOpen(false)} data={data} />
 
-      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { ...dialogPaperSx(d), mx: 2 } }}>
-        <DialogTitle sx={{ color: tc.h(d) }}>Supprimer la séance ?</DialogTitle>
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { ...dialogPaperSx(t), mx: 2 } }}>
+        <DialogTitle sx={{ color: tc.h(t) }}>Supprimer la séance ?</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ color: tc.m(d) }}>
+          <DialogContentText sx={{ color: tc.m(t) }}>
             Cette action est irréversible. Toutes les données de cette séance seront perdues.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDeleteOpen(false)} sx={{ color: tc.m(d) }}>Annuler</Button>
+          <Button onClick={() => setDeleteOpen(false)} sx={{ color: tc.m(t) }}>Annuler</Button>
           <Button onClick={handleDelete} color="error" variant="contained">Supprimer</Button>
         </DialogActions>
       </Dialog>
@@ -534,7 +534,7 @@ function SessionDetailContent() {
 }
 
 function MachineSetupReadonly({ machineSetupId }: { machineSetupId: string }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const { data: rows } = useMachineSetupById(machineSetupId);
   const setup = rows?.[0];
   if (!setup) return null;
@@ -563,11 +563,11 @@ function MachineSetupReadonly({ machineSetupId }: { machineSetupId: string }) {
       )}
       <GearSix size={12} weight={W} color={GOLD} style={{ flexShrink: 0 }} />
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography variant="caption" fontWeight={600} sx={{ lineHeight: 1.2, display: 'block', fontSize: '0.65rem', color: tc.h(d) }} noWrap>
+        <Typography variant="caption" fontWeight={600} sx={{ lineHeight: 1.2, display: 'block', fontSize: '0.65rem', color: tc.h(t) }} noWrap>
           {setup.machine_label}
         </Typography>
         {filledSettings.length > 0 && (
-          <Typography variant="caption" sx={{ fontSize: '0.55rem', lineHeight: 1.2, color: tc.f(d) }}>
+          <Typography variant="caption" sx={{ fontSize: '0.55rem', lineHeight: 1.2, color: tc.f(t) }}>
             {filledSettings.map(s => `${s.key}: ${s.value}`).join(' · ')}
           </Typography>
         )}
@@ -577,7 +577,7 @@ function MachineSetupReadonly({ machineSetupId }: { machineSetupId: string }) {
 }
 
 function ExerciseNoteReadonly({ exerciseId }: { exerciseId: string }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const { data: noteRows } = useExerciseNote(exerciseId);
   const note = noteRows?.[0]?.notes;
   if (!note) return null;
@@ -593,7 +593,7 @@ function ExerciseNoteReadonly({ exerciseId }: { exerciseId: string }) {
       }}
     >
       <NoteBlank size={14} weight={W} color={GOLD} style={{ marginTop: 1, flexShrink: 0 }} />
-      <Typography variant="caption" sx={{ fontStyle: 'italic', lineHeight: 1.4, color: tc.m(d) }}>
+      <Typography variant="caption" sx={{ fontStyle: 'italic', lineHeight: 1.4, color: tc.m(t) }}>
         {note}
       </Typography>
     </Stack>
@@ -601,7 +601,7 @@ function ExerciseNoteReadonly({ exerciseId }: { exerciseId: string }) {
 }
 
 function SessionNotesEditor({ sessionId, initialNotes }: { sessionId: string; initialNotes: string }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const mutations = useWorkoutMutations();
   const [notes, setNotes] = useState(initialNotes);
   const [editing, setEditing] = useState(false);
@@ -621,15 +621,15 @@ function SessionNotesEditor({ sessionId, initialNotes }: { sessionId: string; in
     return (
       <Box
         onClick={() => setEditing(true)}
-        sx={card(d, {
+        sx={card(t, {
           mt: 2, cursor: 'pointer', py: 1.5,
           borderStyle: 'dashed',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75,
           '&:active': { bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.04) },
         })}
       >
-        <NoteBlank size={18} weight={W} color={tc.f(d)} />
-        <Typography variant="caption" sx={{ color: tc.f(d) }}>
+        <NoteBlank size={18} weight={W} color={tc.f(t)} />
+        <Typography variant="caption" sx={{ color: tc.f(t) }}>
           Ajouter une note de séance
         </Typography>
       </Box>
@@ -638,21 +638,21 @@ function SessionNotesEditor({ sessionId, initialNotes }: { sessionId: string; in
 
   if (!editing) {
     return (
-      <Box sx={card(d, { mt: 2, cursor: 'pointer', p: 2 })} onClick={() => setEditing(true)}>
+      <Box sx={card(t, { mt: 2, cursor: 'pointer', p: 2 })} onClick={() => setEditing(true)}>
         <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
-          <NoteBlank size={16} weight={W} color={tc.f(d)} />
-          <Typography variant="caption" fontWeight={500} sx={{ color: tc.m(d) }}>Note de séance</Typography>
+          <NoteBlank size={16} weight={W} color={tc.f(t)} />
+          <Typography variant="caption" fontWeight={500} sx={{ color: tc.m(t) }}>Note de séance</Typography>
         </Stack>
-        <Typography variant="body2" sx={{ pl: 3, color: tc.h(d) }}>{notes}</Typography>
+        <Typography variant="body2" sx={{ pl: 3, color: tc.h(t) }}>{notes}</Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={card(d, { mt: 2, p: 2 })}>
+    <Box sx={card(t, { mt: 2, p: 2 })}>
       <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
-        <NoteBlank size={16} weight={W} color={tc.f(d)} />
-        <Typography variant="caption" fontWeight={500} sx={{ color: tc.m(d) }}>Note de séance</Typography>
+        <NoteBlank size={16} weight={W} color={tc.f(t)} />
+        <Typography variant="caption" fontWeight={500} sx={{ color: tc.m(t) }}>Note de séance</Typography>
       </Stack>
       <TextField
         fullWidth
@@ -666,7 +666,7 @@ function SessionNotesEditor({ sessionId, initialNotes }: { sessionId: string; in
         onBlur={handleSave}
         sx={{
           '& .MuiOutlinedInput-notchedOutline': { borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) },
-          '& .MuiInputBase-input': { fontSize: '0.85rem', color: tc.h(d) },
+          '& .MuiInputBase-input': { fontSize: '0.85rem', color: tc.h(t) },
         }}
       />
     </Box>

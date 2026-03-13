@@ -7,7 +7,7 @@ import { compressImage } from '@/lib/image-utils';
 import { getDefaultSettings } from '@/lib/machine-settings-defaults';
 import { triggerHaptic } from '@/lib/haptic';
 import { GOLD, W, tc, panelBg, goldFieldSx, goldBtnSx } from '@/lib/design-tokens';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
@@ -49,7 +49,7 @@ export default function MachineSetupSheet({
   onSave,
   onDelete,
 }: Props) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   const [label, setLabel] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
@@ -151,7 +151,7 @@ export default function MachineSetupSheet({
     l.toLowerCase().includes(label.toLowerCase()) && l !== existingSetup?.machineLabel
   );
 
-  const gFieldSx = goldFieldSx(d);
+  const gFieldSx = goldFieldSx(t);
 
   return (
     <SwipeableDrawer
@@ -160,7 +160,7 @@ export default function MachineSetupSheet({
       onClose={onClose}
       onOpen={() => {}}
       disableSwipeToOpen
-      PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '90vh', bgcolor: panelBg(d) } }}
+      PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '90vh', bgcolor: panelBg(t) } }}
     >
       {/* Drag handle */}
       <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
@@ -170,10 +170,10 @@ export default function MachineSetupSheet({
       <Box sx={{ px: 2, pb: 3, overflow: 'auto' }}>
         {/* Header */}
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: tc.h(d) }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: tc.h(t) }}>
             {existingSetup ? 'Modifier la machine' : 'Configurer la machine'}
           </Typography>
-          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(d) }}>
+          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(t) }}>
             <X size={20} weight={W} />
           </IconButton>
         </Stack>
@@ -198,14 +198,14 @@ export default function MachineSetupSheet({
                 size="small"
                 variant="outlined"
                 onClick={() => setLabel(l)}
-                sx={{ fontSize: '0.7rem', cursor: 'pointer', borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12), color: tc.m(d) }}
+                sx={{ fontSize: '0.7rem', cursor: 'pointer', borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12), color: tc.m(t) }}
               />
             ))}
           </Stack>
         )}
 
         {/* Photo */}
-        <Typography variant="caption" sx={{ fontWeight: 500, mb: 0.5, display: 'block', color: tc.m(d) }}>
+        <Typography variant="caption" sx={{ fontWeight: 500, mb: 0.5, display: 'block', color: tc.m(t) }}>
           Photo
         </Typography>
         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
@@ -242,7 +242,7 @@ export default function MachineSetupSheet({
                   fontSize: '0.75rem',
                   textTransform: 'none',
                   borderColor: d ? alpha(GOLD, 0.4) : alpha(GOLD, 0.5),
-                  color: tc.m(d),
+                  color: tc.m(t),
                   '&:hover': { borderColor: GOLD, bgcolor: alpha(GOLD, 0.05) },
                 }}
               >
@@ -258,7 +258,7 @@ export default function MachineSetupSheet({
                   fontSize: '0.75rem',
                   textTransform: 'none',
                   borderColor: d ? alpha(GOLD, 0.4) : alpha(GOLD, 0.5),
-                  color: tc.m(d),
+                  color: tc.m(t),
                   '&:hover': { borderColor: GOLD, bgcolor: alpha(GOLD, 0.05) },
                 }}
               >
@@ -284,7 +284,7 @@ export default function MachineSetupSheet({
         </Stack>
 
         {/* Settings */}
-        <Typography variant="caption" sx={{ fontWeight: 500, mb: 0.5, display: 'block', color: tc.m(d) }}>
+        <Typography variant="caption" sx={{ fontWeight: 500, mb: 0.5, display: 'block', color: tc.m(t) }}>
           Réglages
         </Typography>
         <Stack spacing={1} sx={{ mb: 1 }}>
@@ -304,7 +304,7 @@ export default function MachineSetupSheet({
                 onChange={(e) => updateSetting(i, 'value', e.target.value)}
                 sx={{ width: 100, ...gFieldSx, '& .MuiInputBase-input': { fontSize: '0.85rem' } }}
               />
-              <IconButton size="small" onClick={() => removeSetting(i)} sx={{ color: tc.f(d) }}>
+              <IconButton size="small" onClick={() => removeSetting(i)} sx={{ color: tc.f(t) }}>
                 <X size={16} weight={W} />
               </IconButton>
             </Stack>
@@ -314,7 +314,7 @@ export default function MachineSetupSheet({
           size="small"
           startIcon={<Plus size={14} weight={W} />}
           onClick={addSetting}
-          sx={{ mb: 2, fontSize: '0.75rem', textTransform: 'none', color: tc.m(d) }}
+          sx={{ mb: 2, fontSize: '0.75rem', textTransform: 'none', color: tc.m(t) }}
         >
           Ajouter un réglage
         </Button>
@@ -345,7 +345,7 @@ export default function MachineSetupSheet({
               }}
             />
           }
-          label={<Typography variant="caption" sx={{ color: tc.m(d) }}>Machine par défaut pour cet exercice</Typography>}
+          label={<Typography variant="caption" sx={{ color: tc.m(t) }}>Machine par défaut pour cet exercice</Typography>}
           sx={{ mb: 2 }}
         />
 
@@ -356,7 +356,7 @@ export default function MachineSetupSheet({
               <Button
                 size="small"
                 onClick={() => { triggerHaptic('light'); setConfirmDelete(true); }}
-                sx={{ color: tc.f(d), minWidth: 0 }}
+                sx={{ color: tc.f(t), minWidth: 0 }}
               >
                 <Trash size={20} weight={W} />
               </Button>
@@ -372,7 +372,7 @@ export default function MachineSetupSheet({
             )
           )}
           <Box sx={{ flex: 1 }} />
-          <Button onClick={onClose} sx={{ color: tc.m(d) }}>
+          <Button onClick={onClose} sx={{ color: tc.m(t) }}>
             Annuler
           </Button>
           <Button
@@ -380,7 +380,7 @@ export default function MachineSetupSheet({
             disabled={!label.trim() || saving}
             sx={{
               ...goldBtnSx,
-              '&:disabled': { bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08), color: tc.f(d) },
+              '&:disabled': { bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08), color: tc.f(t) },
             }}
           >
             {saving ? '...' : 'Sauvegarder'}

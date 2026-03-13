@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 import { useAuth } from '@/powersync/auth-context';
 import { useCardioSession, useCardioIntervals } from '@/powersync/queries/workout-queries';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
@@ -28,7 +28,7 @@ function CardioContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('id');
   const mutations = useWorkoutMutations();
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   // PowerSync reactive queries
   const { data: sessionRows, isLoading: sessionLoading } = useCardioSession(sessionId);
@@ -158,8 +158,8 @@ function CardioContent() {
 
   if (!sessionId) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(d) }}>
-        <Typography sx={{ color: tc.m(d) }}>Session invalide</Typography>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(t) }}>
+        <Typography sx={{ color: tc.m(t) }}>Session invalide</Typography>
       </Box>
     );
   }
@@ -171,7 +171,7 @@ function CardioContent() {
   const activityInfo = CARDIO_ACTIVITIES[session.cardioActivity];
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(t) }}>
       {/* Header */}
       <Box
         sx={{
@@ -179,15 +179,15 @@ function CardioContent() {
           borderBottom: '1px solid',
           borderColor: d ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
           position: 'sticky', top: 0, zIndex: 10,
-          bgcolor: panelBg(d),
+          bgcolor: panelBg(t),
         }}
       >
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Stack direction="row" alignItems="center" spacing={1}>
-            <IconButton component={Link} href="/workout" size="small" sx={{ color: tc.m(d) }}>
+            <IconButton component={Link} href="/workout" size="small" sx={{ color: tc.m(t) }}>
               <ArrowLeft size={20} weight={W} />
             </IconButton>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(d) }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(t) }}>
               {activityInfo.emoji} {activityInfo.label}
             </Typography>
           </Stack>
@@ -221,23 +221,23 @@ function CardioContent() {
       <Box
         sx={{
           mx: 2.5,
-          ...card(d, { overflow: 'hidden' }),
+          ...card(t, { overflow: 'hidden' }),
         }}
       >
         <Stack direction="row" spacing={0}>
           <Box sx={{ flex: 1, py: 1.5, textAlign: 'center', borderRight: '1px solid', borderColor: d ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: tc.h(d) }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: tc.h(t) }}>
               {distance > 0 ? formatDistance(distanceMeters) : '\u2014'}
             </Typography>
-            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: tc.f(d) }}>
+            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: tc.f(t) }}>
               Distance
             </Typography>
           </Box>
           <Box sx={{ flex: 1, py: 1.5, textAlign: 'center' }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: tc.h(d) }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: tc.h(t) }}>
               {livePace > 0 ? formatPace(livePace) : '\u2014'}
             </Typography>
-            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: tc.f(d) }}>
+            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: tc.f(t) }}>
               Allure
             </Typography>
           </Box>
@@ -246,37 +246,37 @@ function CardioContent() {
 
       {/* Distance Input */}
       <Box sx={{ px: 2.5, mt: 3 }}>
-        <Box sx={card(d, { p: 2 })}>
-          <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mb: 1.5, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: tc.m(d) }}>
+        <Box sx={card(t, { p: 2 })}>
+          <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mb: 1.5, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: tc.m(t) }}>
             Distance (km)
           </Typography>
           <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5}>
             <Typography
               onClick={() => handleDistanceChange(-1)}
-              sx={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(d) }}
+              sx={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(t) }}
             >
               −1
             </Typography>
             <Typography
               onClick={() => handleDistanceChange(-0.1)}
-              sx={{ cursor: 'pointer', fontSize: '1rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(d) }}
+              sx={{ cursor: 'pointer', fontSize: '1rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(t) }}
             >
               −0.1
             </Typography>
             <Typography
-              sx={{ fontSize: '2.5rem', fontWeight: 600, minWidth: 80, textAlign: 'center', color: tc.h(d) }}
+              sx={{ fontSize: '2.5rem', fontWeight: 600, minWidth: 80, textAlign: 'center', color: tc.h(t) }}
             >
               {distance.toFixed(1)}
             </Typography>
             <Typography
               onClick={() => handleDistanceChange(0.1)}
-              sx={{ cursor: 'pointer', fontSize: '1rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(d) }}
+              sx={{ cursor: 'pointer', fontSize: '1rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(t) }}
             >
               +0.1
             </Typography>
             <Typography
               onClick={() => handleDistanceChange(1)}
-              sx={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(d) }}
+              sx={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(t) }}
             >
               +1
             </Typography>
@@ -286,25 +286,25 @@ function CardioContent() {
 
       {/* Heart Rate (optional) */}
       <Box sx={{ px: 2.5, mt: 2 }}>
-        <Box sx={card(d, { p: 2 })}>
-          <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mb: 1.5, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: tc.m(d) }}>
+        <Box sx={card(t, { p: 2 })}>
+          <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mb: 1.5, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: tc.m(t) }}>
             FC moy (bpm) — optionnel
           </Typography>
           <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5}>
             <Typography
               onClick={() => setAvgHr((prev) => Math.max(0, prev - 5))}
-              sx={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(d) }}
+              sx={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(t) }}
             >
               −5
             </Typography>
             <Typography
-              sx={{ fontSize: '2rem', fontWeight: 600, minWidth: 60, textAlign: 'center', color: avgHr > 0 ? tc.h(d) : tc.f(d) }}
+              sx={{ fontSize: '2rem', fontWeight: 600, minWidth: 60, textAlign: 'center', color: avgHr > 0 ? tc.h(t) : tc.f(t) }}
             >
               {avgHr > 0 ? avgHr : '\u2014'}
             </Typography>
             <Typography
               onClick={() => setAvgHr((prev) => Math.min(220, prev + 5))}
-              sx={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(d) }}
+              sx={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 300, opacity: 0.4, userSelect: 'none', '&:active': { opacity: 0.6 }, color: tc.h(t) }}
             >
               +5
             </Typography>
@@ -315,45 +315,45 @@ function CardioContent() {
       {/* Splits */}
       <Box sx={{ px: 2.5, mt: 3, flex: 1 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-          <Typography variant="subtitle2" sx={{ color: tc.m(d) }}>
+          <Typography variant="subtitle2" sx={{ color: tc.m(t) }}>
             Splits
           </Typography>
           <Button
             size="small"
             variant="outlined"
             onClick={handleAddSplit}
-            sx={{ textTransform: 'none', borderRadius: 2, borderColor: d ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)', color: tc.h(d), fontSize: '0.75rem' }}
+            sx={{ textTransform: 'none', borderRadius: 2, borderColor: d ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)', color: tc.h(t), fontSize: '0.75rem' }}
           >
             + Split
           </Button>
         </Stack>
 
         {intervals.length === 0 ? (
-          <Typography variant="body2" sx={{ textAlign: 'center', py: 2, color: tc.f(d) }}>
+          <Typography variant="body2" sx={{ textAlign: 'center', py: 2, color: tc.f(t) }}>
             Appuie sur &quot;Split&quot; pour enregistrer un intervalle
           </Typography>
         ) : (
-          <Box sx={card(d)}>
+          <Box sx={card(t)}>
             <Stack>
               {intervals.map((interval, idx) => (
                 <Box key={interval.id} sx={{ px: 2, py: 1.5, ...(idx > 0 ? { borderTop: '1px solid', borderColor: d ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' } : {}) }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: tc.h(d) }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: tc.h(t) }}>
                       Split {interval.intervalNumber}
                     </Typography>
                     <Stack direction="row" spacing={2}>
                       {interval.distanceMeters && parseFloat(interval.distanceMeters) > 0 && (
-                        <Typography variant="body2" sx={{ color: tc.m(d) }}>
+                        <Typography variant="body2" sx={{ color: tc.m(t) }}>
                           {formatDistance(parseFloat(interval.distanceMeters))}
                         </Typography>
                       )}
                       {interval.paceSecondsPerKm && interval.paceSecondsPerKm > 0 && (
-                        <Typography variant="body2" sx={{ color: tc.m(d) }}>
+                        <Typography variant="body2" sx={{ color: tc.m(t) }}>
                           {formatPace(interval.paceSecondsPerKm)}
                         </Typography>
                       )}
                       {interval.durationSeconds && (
-                        <Typography variant="body2" sx={{ color: tc.f(d) }}>
+                        <Typography variant="body2" sx={{ color: tc.f(t) }}>
                           {formatTime(interval.durationSeconds)}
                         </Typography>
                       )}
@@ -394,11 +394,11 @@ function CardioContent() {
         onClose={() => setShowEndConfirm(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { ...dialogPaperSx(d), backgroundImage: 'none' } }}
+        PaperProps={{ sx: { ...dialogPaperSx(t), backgroundImage: 'none' } }}
       >
-        <DialogTitle sx={{ color: tc.h(d) }}>Terminer la séance cardio ?</DialogTitle>
+        <DialogTitle sx={{ color: tc.h(t) }}>Terminer la séance cardio ?</DialogTitle>
         <DialogContent>
-          <Typography sx={{ color: tc.m(d) }}>
+          <Typography sx={{ color: tc.m(t) }}>
             {formatTime(elapsedSeconds)} — {distance > 0 ? formatDistance(distanceMeters) : 'Aucune distance'}
           </Typography>
         </DialogContent>
@@ -406,7 +406,7 @@ function CardioContent() {
           <Button
             onClick={() => setShowEndConfirm(false)}
             variant="outlined"
-            sx={{ borderColor: d ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)', color: tc.h(d) }}
+            sx={{ borderColor: d ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)', color: tc.h(t) }}
           >
             Continuer
           </Button>

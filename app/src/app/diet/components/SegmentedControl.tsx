@@ -4,8 +4,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
-import { useTheme } from 'next-themes';
 import { tc } from '@/lib/design-tokens';
+import { useThemeTokens } from '@/hooks/useDark';
 
 export type Segment = 'today' | 'week' | 'month';
 
@@ -22,8 +22,7 @@ export default function SegmentedControl({
   value: Segment;
   onChange: (v: Segment) => void;
 }) {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
   const segments: Segment[] = ['today', 'week', 'month'];
 
   return (
@@ -54,7 +53,7 @@ export default function SegmentedControl({
             sx={{
               fontSize: '0.7rem',
               fontWeight: value === seg ? 700 : 500,
-              color: value === seg ? tc.h(d) : tc.m(d),
+              color: value === seg ? tc.h(t) : tc.m(t),
             }}
           >
             {LABELS[seg]}

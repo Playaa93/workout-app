@@ -131,7 +131,7 @@ import {
   DownloadSimple, Table, BracketsCurly, FilePdf,
 } from '@phosphor-icons/react';
 import BottomNav from '@/components/BottomNav';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, dialogPaperSx, goldFieldSx, focusRingSx } from '@/lib/design-tokens';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
@@ -162,7 +162,7 @@ export default function MeasurementsPage() {
 }
 
 function MeasurementsContent() {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const [activeTab, setActiveTab] = useState<TabValue>('overview');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMeasurement, setEditingMeasurement] = useState<MeasurementData | null>(null);
@@ -216,19 +216,19 @@ function MeasurementsContent() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(t) }}>
       {/* Header */}
       <Box sx={{ px: 3, pt: 3, pb: 1 }}>
         <Stack direction="row" alignItems="center" spacing={1.5}>
-          <IconButton component={Link} href="/" size="small" sx={{ color: tc.m(d) }}>
+          <IconButton component={Link} href="/" size="small" sx={{ color: tc.m(t) }}>
             <ArrowLeft size={20} weight={W} />
           </IconButton>
-          <Typography sx={{ flex: 1, fontSize: '1.5rem', fontWeight: 700, color: tc.h(d), letterSpacing: '-0.02em' }}>
+          <Typography sx={{ flex: 1, fontSize: '1.5rem', fontWeight: 700, color: tc.h(t), letterSpacing: '-0.02em' }}>
             Mensurations
           </Typography>
           <IconButton
             size="small"
-            sx={{ color: tc.m(d) }}
+            sx={{ color: tc.m(t) }}
             onClick={() => { triggerHaptic('light'); setShowExport(true); }}
             disabled={measurements.length === 0}
           >
@@ -236,7 +236,7 @@ function MeasurementsContent() {
           </IconButton>
           <IconButton
             size="small"
-            sx={{ color: tc.m(d) }}
+            sx={{ color: tc.m(t) }}
             onClick={() => { triggerHaptic('light'); setActiveTab('photos'); }}
           >
             <Camera size={20} weight={W} />
@@ -261,7 +261,7 @@ function MeasurementsContent() {
                 fontWeight: 600,
                 fontSize: '0.75rem',
                 bgcolor: activeTab === tab.key ? GOLD : (d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.04)),
-                color: activeTab === tab.key ? GOLD_CONTRAST : tc.m(d),
+                color: activeTab === tab.key ? GOLD_CONTRAST : tc.m(t),
                 '&:hover': {
                   bgcolor: activeTab === tab.key ? GOLD : (d ? alpha('#ffffff', 0.08) : alpha('#000000', 0.06)),
                 },
@@ -347,9 +347,9 @@ const TREND_GOOD = '#2d6a4f';
 const TREND_BAD = '#e53935';
 
 function TrendBadge({ value, unit, inverse = false }: { value: number; unit: string; inverse?: boolean }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const isGood = inverse ? value < 0 : value > 0;
-  const color = value === 0 ? tc.m(d) : isGood ? TREND_GOOD : TREND_BAD;
+  const color = value === 0 ? tc.m(t) : isGood ? TREND_GOOD : TREND_BAD;
   const Icon = value > 0 ? TrendUp : value < 0 ? TrendDown : Minus;
   const sign = value > 0 ? '+' : '';
 
@@ -396,17 +396,17 @@ function OverviewTab({
   onAddMeasurement: () => void;
   onEditLatest: () => void;
 }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const [showNavyInfo, setShowNavyInfo] = useState(false);
 
   if (!latest) {
     return (
       <Box sx={{ px: 2.5, pt: 6, textAlign: 'center' }}>
-        <Scales size={64} weight={W} color={tc.f(d)} style={{ marginBottom: 16 }} />
-        <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, mb: 1, color: tc.h(d) }}>
+        <Scales size={64} weight={W} color={tc.f(t)} style={{ marginBottom: 16 }} />
+        <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, mb: 1, color: tc.h(t) }}>
           Suis ta transformation
         </Typography>
-        <Typography variant="body2" sx={{ mb: 3, px: 2, color: tc.m(d) }}>
+        <Typography variant="body2" sx={{ mb: 3, px: 2, color: tc.m(t) }}>
           Ajoute tes mesures pour voir les changements que le miroir ne montre pas
         </Typography>
         <Button
@@ -471,17 +471,17 @@ function OverviewTab({
           })}
         >
           <Box sx={{ py: 3, textAlign: 'center' }}>
-            <Typography variant="caption" sx={{ color: tc.m(d), fontWeight: 500 }}>
+            <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 500 }}>
               Poids actuel
             </Typography>
-            <Typography sx={{ fontSize: '3rem', fontWeight: 800, my: 1, lineHeight: 1, color: tc.h(d) }}>
+            <Typography sx={{ fontSize: '3rem', fontWeight: 800, my: 1, lineHeight: 1, color: tc.h(t) }}>
               {fmt(latest.weight)}
-              <Typography component="span" sx={{ fontSize: '1.25rem', color: tc.m(d), fontWeight: 400 }}> kg</Typography>
+              <Typography component="span" sx={{ fontSize: '1.25rem', color: tc.m(t), fontWeight: 400 }}> kg</Typography>
             </Typography>
             {weightChange !== null && (
               <TrendBadge value={weightChange} unit=" kg" inverse />
             )}
-            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: tc.f(d) }}>
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: tc.f(t) }}>
               {formattedDate}
             </Typography>
             <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 1.5 }}>
@@ -537,8 +537,8 @@ function OverviewTab({
               ...(estimated !== null && { cursor: 'pointer' }),
             }}
           >
-            <Typography variant="caption" sx={{ color: tc.m(d) }}>Masse grasse</Typography>
-            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, my: 0.5, color: tc.h(d) }}>
+            <Typography variant="caption" sx={{ color: tc.m(t) }}>Masse grasse</Typography>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, my: 0.5, color: tc.h(t) }}>
               {displayBf !== null ? `${displayBf}%` : '--'}
             </Typography>
             {estimated !== null && (
@@ -551,8 +551,8 @@ function OverviewTab({
             )}
           </Box>
           <Box sx={card(d, { flex: 1, py: 2, textAlign: 'center' })}>
-            <Typography variant="caption" sx={{ color: tc.m(d) }}>Tour de taille</Typography>
-            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, my: 0.5, color: tc.h(d) }}>
+            <Typography variant="caption" sx={{ color: tc.m(t) }}>Tour de taille</Typography>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, my: 0.5, color: tc.h(t) }}>
               {latest.waist ? `${fmt(latest.waist)} cm` : '--'}
             </Typography>
             {calcChange('waist') !== null && (
@@ -566,10 +566,10 @@ function OverviewTab({
         {/* All measurements - compact CSS Grid list */}
         {filledMeasures.length > 0 && (
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: tc.m(d) }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, color: tc.m(t) }}>
               Toutes les mesures
             </Typography>
-            <Box sx={card(d)}>
+            <Box sx={card(t)}>
               <Stack divider={<Divider />}>
                 {filledMeasures.map((m) => (
                   <ListRow
@@ -594,17 +594,17 @@ function OverviewTab({
         onClose={() => setShowNavyInfo(false)}
         PaperProps={{
           sx: {
-            bgcolor: panelBg(d),
+            bgcolor: panelBg(t),
             borderRadius: 3,
             maxWidth: 360,
           },
         }}
       >
-        <DialogTitle sx={{ color: tc.h(d), fontSize: '1rem', fontWeight: 700, pb: 0.5 }}>
+        <DialogTitle sx={{ color: tc.h(t), fontSize: '1rem', fontWeight: 700, pb: 0.5 }}>
           Méthode Navy (U.S. Navy)
         </DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ color: tc.m(d), fontSize: '0.85rem', lineHeight: 1.6 }}>
+          <DialogContentText sx={{ color: tc.m(t), fontSize: '0.85rem', lineHeight: 1.6 }}>
             Cette estimation utilise la formule développée par la Marine américaine, basée sur vos mensurations :
           </DialogContentText>
           <Stack spacing={1} sx={{ mt: 1.5 }}>
@@ -614,14 +614,14 @@ function OverviewTab({
               { label: 'Taille', value: latest.height, unit: 'cm' },
             ].map((m) => (
               <Stack key={m.label} direction="row" justifyContent="space-between" alignItems="center">
-                <Typography sx={{ fontSize: '0.8rem', color: tc.m(d) }}>{m.label}</Typography>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d) }}>
+                <Typography sx={{ fontSize: '0.8rem', color: tc.m(t) }}>{m.label}</Typography>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(t) }}>
                   {m.value ? `${parseFloat(m.value)} ${m.unit}` : '--'}
                 </Typography>
               </Stack>
             ))}
           </Stack>
-          <Typography sx={{ mt: 2, fontSize: '0.75rem', color: tc.f(d), lineHeight: 1.5 }}>
+          <Typography sx={{ mt: 2, fontSize: '0.75rem', color: tc.f(t), lineHeight: 1.5 }}>
             Précision : ±3-4% par rapport à un DEXA scan. Pour une mesure plus précise, enregistrez directement votre % de masse grasse via un impédancemètre ou un professionnel.
           </Typography>
         </DialogContent>
@@ -644,7 +644,7 @@ function OverviewTab({
 function ListRow({ label, value, unit, change, inverse = false }: {
   label: string; value: string; unit: string; change: number | null; inverse?: boolean;
 }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   return (
     <Box sx={{
       px: 2.5, py: 1.5,
@@ -653,15 +653,15 @@ function ListRow({ label, value, unit, change, inverse = false }: {
       gap: 1,
       alignItems: 'center',
     }}>
-      <Typography variant="body2" sx={{ color: tc.m(d) }}>{label}</Typography>
-      <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums', textAlign: 'right', color: tc.h(d) }}>
+      <Typography variant="body2" sx={{ color: tc.m(t) }}>{label}</Typography>
+      <Typography variant="body2" fontWeight={700} sx={{ fontVariantNumeric: 'tabular-nums', textAlign: 'right', color: tc.h(t) }}>
         {fmt(value)} {unit}
       </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
         {change !== null ? (
           <TrendBadge value={change} unit="" inverse={inverse} />
         ) : (
-          <Typography variant="caption" sx={{ color: tc.f(d) }}>--</Typography>
+          <Typography variant="caption" sx={{ color: tc.f(t) }}>--</Typography>
         )}
       </Box>
     </Box>
@@ -672,7 +672,7 @@ function ListRow({ label, value, unit, change, inverse = false }: {
 // Weight Chart
 // =========================================================
 function WeightChart() {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const [selected, setSelected] = useState<number | null>(null);
   const { data: rawData } = useMeasurementHistory('weight', 10);
 
@@ -694,7 +694,7 @@ function WeightChart() {
   return (
     <Box sx={card(d, { py: 2, px: 2 })}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-        <Typography variant="caption" sx={{ color: tc.m(d) }}>
+        <Typography variant="caption" sx={{ color: tc.m(t) }}>
           Évolution du poids
         </Typography>
         {active ? (
@@ -703,10 +703,10 @@ function WeightChart() {
           </Typography>
         ) : (
           <Stack direction="row" spacing={1}>
-            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: tc.f(d) }}>
+            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: tc.f(t) }}>
               {min.toFixed(1)}kg
             </Typography>
-            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: tc.f(d) }}>
+            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: tc.f(t) }}>
               {max.toFixed(1)}kg
             </Typography>
           </Stack>
@@ -749,7 +749,7 @@ function HistoryTab({
   measurements: MeasurementData[];
   onDelete: (id: string) => void;
 }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [measureToDelete, setMeasureToDelete] = useState<string | null>(null);
@@ -757,11 +757,11 @@ function HistoryTab({
   if (measurements.length === 0) {
     return (
       <Box sx={{ px: 2.5, textAlign: 'center', py: 6 }}>
-        <Ruler size={48} weight={W} color={tc.f(d)} style={{ marginBottom: 12, transform: 'rotate(-45deg)' }} />
-        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5, color: tc.h(d) }}>
+        <Ruler size={48} weight={W} color={tc.f(t)} style={{ marginBottom: 12, transform: 'rotate(-45deg)' }} />
+        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5, color: tc.h(t) }}>
           Aucun historique
         </Typography>
-        <Typography variant="body2" sx={{ color: tc.m(d) }}>
+        <Typography variant="body2" sx={{ color: tc.m(t) }}>
           Tes mesures apparaitront ici
         </Typography>
       </Box>
@@ -805,24 +805,24 @@ function HistoryTab({
           ].filter((f) => f.value !== null);
 
           return (
-            <Box key={m.id} sx={card(d)}>
+            <Box key={m.id} sx={card(t)}>
               <Box
                 onClick={() => setExpanded(isExpanded ? null : m.id)}
                 sx={{ px: 2.5, py: 2, cursor: 'pointer' }}
               >
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Box>
-                    <Typography variant="body2" fontWeight={600} sx={{ color: tc.h(d) }}>
+                    <Typography variant="body2" fontWeight={600} sx={{ color: tc.h(t) }}>
                       {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: tc.m(d) }}>
+                    <Typography variant="caption" sx={{ color: tc.m(t) }}>
                       {m.weight ? `${fmt(m.weight)} kg` : ''}{m.waist ? ` · Taille ${fmt(m.waist)} cm` : ''}
                     </Typography>
                   </Box>
                   <CaretDown
                     size={20}
                     weight={W}
-                    color={tc.m(d)}
+                    color={tc.m(t)}
                     style={{
                       transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
                       transition: 'transform 0.3s',
@@ -842,17 +842,17 @@ function HistoryTab({
                   }}>
                     {allFields.map((f) => (
                       <Box key={f.label}>
-                        <Typography variant="caption" sx={{ fontSize: '0.65rem', color: tc.m(d) }}>
+                        <Typography variant="caption" sx={{ fontSize: '0.65rem', color: tc.m(t) }}>
                           {f.label}
                         </Typography>
-                        <Typography variant="body2" fontWeight={600} sx={{ fontVariantNumeric: 'tabular-nums', color: tc.h(d) }}>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontVariantNumeric: 'tabular-nums', color: tc.h(t) }}>
                           {f.value}
                         </Typography>
                       </Box>
                     ))}
                   </Box>
                   {m.notes && (
-                    <Typography variant="body2" sx={{ mb: 1.5, fontStyle: 'italic', color: tc.m(d) }}>
+                    <Typography variant="body2" sx={{ mb: 1.5, fontStyle: 'italic', color: tc.m(t) }}>
                       {m.notes}
                     </Typography>
                   )}
@@ -874,16 +874,16 @@ function HistoryTab({
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        PaperProps={{ sx: dialogPaperSx(d) }}
+        PaperProps={{ sx: dialogPaperSx(t) }}
       >
-        <DialogTitle sx={{ color: tc.h(d) }}>Supprimer la mesure ?</DialogTitle>
+        <DialogTitle sx={{ color: tc.h(t) }}>Supprimer la mesure ?</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ color: tc.m(d) }}>
+          <DialogContentText sx={{ color: tc.m(t) }}>
             Cette action est irreversible.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: tc.m(d), textTransform: 'none' }}>Annuler</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: tc.m(t), textTransform: 'none' }}>Annuler</Button>
           <Button onClick={handleDeleteConfirm} color="error" variant="contained">Supprimer</Button>
         </DialogActions>
       </Dialog>
@@ -901,7 +901,7 @@ function PhotosTab({
   photos: ProgressPhotoData[];
   mutations: ReturnType<typeof useMeasurementMutations>;
 }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const [showUpload, setShowUpload] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhotoData | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -924,11 +924,11 @@ function PhotosTab({
   if (photos.length === 0 && !showUpload) {
     return (
       <Box sx={{ px: 2.5, textAlign: 'center', py: 6 }}>
-        <Camera size={48} weight={W} color={tc.f(d)} style={{ marginBottom: 12 }} />
-        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5, color: tc.h(d) }}>
+        <Camera size={48} weight={W} color={tc.f(t)} style={{ marginBottom: 12 }} />
+        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5, color: tc.h(t) }}>
           Aucune photo
         </Typography>
-        <Typography variant="body2" sx={{ mb: 3, color: tc.m(d) }}>
+        <Typography variant="body2" sx={{ mb: 3, color: tc.m(t) }}>
           Prends des photos pour suivre ta transformation
         </Typography>
         <Button
@@ -974,7 +974,7 @@ function PhotosTab({
             }}>
               <Plus size={20} weight="bold" color={GOLD} />
             </Box>
-            <Typography sx={{ fontSize: '0.75rem', color: tc.m(d), fontWeight: 600 }}>
+            <Typography sx={{ fontSize: '0.75rem', color: tc.m(t), fontWeight: 600 }}>
               Ajouter une photo
             </Typography>
           </Stack>
@@ -982,7 +982,7 @@ function PhotosTab({
 
         {Object.entries(photosByDate).map(([date, datePhotos]) => (
           <Box key={date}>
-            <Typography variant="caption" fontWeight={500} sx={{ mb: 1, display: 'block', color: tc.m(d) }}>
+            <Typography variant="caption" fontWeight={500} sx={{ mb: 1, display: 'block', color: tc.m(t) }}>
               {date}
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
@@ -1034,7 +1034,7 @@ function PhotosTab({
         anchor="bottom"
         open={!!selectedPhoto && !editingType}
         onClose={() => setSelectedPhoto(null)}
-        PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(d) } }}
+        PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(t) } }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
           <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }} />
@@ -1053,10 +1053,10 @@ function PhotosTab({
                 />
               </Box>
               <Box>
-                <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'capitalize', color: tc.h(d) }}>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'capitalize', color: tc.h(t) }}>
                   {selectedPhoto.photoType.replace('_', ' ')}
                 </Typography>
-                <Typography variant="caption" sx={{ color: tc.m(d) }}>
+                <Typography variant="caption" sx={{ color: tc.m(t) }}>
                   {new Date(selectedPhoto.takenAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </Typography>
               </Box>
@@ -1071,7 +1071,7 @@ function PhotosTab({
               </ListItemIcon>
               <ListItemText
                 primary="Changer le type de pose"
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }}
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(t) }}
               />
             </ListItemButton>
 
@@ -1096,13 +1096,13 @@ function PhotosTab({
         anchor="bottom"
         open={editingType}
         onClose={() => { setEditingType(false); setSelectedPhoto(null); }}
-        PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(d) } }}
+        PaperProps={{ sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(t) } }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
           <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }} />
         </Box>
         <Box sx={{ px: 1.5, pb: 2.5 }}>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ px: 0.5, pb: 1.5, color: tc.h(d) }}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ px: 0.5, pb: 1.5, color: tc.h(t) }}>
             Type de pose
           </Typography>
           {([
@@ -1122,7 +1122,7 @@ function PhotosTab({
                 primaryTypographyProps={{
                   fontWeight: selectedPhoto?.photoType === type.key ? 700 : 500,
                   fontSize: '0.9rem',
-                  color: tc.h(d),
+                  color: tc.h(t),
                 }}
               />
               {selectedPhoto?.photoType === type.key && (
@@ -1137,16 +1137,16 @@ function PhotosTab({
       <Dialog
         open={deleteDialogOpen}
         onClose={() => { setDeleteDialogOpen(false); setSelectedPhoto(null); }}
-        PaperProps={{ sx: dialogPaperSx(d) }}
+        PaperProps={{ sx: dialogPaperSx(t) }}
       >
-        <DialogTitle sx={{ color: tc.h(d) }}>Supprimer la photo ?</DialogTitle>
+        <DialogTitle sx={{ color: tc.h(t) }}>Supprimer la photo ?</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ color: tc.m(d) }}>
+          <DialogContentText sx={{ color: tc.m(t) }}>
             Cette action est irreversible.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => { setDeleteDialogOpen(false); setSelectedPhoto(null); }} sx={{ color: tc.m(d), textTransform: 'none' }}>
+          <Button onClick={() => { setDeleteDialogOpen(false); setSelectedPhoto(null); }} sx={{ color: tc.m(t), textTransform: 'none' }}>
             Annuler
           </Button>
           <Button onClick={handleDeletePhoto} color="error" variant="contained">
@@ -1172,7 +1172,7 @@ function PhotoUploadModal({
   onUpload: () => void;
   mutations: ReturnType<typeof useMeasurementMutations>;
 }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const [photoType, setPhotoType] = useState<'front' | 'back' | 'side_left' | 'side_right'>('front');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -1222,7 +1222,7 @@ function PhotoUploadModal({
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           maxHeight: '85vh',
-          bgcolor: panelBg(d),
+          bgcolor: panelBg(t),
         },
       }}
     >
@@ -1237,7 +1237,7 @@ function PhotoUploadModal({
         {!previewUrl ? (
           /* ===== Step 1: Choose source ===== */
           <Stack spacing={2}>
-            <Typography variant="subtitle1" fontWeight={700} sx={{ pt: 0.5, color: tc.h(d) }}>
+            <Typography variant="subtitle1" fontWeight={700} sx={{ pt: 0.5, color: tc.h(t) }}>
               Ajouter une photo
             </Typography>
 
@@ -1266,8 +1266,8 @@ function PhotoUploadModal({
                   <Camera size={24} weight={W} color={GOLD} />
                 </Box>
                 <Box>
-                  <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(d) }}>Prendre une photo</Typography>
-                  <Typography variant="caption" sx={{ color: tc.m(d) }}>
+                  <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(t) }}>Prendre une photo</Typography>
+                  <Typography variant="caption" sx={{ color: tc.m(t) }}>
                     Ouvre l&apos;appareil photo
                   </Typography>
                 </Box>
@@ -1298,8 +1298,8 @@ function PhotoUploadModal({
                   <Images size={24} weight={W} color={GOLD} />
                 </Box>
                 <Box>
-                  <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(d) }}>Choisir depuis la galerie</Typography>
-                  <Typography variant="caption" sx={{ color: tc.m(d) }}>
+                  <Typography variant="body1" fontWeight={600} sx={{ color: tc.h(t) }}>Choisir depuis la galerie</Typography>
+                  <Typography variant="caption" sx={{ color: tc.m(t) }}>
                     Selectionne une photo existante
                   </Typography>
                 </Box>
@@ -1310,10 +1310,10 @@ function PhotoUploadModal({
           /* ===== Step 2: Preview + Pose + Save ===== */
           <Stack spacing={2.5}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: 0.5 }}>
-              <Typography variant="subtitle1" fontWeight={700} sx={{ color: tc.h(d) }}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ color: tc.h(t) }}>
                 Photo de progression
               </Typography>
-              <IconButton onClick={handleReset} size="small" sx={{ color: tc.m(d) }}>
+              <IconButton onClick={handleReset} size="small" sx={{ color: tc.m(t) }}>
                 <X size={18} weight={W} />
               </IconButton>
             </Stack>
@@ -1337,7 +1337,7 @@ function PhotoUploadModal({
 
             {/* Pose type selection */}
             <Box>
-              <Typography variant="caption" fontWeight={500} sx={{ mb: 1, display: 'block', color: tc.m(d) }}>
+              <Typography variant="caption" fontWeight={500} sx={{ mb: 1, display: 'block', color: tc.m(t) }}>
                 Type de pose
               </Typography>
               <Stack direction="row" spacing={1}>
@@ -1355,7 +1355,7 @@ function PhotoUploadModal({
                     sx={{
                       flex: 1, fontWeight: 600, fontSize: '0.75rem',
                       bgcolor: photoType === type.key ? GOLD : (d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.04)),
-                      color: photoType === type.key ? GOLD_CONTRAST : tc.m(d),
+                      color: photoType === type.key ? GOLD_CONTRAST : tc.m(t),
                     }}
                   />
                 ))}
@@ -1374,7 +1374,7 @@ function PhotoUploadModal({
                 bgcolor: GOLD, color: GOLD_CONTRAST,
                 background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
                 '&:hover': { bgcolor: GOLD_LIGHT },
-                '&.Mui-disabled': { bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08), color: tc.f(d) },
+                '&.Mui-disabled': { bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08), color: tc.f(t) },
               }}
             >
               {isUploading ? 'Enregistrement...' : 'Enregistrer'}
@@ -1400,7 +1400,7 @@ function AddMeasurementForm({
   onSubmit: (data: MeasurementInput) => void;
   onClose: () => void;
 }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const isEditing = !!editingMeasurement;
   const source = editingMeasurement || lastMeasurement;
 
@@ -1455,16 +1455,16 @@ function AddMeasurementForm({
   return (
     <Box sx={{
       position: 'fixed', inset: 0,
-      bgcolor: surfaceBg(d), zIndex: 1300,
+      bgcolor: surfaceBg(t), zIndex: 1300,
       display: 'flex', flexDirection: 'column',
     }}>
       {/* Header — pill grab + close */}
       <Box sx={{ pt: 1.5, px: 2.5 }}>
         <Stack direction="row" alignItems="center" spacing={1}>
-          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(d) }}>
+          <IconButton onClick={onClose} size="small" sx={{ color: tc.m(t) }}>
             <X size={20} weight={W} />
           </IconButton>
-          <Typography sx={{ flex: 1, fontSize: '1.1rem', fontWeight: 700, color: tc.h(d) }}>
+          <Typography sx={{ flex: 1, fontSize: '1.1rem', fontWeight: 700, color: tc.h(t) }}>
             {isEditing ? 'Modifier' : 'Nouvelle mesure'}
           </Typography>
         </Stack>
@@ -1476,7 +1476,7 @@ function AddMeasurementForm({
 
           {/* Section: Essentiels */}
           <Box>
-            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.f(d), textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.5 }}>
+            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.f(t), textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.5 }}>
               Essentiels
             </Typography>
             <Stack spacing={2}>
@@ -1500,7 +1500,7 @@ function AddMeasurementForm({
               <Stack spacing={3} sx={{ mt: 2 }}>
                 {/* General */}
                 <Box>
-                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(d), textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5 }}>
+                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5 }}>
                     General
                   </Typography>
                   <Stack spacing={2}>
@@ -1523,7 +1523,7 @@ function AddMeasurementForm({
 
                 {/* Haut du corps */}
                 <Box>
-                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(d), textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5 }}>
+                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5 }}>
                     Haut du corps
                   </Typography>
                   <Stack spacing={2}>
@@ -1544,7 +1544,7 @@ function AddMeasurementForm({
 
                 {/* Bas du corps */}
                 <Box>
-                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(d), textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5 }}>
+                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5 }}>
                     Bas du corps
                   </Typography>
                   <Stack spacing={2}>
@@ -1573,7 +1573,7 @@ function AddMeasurementForm({
 
           {/* Notes */}
           <Box>
-            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.f(d), textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.5 }}>
+            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.f(t), textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.5 }}>
               Notes
             </Typography>
             <TextField
@@ -1584,7 +1584,7 @@ function AddMeasurementForm({
               placeholder="Conditions, sensations..."
               fullWidth
               size="small"
-              sx={goldFieldSx(d)}
+              sx={goldFieldSx(t)}
             />
           </Box>
         </Stack>
@@ -1592,7 +1592,7 @@ function AddMeasurementForm({
 
       {/* Sticky CTA */}
       <Box sx={{
-        px: 2.5, pb: 3, pt: 1.5, bgcolor: surfaceBg(d),
+        px: 2.5, pb: 3, pt: 1.5, bgcolor: surfaceBg(t),
         borderTop: '1px solid',
         borderColor: d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06),
       }}>
@@ -1607,7 +1607,7 @@ function AddMeasurementForm({
             background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
             boxShadow: `0 4px 16px ${alpha(GOLD, 0.3)}`,
             '&:hover': { bgcolor: GOLD_LIGHT },
-            '&.Mui-disabled': { bgcolor: d ? alpha('#ffffff', 0.08) : alpha('#000000', 0.06), color: tc.f(d), boxShadow: 'none' },
+            '&.Mui-disabled': { bgcolor: d ? alpha('#ffffff', 0.08) : alpha('#000000', 0.06), color: tc.f(t), boxShadow: 'none' },
           }}
         >
           {isSubmitting ? 'Enregistrement...' : isEditing ? 'Enregistrer les modifications' : 'Enregistrer la mesure'}
@@ -1666,7 +1666,7 @@ function ExportDrawer({
   onClose: () => void;
   measurements: MeasurementData[];
 }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   const exportJSON = () => {
     const data = measurements.map((m) => {
@@ -1764,17 +1764,17 @@ ${measurements.map((m) => `<tr><td>${formatDate(m.measuredAt)}</td>${usedFields.
       open={open}
       onClose={onClose}
       PaperProps={{
-        sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(d) },
+        sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20, bgcolor: panelBg(t) },
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
         <Box sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }} />
       </Box>
       <Box sx={{ px: 1, pb: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1, color: tc.h(d) }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ px: 1.5, pt: 0.5, pb: 1, color: tc.h(t) }}>
           Exporter les mensurations
         </Typography>
-        <Typography variant="caption" sx={{ px: 1.5, display: 'block', mb: 1, color: tc.m(d) }}>
+        <Typography variant="caption" sx={{ px: 1.5, display: 'block', mb: 1, color: tc.m(t) }}>
           {measurements.length} mesure{measurements.length > 1 ? 's' : ''}
         </Typography>
 
@@ -1785,8 +1785,8 @@ ${measurements.map((m) => `<tr><td>${formatDate(m.measuredAt)}</td>${usedFields.
           <ListItemText
             primary="Excel / CSV"
             secondary="Fichier .csv compatible Excel, Google Sheets"
-            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }}
-            secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }}
+            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(t) }}
+            secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(t) }}
           />
         </ListItemButton>
 
@@ -1797,8 +1797,8 @@ ${measurements.map((m) => `<tr><td>${formatDate(m.measuredAt)}</td>${usedFields.
           <ListItemText
             primary="JSON"
             secondary="Format brut pour traitement de donnees"
-            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }}
-            secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }}
+            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(t) }}
+            secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(t) }}
           />
         </ListItemButton>
 
@@ -1809,8 +1809,8 @@ ${measurements.map((m) => `<tr><td>${formatDate(m.measuredAt)}</td>${usedFields.
           <ListItemText
             primary="PDF"
             secondary="Tableau imprimable via le navigateur"
-            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(d) }}
-            secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(d) }}
+            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: tc.h(t) }}
+            secondaryTypographyProps={{ fontSize: '0.75rem', color: tc.m(t) }}
           />
         </ListItemButton>
       </Box>
@@ -1836,7 +1836,7 @@ function MeasureInput({
   placeholder: string;
   tip?: string;
 }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const [focused, setFocused] = useState(false);
 
   return (
@@ -1850,11 +1850,11 @@ function MeasureInput({
         onBlur={() => setTimeout(() => setFocused(false), 200)}
         placeholder={placeholder || '0'}
         fullWidth
-        sx={goldFieldSx(d)}
+        sx={goldFieldSx(t)}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: tc.f(d) }}>{unit}</Typography>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: tc.f(t) }}>{unit}</Typography>
             </InputAdornment>
           ),
           inputProps: { step: '0.1' },
@@ -1866,7 +1866,7 @@ function MeasureInput({
           bgcolor: alpha(GOLD, 0.06),
           borderRadius: 1.5,
         }}>
-          <Typography sx={{ fontSize: '0.6rem', lineHeight: 1.5, color: tc.m(d) }}>
+          <Typography sx={{ fontSize: '0.6rem', lineHeight: 1.5, color: tc.m(t) }}>
             {tip}
           </Typography>
         </Box>

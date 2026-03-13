@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useId, useMemo, useState } from 'react'
-import { useTheme } from 'next-themes'
+import { useThemeTokens } from '@/hooks/useDark'
 import { useAuth } from '@/powersync/auth-context'
 import {
   useUserProfile,
@@ -55,13 +55,14 @@ const STAT_ITEMS = [
 // Sub-components
 // =========================================================
 
-function ChangeIndicator({ cur, prev, isDark }: { cur: number; prev: number; isDark: boolean }) {
+function ChangeIndicator({ cur, prev }: { cur: number; prev: number }) {
+  const { t, d: isDark } = useThemeTokens()
   const green = isDark ? '#4ade80' : '#22c55e'
   const red = isDark ? '#f87171' : '#ef4444'
   const blue = isDark ? '#60a5fa' : '#3b82f6'
 
   let icon: React.ReactNode = null
-  let color = tc.f(isDark)
+  let color = tc.f(t)
   let text = '='
 
   if (prev === 0 && cur > 0) {
@@ -89,9 +90,10 @@ function ChangeIndicator({ cur, prev, isDark }: { cur: number; prev: number; isD
   )
 }
 
-function SessionRing({ size, sw, workouts, goal, isDark }: {
-  size: number; sw: number; workouts: number; goal: number; isDark: boolean
+function SessionRing({ size, sw, workouts, goal }: {
+  size: number; sw: number; workouts: number; goal: number
 }) {
+  const { t } = useThemeTokens()
   const gradId = useId()
   const r = (size / 2) - sw - 4
   const circ = 2 * Math.PI * r
@@ -114,10 +116,10 @@ function SessionRing({ size, sw, workouts, goal, isDark }: {
         />
       </svg>
       <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography sx={{ fontSize: '3rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', color: tc.h(isDark) }}>
-          {workouts}<Typography component="span" sx={{ fontSize: '1rem', fontWeight: 500, color: tc.m(isDark) }}>/{goal}</Typography>
+        <Typography sx={{ fontSize: '3rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', color: tc.h(t) }}>
+          {workouts}<Typography component="span" sx={{ fontSize: '1rem', fontWeight: 500, color: tc.m(t) }}>/{goal}</Typography>
         </Typography>
-        <Typography sx={{ fontSize: '0.62rem', color: tc.m(isDark), fontWeight: 500, mt: 0.4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <Typography sx={{ fontSize: '0.62rem', color: tc.m(t), fontWeight: 500, mt: 0.4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           séances
         </Typography>
       </Box>
@@ -145,8 +147,7 @@ export default function HomeContent() {
 
 function HomeContentInner() {
   const { displayName: authDisplayName } = useAuth()
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme !== 'light'
+  const { t, d: isDark } = useThemeTokens()
 
   const { data: profileRows } = useUserProfile()
   const { data: gamificationRows } = useGamification()
@@ -224,7 +225,7 @@ function HomeContentInner() {
   const statValues = { totalWorkouts, streak, totalPRs }
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: meshBg(isDark) }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: meshBg(t) }}>
 
       {/* Header */}
       <Box sx={{ px: 3, pt: 3, pb: 1 }}>
@@ -258,23 +259,23 @@ function HomeContentInner() {
               )}
             </Box>
             <Box>
-              <Typography sx={{ fontSize: '0.65rem', color: tc.m(isDark), lineHeight: 1.3, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <Typography sx={{ fontSize: '0.65rem', color: tc.m(t), lineHeight: 1.3, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 Bonjour
               </Typography>
-              <Typography sx={{ fontSize: '1.2rem', fontWeight: 700, lineHeight: 1.15, color: tc.h(isDark), letterSpacing: '-0.01em' }}>
+              <Typography sx={{ fontSize: '1.2rem', fontWeight: 700, lineHeight: 1.15, color: tc.h(t), letterSpacing: '-0.01em' }}>
                 {displayName}
               </Typography>
             </Box>
           </Stack>
           <IconButton component={Link} href="/profile" size="small">
-            <GearSix size={20} weight={W} color={tc.f(isDark)} />
+            <GearSix size={20} weight={W} color={tc.f(t)} />
           </IconButton>
         </Stack>
       </Box>
 
       {/* Hero Ring */}
       <Box sx={{ display: 'flex', justifyContent: 'center', pt: 2.5, pb: 3 }}>
-        <SessionRing size={170} sw={12} workouts={weeklyWorkouts} goal={WEEKLY_GOAL} isDark={isDark} />
+        <SessionRing size={170} sw={12} workouts={weeklyWorkouts} goal={WEEKLY_GOAL} />
       </Box>
 
       {/* CTA */}
@@ -307,7 +308,7 @@ function HomeContentInner() {
             component={Link}
             href="/morphology"
             sx={{
-              ...glass(isDark),
+              ...glass(t),
               display: 'flex', alignItems: 'center', gap: 2,
               p: 2.5, textDecoration: 'none',
               borderLeft: `3px solid ${GOLD}`,
@@ -315,10 +316,10 @@ function HomeContentInner() {
           >
             <Box sx={{ fontSize: '1.5rem' }}>🧬</Box>
             <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(isDark) }}>
+              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t) }}>
                 Découvre ton morphotype
               </Typography>
-              <Typography sx={{ fontSize: '0.65rem', color: tc.m(isDark), fontWeight: 500 }}>
+              <Typography sx={{ fontSize: '0.65rem', color: tc.m(t), fontWeight: 500 }}>
                 Optimise tes exercices selon ta morphologie
               </Typography>
             </Box>
@@ -336,7 +337,7 @@ function HomeContentInner() {
             flex: 1, height: 4, borderRadius: 2, bgcolor: alpha(GOLD, 0.08),
             '& .MuiLinearProgress-bar': { borderRadius: 2, background: `linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT})` },
           }} />
-          <Typography sx={{ fontSize: '0.6rem', color: tc.f(isDark), fontWeight: 500 }}>
+          <Typography sx={{ fontSize: '0.6rem', color: tc.f(t), fontWeight: 500 }}>
             {xpCur}/{xpMax} XP
           </Typography>
         </Stack>
@@ -344,11 +345,11 @@ function HomeContentInner() {
 
       {/* Stats card (expandable) */}
       <Box sx={{ px: 3, pb: 3 }}>
-        <Box sx={glass(isDark, { overflow: 'hidden' })}>
+        <Box sx={glass(t, { overflow: 'hidden' })}>
           <Box onClick={() => setStatsOpen(!statsOpen)} sx={{ p: 3, cursor: 'pointer', userSelect: 'none' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2.5 }}>
               <Typography sx={{
-                fontSize: '0.68rem', fontWeight: 600, color: tc.m(isDark),
+                fontSize: '0.68rem', fontWeight: 600, color: tc.m(t),
                 letterSpacing: '0.1em', textTransform: 'uppercase',
               }}>
                 Ton activité
@@ -370,7 +371,7 @@ function HomeContentInner() {
                   <Typography sx={{ fontSize: '1.75rem', fontWeight: 800, color: item.color, letterSpacing: '-0.02em', lineHeight: 1 }}>
                     {statValues[item.field]}
                   </Typography>
-                  <Typography sx={{ fontSize: '0.62rem', color: tc.m(isDark), mt: 0.6, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontSize: '0.62rem', color: tc.m(t), mt: 0.6, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                     {item.label}
                   </Typography>
                 </Box>
@@ -398,15 +399,15 @@ function HomeContentInner() {
                     border: '1px solid',
                     borderColor: isDark ? alpha(GOLD, 0.07) : alpha(GOLD, 0.1),
                   }}>
-                    <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(isDark), letterSpacing: '-0.02em', lineHeight: 1 }}>
+                    <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), letterSpacing: '-0.02em', lineHeight: 1 }}>
                       {weeklyComparison.thisWeek[m.field]}
-                      {m.unit && <Typography component="span" sx={{ fontSize: '0.6rem', color: tc.f(isDark), fontWeight: 500 }}> {m.unit}</Typography>}
+                      {m.unit && <Typography component="span" sx={{ fontSize: '0.6rem', color: tc.f(t), fontWeight: 500 }}> {m.unit}</Typography>}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.6rem', color: tc.m(isDark), mt: 0.6, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    <Typography sx={{ fontSize: '0.6rem', color: tc.m(t), mt: 0.6, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       {m.label}
                     </Typography>
                     <Box sx={{ mt: 0.4 }}>
-                      <ChangeIndicator cur={weeklyComparison.thisWeek[m.field]} prev={weeklyComparison.lastWeek[m.field]} isDark={isDark} />
+                      <ChangeIndicator cur={weeklyComparison.thisWeek[m.field]} prev={weeklyComparison.lastWeek[m.field]} />
                     </Box>
                   </Box>
                 ))}
@@ -427,11 +428,11 @@ function HomeContentInner() {
                   <Typography sx={{ fontSize: '1.1rem', fontWeight: 800, color: GOLD, letterSpacing: '-0.01em' }}>
                     {weeklyComparison.thisWeek.prCount} PRs
                   </Typography>
-                  <Typography sx={{ fontSize: '0.58rem', color: tc.m(isDark), fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontSize: '0.58rem', color: tc.m(t), fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                     cette semaine
                   </Typography>
                 </Box>
-                <ChangeIndicator cur={weeklyComparison.thisWeek.prCount} prev={weeklyComparison.lastWeek.prCount} isDark={isDark} />
+                <ChangeIndicator cur={weeklyComparison.thisWeek.prCount} prev={weeklyComparison.lastWeek.prCount} />
               </Box>
             </Box>
           </Collapse>

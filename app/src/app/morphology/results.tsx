@@ -18,7 +18,7 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import { alpha } from '@mui/material/styles';
 import { CaretDown } from '@phosphor-icons/react';
 import { GOLD, GOLD_CONTRAST, GOLD_LIGHT, W, tc, card, focusRingSx } from '@/lib/design-tokens';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 
 type Props = {
   result: MorphotypeResult;
@@ -99,27 +99,27 @@ const segmentLabels: Record<string, string> = {
 const sectionLabel = { textTransform: 'uppercase' as const, letterSpacing: 1 };
 
 export function Results({ result, onRetake }: Props) {
-  const d = useDark();
+  const { t } = useThemeTokens();
   const globalInfo = getGlobalDescription(result);
 
   return (
     <Stack spacing={2.5}>
       {/* Main Result Card */}
-      <Box sx={{ ...card(d), py: 3, textAlign: 'center', px: 2 }}>
+      <Box sx={{ ...card(t), py: 3, textAlign: 'center', px: 2 }}>
         <Typography sx={{ fontSize: '3rem', mb: 0.5 }}>{globalInfo.emoji}</Typography>
-        <Typography variant="h5" fontWeight={700} sx={{ color: tc.h(d) }}>{globalInfo.title}</Typography>
-        <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic', color: tc.m(d) }}>
+        <Typography variant="h5" fontWeight={700} sx={{ color: tc.h(t) }}>{globalInfo.title}</Typography>
+        <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic', color: tc.m(t) }}>
           {globalInfo.subtitle}
         </Typography>
         <Box sx={{ width: 40, height: 2, bgcolor: GOLD, mx: 'auto', my: 1.5, borderRadius: 1 }} />
-        <Typography variant="body2" sx={{ lineHeight: 1.7, color: tc.m(d) }}>
+        <Typography variant="body2" sx={{ lineHeight: 1.7, color: tc.m(t) }}>
           {globalInfo.description}
         </Typography>
       </Box>
 
       {/* Structure Osseuse */}
-      <Box sx={{ ...card(d), p: 2 }}>
-        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(d) }}>
+      <Box sx={{ ...card(t), p: 2 }}>
+        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(t) }}>
           Structure osseuse
         </Typography>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
@@ -130,8 +130,8 @@ export function Results({ result, onRetake }: Props) {
       </Box>
 
       {/* Proportions */}
-      <Box sx={{ ...card(d), p: 2 }}>
-        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(d) }}>
+      <Box sx={{ ...card(t), p: 2 }}>
+        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(t) }}>
           Proportions
         </Typography>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
@@ -147,8 +147,8 @@ export function Results({ result, onRetake }: Props) {
       </Box>
 
       {/* Mobilité */}
-      <Box sx={{ ...card(d), p: 2 }}>
-        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(d) }}>
+      <Box sx={{ ...card(t), p: 2 }}>
+        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(t) }}>
           Mobilité
         </Typography>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
@@ -171,7 +171,7 @@ export function Results({ result, onRetake }: Props) {
       </Box>
 
       {/* Exercise Recommendations */}
-      <Typography variant="subtitle2" fontWeight={600} sx={{ pt: 1, textAlign: 'center', color: tc.h(d) }}>
+      <Typography variant="subtitle2" fontWeight={600} sx={{ pt: 1, textAlign: 'center', color: tc.h(t) }}>
         Recommandations par exercice
       </Typography>
 
@@ -182,8 +182,8 @@ export function Results({ result, onRetake }: Props) {
 
       {/* Mobility Work */}
       {result.mobilityWork.length > 0 && (
-        <Box sx={{ ...card(d), p: 2 }}>
-          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(d) }}>
+        <Box sx={{ ...card(t), p: 2 }}>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(t) }}>
             Travail correctif
           </Typography>
           <Stack spacing={1.5}>
@@ -195,8 +195,8 @@ export function Results({ result, onRetake }: Props) {
       )}
 
       {/* Muscle Insertions */}
-      <Box sx={{ ...card(d), p: 2 }}>
-        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(d) }}>
+      <Box sx={{ ...card(t), p: 2 }}>
+        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(t) }}>
           Potentiel musculaire
         </Typography>
         <Stack spacing={1.5}>
@@ -208,13 +208,13 @@ export function Results({ result, onRetake }: Props) {
 
       {/* Strengths */}
       {result.strengths.length > 0 && (
-        <Box sx={{ ...card(d), p: 2 }}>
-          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(d) }}>
+        <Box sx={{ ...card(t), p: 2 }}>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(t) }}>
             Tes points forts
           </Typography>
           <Stack spacing={0.5}>
             {result.strengths.map((strength) => (
-              <Typography key={strength} variant="body2" sx={{ color: tc.m(d) }}>
+              <Typography key={strength} variant="body2" sx={{ color: tc.m(t) }}>
                 + {strength}
               </Typography>
             ))}
@@ -224,13 +224,13 @@ export function Results({ result, onRetake }: Props) {
 
       {/* Weaknesses */}
       {result.weaknesses.length > 0 && (
-        <Box sx={{ ...card(d), p: 2 }}>
-          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(d) }}>
+        <Box sx={{ ...card(t), p: 2 }}>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, textAlign: 'center', color: tc.h(t) }}>
             Points à travailler
           </Typography>
           <Stack spacing={0.5}>
             {result.weaknesses.map((weakness) => (
-              <Typography key={weakness} variant="body2" sx={{ color: tc.m(d) }}>
+              <Typography key={weakness} variant="body2" sx={{ color: tc.m(t) }}>
                 - {weakness}
               </Typography>
             ))}
@@ -306,7 +306,7 @@ export function Results({ result, onRetake }: Props) {
 }
 
 function SegmentChip({ label, value, warning }: { label: string; value: string; warning?: boolean }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   return (
     <Box
       sx={{
@@ -317,10 +317,10 @@ function SegmentChip({ label, value, warning }: { label: string; value: string; 
         textAlign: 'center',
       }}
     >
-      <Typography variant="caption" display="block" sx={{ color: tc.f(d) }}>
+      <Typography variant="caption" display="block" sx={{ color: tc.f(t) }}>
         {label}
       </Typography>
-      <Typography variant="body2" fontWeight={600} sx={{ color: tc.h(d) }}>
+      <Typography variant="body2" fontWeight={600} sx={{ color: tc.h(t) }}>
         {segmentLabels[value] || value} {warning && '⚠'}
       </Typography>
     </Box>
@@ -328,7 +328,7 @@ function SegmentChip({ label, value, warning }: { label: string; value: string; 
 }
 
 function InsertionBar({ label, potential }: { label: string; potential: InsertionPotential }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const valueMap: Record<InsertionPotential, number> = {
     high: 100,
     medium: 60,
@@ -338,8 +338,8 @@ function InsertionBar({ label, potential }: { label: string; potential: Insertio
   return (
     <Box>
       <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
-        <Typography variant="body2" sx={{ color: tc.m(d) }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} sx={{ color: tc.h(d) }}>
+        <Typography variant="body2" sx={{ color: tc.m(t) }}>{label}</Typography>
+        <Typography variant="body2" fontWeight={500} sx={{ color: tc.h(t) }}>
           {insertionLabels[potential]}
         </Typography>
       </Stack>
@@ -361,7 +361,7 @@ function InsertionBar({ label, potential }: { label: string; potential: Insertio
 }
 
 function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendation }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const hasContent =
     recommendation.advantages.length > 0 ||
     recommendation.disadvantages.length > 0 ||
@@ -376,27 +376,27 @@ function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendati
       defaultExpanded={false}
       sx={{
         '&:before': { display: 'none' },
-        ...card(d),
+        ...card(t),
         boxShadow: 'none',
         overflow: 'hidden',
       }}
     >
       <AccordionSummary
-        expandIcon={<CaretDown size={20} weight={W} style={{ color: tc.m(d) }} />}
+        expandIcon={<CaretDown size={20} weight={W} style={{ color: tc.m(t) }} />}
         sx={{ bgcolor: d ? alpha('#ffffff', 0.03) : alpha('#000000', 0.02) }}
       >
-        <Typography fontWeight={600} sx={{ color: tc.h(d) }}>{recommendation.exercise}</Typography>
+        <Typography fontWeight={600} sx={{ color: tc.h(t) }}>{recommendation.exercise}</Typography>
       </AccordionSummary>
       <AccordionDetails sx={{ pt: 2 }}>
         <Stack spacing={2}>
           {recommendation.advantages.length > 0 && (
             <Box>
-              <Typography variant="caption" fontWeight={700} sx={{ ...sectionLabel, color: tc.h(d) }}>
+              <Typography variant="caption" fontWeight={700} sx={{ ...sectionLabel, color: tc.h(t) }}>
                 Avantages
               </Typography>
               <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                 {recommendation.advantages.map((adv) => (
-                  <Typography key={adv} variant="body2" sx={{ color: tc.m(d) }}>• {adv}</Typography>
+                  <Typography key={adv} variant="body2" sx={{ color: tc.m(t) }}>• {adv}</Typography>
                 ))}
               </Stack>
             </Box>
@@ -404,12 +404,12 @@ function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendati
 
           {recommendation.disadvantages.length > 0 && (
             <Box>
-              <Typography variant="caption" fontWeight={700} sx={{ ...sectionLabel, color: tc.h(d) }}>
+              <Typography variant="caption" fontWeight={700} sx={{ ...sectionLabel, color: tc.h(t) }}>
                 A considérer
               </Typography>
               <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                 {recommendation.disadvantages.map((dis) => (
-                  <Typography key={dis} variant="body2" sx={{ color: tc.m(d) }}>• {dis}</Typography>
+                  <Typography key={dis} variant="body2" sx={{ color: tc.m(t) }}>• {dis}</Typography>
                 ))}
               </Stack>
             </Box>
@@ -417,7 +417,7 @@ function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendati
 
           {recommendation.variants.length > 0 && (
             <Box>
-              <Typography variant="caption" fontWeight={700} sx={{ ...sectionLabel, color: tc.h(d) }}>
+              <Typography variant="caption" fontWeight={700} sx={{ ...sectionLabel, color: tc.h(t) }}>
                 Variantes recommandées
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
@@ -430,7 +430,7 @@ function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendati
                     sx={{
                       fontWeight: 500,
                       borderColor: alpha(GOLD, 0.35),
-                      color: tc.h(d),
+                      color: tc.h(t),
                     }}
                   />
                 ))}
@@ -440,12 +440,12 @@ function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendati
 
           {recommendation.tips.length > 0 && (
             <Box>
-              <Typography variant="caption" fontWeight={700} sx={{ ...sectionLabel, color: tc.h(d) }}>
+              <Typography variant="caption" fontWeight={700} sx={{ ...sectionLabel, color: tc.h(t) }}>
                 Conseils
               </Typography>
               <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                 {recommendation.tips.map((tip) => (
-                  <Typography key={tip} variant="body2" sx={{ color: tc.m(d) }}>• {tip}</Typography>
+                  <Typography key={tip} variant="body2" sx={{ color: tc.m(t) }}>• {tip}</Typography>
                 ))}
               </Stack>
             </Box>
@@ -457,7 +457,7 @@ function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendati
 }
 
 function MobilityWorkItem({ work }: { work: MobilityWork }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const priorityLabels: Record<string, string> = {
     high: 'Prioritaire',
     medium: 'Recommandé',
@@ -467,14 +467,14 @@ function MobilityWorkItem({ work }: { work: MobilityWork }) {
   return (
     <Box sx={{ p: 1.5, bgcolor: d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.03), borderRadius: 2 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
-        <Typography variant="body2" fontWeight={600} sx={{ color: tc.h(d) }}>{work.area}</Typography>
+        <Typography variant="body2" fontWeight={600} sx={{ color: tc.h(t) }}>{work.area}</Typography>
         <Typography variant="caption" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, color: GOLD }}>
           {priorityLabels[work.priority]}
         </Typography>
       </Stack>
       <Stack spacing={0.25}>
         {work.exercises.map((ex) => (
-          <Typography key={ex} variant="caption" sx={{ color: tc.m(d) }}>• {ex}</Typography>
+          <Typography key={ex} variant="caption" sx={{ color: tc.m(t) }}>• {ex}</Typography>
         ))}
       </Stack>
     </Box>

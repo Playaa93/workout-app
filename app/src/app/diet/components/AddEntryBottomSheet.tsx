@@ -7,8 +7,8 @@ import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import { X, MagnifyingGlass, Camera, Barcode } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
-import { useTheme } from 'next-themes';
 import { tc, panelBg, GOLD, W } from '@/lib/design-tokens';
+import { useThemeTokens } from '@/hooks/useDark';
 import { MEAL_CONFIG, triggerHaptic } from './shared';
 import type { MealType, FoodEntryData } from './shared';
 
@@ -34,8 +34,7 @@ export default function AddEntryBottomSheet({
   onSelectAction: (action: SheetAction) => void;
   onQuickReAdd: (entry: FoodEntryData) => void;
 }) {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
 
   useEffect(() => {
     if (!open) return;
@@ -87,7 +86,7 @@ export default function AddEntryBottomSheet({
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
           mx: 'auto',
-          bgcolor: panelBg(d),
+          bgcolor: panelBg(t),
           animation: 'slide-up 0.3s ease-out',
           '@keyframes slide-up': {
             from: { transform: 'translateY(100%)' },
@@ -101,10 +100,10 @@ export default function AddEntryBottomSheet({
 
         <Box sx={{ px: 3, pt: 1.5, pb: 'calc(env(safe-area-inset-bottom, 16px) + 48px)' }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(d) }}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: tc.h(t) }}>
               Ajouter - {meal.label}
             </Typography>
-            <IconButton size="small" onClick={onClose} sx={{ color: tc.f(d) }}>
+            <IconButton size="small" onClick={onClose} sx={{ color: tc.f(t) }}>
               <X size={20} weight={W} />
             </IconButton>
           </Stack>
@@ -133,7 +132,7 @@ export default function AddEntryBottomSheet({
                 }}>
                   <Icon size={20} weight={W} />
                 </Box>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d) }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(t) }}>
                   {label}
                 </Typography>
               </Box>
@@ -149,8 +148,8 @@ export default function AddEntryBottomSheet({
               '&:hover': { opacity: 0.7 },
             }}
           >
-            <Barcode size={14} weight={W} color={tc.f(d)} />
-            <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
+            <Barcode size={14} weight={W} color={tc.f(t)} />
+            <Typography sx={{ fontSize: '0.7rem', color: tc.f(t) }}>
               Scanner un code-barres
             </Typography>
           </Box>
@@ -158,7 +157,7 @@ export default function AddEntryBottomSheet({
           {/* Recent foods */}
           {recentFoods.length > 0 && (
             <>
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.f(d), mt: 1.5, mb: 1, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.f(t), mt: 1.5, mb: 1, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
                 Récemment ajoutés
               </Typography>
               {recentFoods.slice(0, 5).map((entry, i, arr) => (
@@ -175,10 +174,10 @@ export default function AddEntryBottomSheet({
                   }}
                 >
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: tc.h(d) }}>
+                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: tc.h(t) }}>
                       {entry.customName || 'Aliment'}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(d) }}>
+                    <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(t) }}>
                       {entry.calories ? `${Math.round(parseFloat(entry.calories))} kcal` : '--'}
                     </Typography>
                   </Stack>

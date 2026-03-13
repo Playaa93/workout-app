@@ -5,8 +5,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
-import { useTheme } from 'next-themes';
 import { tc, card, GOLD } from '@/lib/design-tokens';
+import { useThemeTokens } from '@/hooks/useDark';
 import { triggerHaptic } from './shared';
 import type { NutritionProfileData, NutritionGoal, ActivityLevel } from './shared';
 
@@ -40,8 +40,7 @@ export default function SettingsView({
   }) => void;
   onClose: () => void;
 }) {
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
 
   const [goal, setGoal] = useState<NutritionGoal>(profile?.goal || 'maintain');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
@@ -88,14 +87,14 @@ export default function SettingsView({
 
           {/* Live preview hero */}
           {preview && (
-            <Box sx={card(d, { p: 2.5, textAlign: 'center' })}>
-              <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), letterSpacing: '0.05em', textTransform: 'uppercase', mb: 0.5 }}>
+            <Box sx={card(t, { p: 2.5, textAlign: 'center' })}>
+              <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), letterSpacing: '0.05em', textTransform: 'uppercase', mb: 0.5 }}>
                 Objectif journalier
               </Typography>
               <Typography sx={{ fontSize: '2.2rem', fontWeight: 800, color: GOLD, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                 {preview.target}
               </Typography>
-              <Typography sx={{ fontSize: '0.7rem', color: tc.m(d), mt: 0.5 }}>
+              <Typography sx={{ fontSize: '0.7rem', color: tc.m(t), mt: 0.5 }}>
                 kcal/jour · Dépense estimée {preview.tdee}
               </Typography>
             </Box>
@@ -103,7 +102,7 @@ export default function SettingsView({
 
           {/* Goal */}
           <Box>
-            <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(d), mb: 1 }}>
+            <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(t), mb: 1 }}>
               Objectif
             </Typography>
             <Stack spacing={0.75}>
@@ -113,7 +112,7 @@ export default function SettingsView({
                   <Box
                     key={g.value}
                     onClick={() => { triggerHaptic('light'); setGoal(g.value); }}
-                    sx={card(d, {
+                    sx={card(t, {
                       p: 0,
                       overflow: 'hidden',
                       cursor: 'pointer',
@@ -132,17 +131,17 @@ export default function SettingsView({
                       <Box sx={{ py: 1.5, px: 2, flex: 1 }}>
                         <Stack direction="row" alignItems="center" justifyContent="space-between">
                           <Box>
-                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: selected ? GOLD : tc.h(d) }}>
+                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: selected ? GOLD : tc.h(t) }}>
                               {g.label}
                             </Typography>
-                            <Typography sx={{ fontSize: '0.6rem', color: tc.f(d), mt: 0.2 }}>
+                            <Typography sx={{ fontSize: '0.6rem', color: tc.f(t), mt: 0.2 }}>
                               {g.desc}
                             </Typography>
                           </Box>
                           <Typography sx={{
                             fontSize: '0.7rem',
                             fontWeight: 700,
-                            color: selected ? GOLD : tc.f(d),
+                            color: selected ? GOLD : tc.f(t),
                             fontVariantNumeric: 'tabular-nums',
                           }}>
                             {g.adj > 0 ? '+' : ''}{g.adj}
@@ -158,10 +157,10 @@ export default function SettingsView({
 
           {/* Body info card */}
           <Box>
-            <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(d), mb: 1 }}>
+            <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(t), mb: 1 }}>
               Mes infos
             </Typography>
-            <Box sx={card(d, { p: 2 })}>
+            <Box sx={card(t, { p: 2 })}>
               <Stack spacing={2}>
                 {/* Gender segmented */}
                 <Stack
@@ -189,7 +188,7 @@ export default function SettingsView({
                           transition: 'all 0.2s ease',
                         }}
                       >
-                        <Typography sx={{ fontSize: '0.75rem', fontWeight: selected ? 700 : 500, color: selected ? tc.h(d) : tc.m(d) }}>
+                        <Typography sx={{ fontSize: '0.75rem', fontWeight: selected ? 700 : 500, color: selected ? tc.h(t) : tc.m(t) }}>
                           {male ? 'Homme' : 'Femme'}
                         </Typography>
                       </Box>
@@ -221,7 +220,7 @@ export default function SettingsView({
                             border: '1px solid',
                             borderColor: field.value ? (d ? alpha('#ffffff', 0.12) : alpha('#000000', 0.1)) : (d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.04)),
                             bgcolor: 'transparent',
-                            color: tc.h(d),
+                            color: tc.h(t),
                             fontSize: '1.1rem',
                             fontWeight: 700,
                             fontFamily: 'inherit',
@@ -229,14 +228,14 @@ export default function SettingsView({
                             outline: 'none',
                             transition: 'border-color 0.2s ease',
                             '&:focus': { borderColor: GOLD },
-                            '&::placeholder': { color: tc.f(d), fontWeight: 400, fontSize: '0.8rem' },
+                            '&::placeholder': { color: tc.f(t), fontWeight: 400, fontSize: '0.8rem' },
                             '&::-webkit-inner-spin-button, &::-webkit-outer-spin-button': { WebkitAppearance: 'none', margin: 0 },
                             MozAppearance: 'textfield',
                           }}
                           placeholder="—"
                         />
                       </Box>
-                      <Typography sx={{ fontSize: '0.55rem', color: tc.f(d), mt: 0.5 }}>
+                      <Typography sx={{ fontSize: '0.55rem', color: tc.f(t), mt: 0.5 }}>
                         {field.label} ({field.unit})
                       </Typography>
                     </Box>
@@ -248,10 +247,10 @@ export default function SettingsView({
 
           {/* Activity Level */}
           <Box>
-            <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(d), mb: 1 }}>
+            <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(t), mb: 1 }}>
               Activité
             </Typography>
-            <Box sx={card(d, { overflow: 'hidden' })}>
+            <Box sx={card(t, { overflow: 'hidden' })}>
               {ACTIVITY_LEVELS.map((level, i) => {
                 const selected = activityLevel === level.value;
                 return (
@@ -291,10 +290,10 @@ export default function SettingsView({
                         }} />
                       </Box>
                       <Box sx={{ flex: 1 }}>
-                        <Typography sx={{ fontSize: '0.8rem', fontWeight: selected ? 600 : 500, color: selected ? GOLD : tc.h(d) }}>
+                        <Typography sx={{ fontSize: '0.8rem', fontWeight: selected ? 600 : 500, color: selected ? GOLD : tc.h(t) }}>
                           {level.label}
                         </Typography>
-                        <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>
+                        <Typography sx={{ fontSize: '0.6rem', color: tc.f(t) }}>
                           {level.desc}
                         </Typography>
                       </Box>
@@ -306,7 +305,7 @@ export default function SettingsView({
           </Box>
 
           {/* Tip */}
-          <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), textAlign: 'center', lineHeight: 1.6, px: 2 }}>
+          <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), textAlign: 'center', lineHeight: 1.6, px: 2 }}>
             Ces infos servent à estimer tes besoins. C&apos;est une base de départ, pas un objectif strict.
           </Typography>
         </Stack>
@@ -328,7 +327,7 @@ export default function SettingsView({
             py: 1.5,
             textAlign: 'center',
             bgcolor: !isValid ? (d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06)) : GOLD,
-            color: !isValid ? tc.f(d) : '#1a1715',
+            color: !isValid ? tc.f(t) : '#1a1715',
             borderRadius: '14px',
             fontWeight: 700,
             fontSize: '0.9rem',

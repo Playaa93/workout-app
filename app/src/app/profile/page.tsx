@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
+import { useThemeTokens } from '@/hooks/useDark';
 import {
   getGroqApiKey,
   saveGroqApiKey,
@@ -47,6 +48,9 @@ import {
   Sun,
   Moon,
   Monitor,
+  Anchor,
+  CloudSun,
+  Coffee,
   Check,
   SignOut,
   Key,
@@ -58,6 +62,7 @@ import { triggerHaptic } from '@/lib/haptic';
 import { calculateLevel, xpReasonLabel } from '@/lib/xp-utils';
 import { parseJson, parseJsonArray } from '@/powersync/helpers';
 import { GOLD, GOLD_LIGHT, tc, card, surfaceBg } from '@/lib/design-tokens';
+import { DARK_THEMES, THEME_PRESETS, type ThemeId } from '@/lib/theme-presets';
 import BottomNav from '@/components/BottomNav';
 
 const W = 'light' as const; // Phosphor weight
@@ -134,8 +139,7 @@ const morphotypeInfo: Record<string, { abbr: string; title: string }> = {
 
 function ProfileContent() {
   const [tab, setTab] = useState(0);
-  const { resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const { t, d } = useThemeTokens();
 
   const { data: profileRows, isLoading: profileLoading } = useUserProfile();
   const { data: gamificationRows, isLoading: gamLoading } = useGamification();
@@ -177,8 +181,8 @@ function ProfileContent() {
   }, [achievementRows]);
 
   const recentXp = useMemo<XpTransactionData[]>(() => {
-    return xpRows.map((t: any) => ({
-      id: t.id, amount: t.amount, reason: t.reason, createdAt: t.created_at,
+    return xpRows.map((row: any) => ({
+      id: row.id, amount: row.amount, reason: row.reason, createdAt: row.created_at,
     }));
   }, [xpRows]);
 
@@ -205,7 +209,7 @@ function ProfileContent() {
 
   if (isLoading) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(d) }}>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(t) }}>
         <CircularProgress sx={{ color: GOLD }} />
       </Box>
     );
@@ -220,7 +224,7 @@ function ProfileContent() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(t) }}>
 
       {/* ── Header compact ── */}
       <Box sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}>
@@ -235,7 +239,7 @@ function ProfileContent() {
             {(profile?.displayName || 'G')[0].toUpperCase()}
           </Avatar>
           <Box sx={{ flex: 1 }}>
-            <Typography sx={{ fontSize: '1.05rem', fontWeight: 700, color: tc.h(d) }}>
+            <Typography sx={{ fontSize: '1.05rem', fontWeight: 700, color: tc.h(t) }}>
               {profile?.displayName || 'Guerrier'}
             </Typography>
             <Stack direction="row" alignItems="center" spacing={1}>
@@ -244,7 +248,7 @@ function ProfileContent() {
               }} />
               <Stack direction="row" alignItems="center" spacing={0.3}>
                 <Lightning size={14} weight={W} color={GOLD} />
-                <Typography sx={{ fontSize: '0.7rem', color: tc.m(d) }}>
+                <Typography sx={{ fontSize: '0.7rem', color: tc.m(t) }}>
                   {(gamification?.totalXp ?? 0).toLocaleString()} XP
                 </Typography>
               </Stack>
@@ -252,7 +256,7 @@ function ProfileContent() {
           </Box>
           <Box
             onClick={() => handleTabChange(3)}
-            sx={{ cursor: 'pointer', p: 0.5, color: tc.f(d), display: 'flex', '&:active': { opacity: 0.5 } }}
+            sx={{ cursor: 'pointer', p: 0.5, color: tc.f(t), display: 'flex', '&:active': { opacity: 0.5 } }}
           >
             <GearSix size={22} weight={W} />
           </Box>
@@ -268,7 +272,7 @@ function ProfileContent() {
               borderRadius: 2,
             },
           }} />
-          <Typography sx={{ fontSize: '0.55rem', color: tc.f(d), mt: 0.3, textAlign: 'right' }}>
+          <Typography sx={{ fontSize: '0.55rem', color: tc.f(t), mt: 0.3, textAlign: 'right' }}>
             {gamification?.xpProgress ?? 0}% vers niv. {(gamification?.currentLevel ?? 1) + 1}
           </Typography>
         </Box>
@@ -276,21 +280,21 @@ function ProfileContent() {
 
       {/* ── Streak + Morpho row ── */}
       <Stack direction="row" spacing={1} sx={{ px: 2.5, mt: 0.5 }}>
-        <Box sx={card(d, { flex: 1, p: 1.5 })}>
+        <Box sx={card(t, { flex: 1, p: 1.5 })}>
           <Stack direction="row" alignItems="center" spacing={0.75}>
             <Flame size={24} weight={W} color="#ff9800" />
             <Box>
-              <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tc.h(d), lineHeight: 1 }}>
+              <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
                 {gamification?.currentStreak ?? 0}
               </Typography>
-              <Typography sx={{ fontSize: '0.55rem', color: tc.f(d) }}>jours streak</Typography>
+              <Typography sx={{ fontSize: '0.55rem', color: tc.f(t) }}>jours streak</Typography>
             </Box>
           </Stack>
         </Box>
         <Box
           component={Link}
           href="/morphology"
-          sx={card(d, {
+          sx={card(t, {
             flex: 1.5, p: 1.5, cursor: 'pointer', textDecoration: 'none',
             borderColor: alpha(GOLD, 0.2),
             '&:active': { transform: 'scale(0.98)' },
@@ -308,21 +312,21 @@ function ProfileContent() {
                 : <PersonArmsSpread size={20} weight={W} color={GOLD} />}
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: tc.h(d) }}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: tc.h(t) }}>
                 {morphoProfile ? morphoInfo.title : 'Morphotype'}
               </Typography>
-              <Typography sx={{ fontSize: '0.55rem', color: tc.f(d) }}>
+              <Typography sx={{ fontSize: '0.55rem', color: tc.f(t) }}>
                 {morphoProfile ? 'Mon morphotype' : 'Découvrir'}
               </Typography>
             </Box>
-            <CaretRight size={16} weight="bold" color={tc.f(d)} />
+            <CaretRight size={16} weight="bold" color={tc.f(t)} />
           </Stack>
         </Box>
       </Stack>
 
       {/* ── Actions grid 2x2 ── */}
       <Box sx={{ px: 2.5, mt: 2.5 }}>
-        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.06em', textTransform: 'uppercase', mb: 1.5 }}>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(t), letterSpacing: '0.06em', textTransform: 'uppercase', mb: 1.5 }}>
           Actions rapides
         </Typography>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
@@ -336,7 +340,7 @@ function ProfileContent() {
               key={item.label}
               component={Link}
               href={item.href}
-              sx={card(d, {
+              sx={card(t, {
                 p: 2, cursor: 'pointer', textDecoration: 'none',
                 transition: 'all 0.15s ease',
                 '&:active': { transform: 'scale(0.96)', bgcolor: d ? alpha('#fff', 0.1) : alpha('#000', 0.03) },
@@ -345,8 +349,8 @@ function ProfileContent() {
               <Box sx={{ mb: 1.5, display: 'flex' }}>
                 <item.Icon size={30} weight={W} color={item.accent} />
               </Box>
-              <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, color: tc.h(d) }}>{item.label}</Typography>
-              <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mt: 0.2 }}>{item.sub}</Typography>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, color: tc.h(t) }}>{item.label}</Typography>
+              <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), mt: 0.2 }}>{item.sub}</Typography>
             </Box>
           ))}
         </Box>
@@ -368,7 +372,7 @@ function ProfileContent() {
             >
               <Typography sx={{
                 fontSize: '0.8rem', fontWeight: tab === i ? 700 : 400,
-                color: tab === i ? tc.h(d) : tc.f(d),
+                color: tab === i ? tc.h(t) : tc.f(t),
               }}>
                 {label}
               </Typography>
@@ -379,9 +383,9 @@ function ProfileContent() {
 
       {/* ── Tab content ── */}
       <Box sx={{ flex: 1, overflow: 'auto', px: 2.5, pt: 2, pb: 12 }}>
-        {tab === 0 && <OverviewTab stats={stats} unlockedAchievements={achievements.filter((a) => a.unlockedAt)} totalCount={achievements.length} d={d} />}
-        {tab === 1 && <AchievementsTab achievements={achievements} d={d} />}
-        {tab === 2 && <HistoryTab transactions={recentXp} d={d} />}
+        {tab === 0 && <OverviewTab stats={stats} unlockedAchievements={achievements.filter((a) => a.unlockedAt)} totalCount={achievements.length} t={t} />}
+        {tab === 1 && <AchievementsTab achievements={achievements} t={t} />}
+        {tab === 2 && <HistoryTab transactions={recentXp} t={t} />}
         {tab === 3 && <SettingsTab />}
       </Box>
 
@@ -391,8 +395,8 @@ function ProfileContent() {
 }
 
 /* ── Overview tab (mini stats + recent achievements) ── */
-function OverviewTab({ stats, unlockedAchievements, totalCount, d }: {
-  stats: StatsData | null; unlockedAchievements: AchievementData[]; totalCount: number; d: boolean;
+function OverviewTab({ stats, unlockedAchievements, totalCount, t }: {
+  stats: StatsData | null; unlockedAchievements: AchievementData[]; totalCount: number; t: ThemeId;
 }) {
   if (!stats) return null;
 
@@ -406,25 +410,25 @@ function OverviewTab({ stats, unlockedAchievements, totalCount, d }: {
           { val: `${unlockedAchievements.length}/${totalCount}`, label: 'Succès', Icon: Star },
           { val: stats.totalWorkouts, label: 'Séances', Icon: Barbell },
         ].map((s) => (
-          <Box key={s.label} sx={card(d, { flex: 1, py: 1.5, textAlign: 'center' })}>
+          <Box key={s.label} sx={card(t, { flex: 1, py: 1.5, textAlign: 'center' })}>
             <Box sx={{ mb: 0.3, display: 'flex', justifyContent: 'center', color: GOLD }}>
               <s.Icon size={18} weight={W} />
             </Box>
-            <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: tc.h(d), lineHeight: 1 }}>{s.val}</Typography>
-            <Typography sx={{ fontSize: '0.5rem', color: tc.f(d), mt: 0.3 }}>{s.label}</Typography>
+            <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: tc.h(t), lineHeight: 1 }}>{s.val}</Typography>
+            <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3 }}>{s.label}</Typography>
           </Box>
         ))}
       </Stack>
 
       {/* Recent achievements */}
       <Box>
-        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.06em', textTransform: 'uppercase', mb: 1 }}>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(t), letterSpacing: '0.06em', textTransform: 'uppercase', mb: 1 }}>
           Derniers succès
         </Typography>
         {unlockedAchievements.length === 0 ? (
           <Box sx={{ py: 4, textAlign: 'center' }}>
-            <Star size={32} weight={W} color={tc.f(d)} />
-            <Typography sx={{ fontSize: '0.8rem', color: tc.f(d), mt: 1 }}>
+            <Star size={32} weight={W} color={tc.f(t)} />
+            <Typography sx={{ fontSize: '0.8rem', color: tc.f(t), mt: 1 }}>
               Aucun succès débloqué pour l&apos;instant
             </Typography>
           </Box>
@@ -433,7 +437,7 @@ function OverviewTab({ stats, unlockedAchievements, totalCount, d }: {
             {unlockedAchievements
               .slice(0, 3)
               .map((a) => (
-                <Box key={a.id} sx={card(d, { p: 1.5 })}>
+                <Box key={a.id} sx={card(t, { p: 1.5 })}>
                   <Stack direction="row" alignItems="center" spacing={1.5}>
                     <Box sx={{
                       width: 32, height: 32, borderRadius: '8px',
@@ -444,8 +448,8 @@ function OverviewTab({ stats, unlockedAchievements, totalCount, d }: {
                       <Star size={16} weight={W} />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.h(d) }}>{a.nameFr}</Typography>
-                      <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>{a.descriptionFr}</Typography>
+                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.h(t) }}>{a.nameFr}</Typography>
+                      <Typography sx={{ fontSize: '0.6rem', color: tc.f(t) }}>{a.descriptionFr}</Typography>
                     </Box>
                     <Chip label={`+${a.xpReward}`} size="small" sx={{ bgcolor: alpha(GOLD, 0.1), color: GOLD, fontWeight: 700, fontSize: '0.6rem', height: 20 }} />
                   </Stack>
@@ -474,7 +478,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   measurements: 'Mensurations',
 };
 
-function AchievementsTab({ achievements, d }: { achievements: AchievementData[]; d: boolean }) {
+function AchievementsTab({ achievements, t }: { achievements: AchievementData[]; t: ThemeId }) {
+  const d = DARK_THEMES.has(t);
 
   return (
     <Stack spacing={3}>
@@ -486,7 +491,7 @@ function AchievementsTab({ achievements, d }: { achievements: AchievementData[];
           <Box key={category}>
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
               <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: categoryColors[category] || GOLD }} />
-              <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(t), letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 {CATEGORY_LABELS[category]}
               </Typography>
             </Stack>
@@ -497,7 +502,7 @@ function AchievementsTab({ achievements, d }: { achievements: AchievementData[];
                 return (
                   <Box
                     key={a.id}
-                    sx={card(d, {
+                    sx={card(t, {
                       p: 1.5,
                       opacity: unlocked ? 1 : 0.6,
                       ...(unlocked && {
@@ -511,15 +516,15 @@ function AchievementsTab({ achievements, d }: { achievements: AchievementData[];
                         width: 36, height: 36, borderRadius: '10px',
                         bgcolor: unlocked ? alpha(GOLD, 0.12) : (d ? alpha('#fff', 0.05) : alpha('#000', 0.04)),
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: unlocked ? GOLD : tc.f(d),
+                        color: unlocked ? GOLD : tc.f(t),
                       }}>
                         {secret ? <Lock size={18} weight={W} /> : <Star size={18} weight={W} />}
                       </Box>
                       <Box sx={{ flex: 1 }}>
-                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(d) }}>
+                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(t) }}>
                           {secret ? '???' : a.nameFr}
                         </Typography>
-                        <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>
+                        <Typography sx={{ fontSize: '0.6rem', color: tc.f(t) }}>
                           {secret ? 'Succès secret' : a.descriptionFr}
                         </Typography>
                       </Box>
@@ -529,11 +534,11 @@ function AchievementsTab({ achievements, d }: { achievements: AchievementData[];
                           size="small"
                           sx={unlocked
                             ? { bgcolor: alpha(GOLD, 0.1), color: GOLD, fontWeight: 700, fontSize: '0.6rem', height: 20 }
-                            : { bgcolor: d ? alpha('#fff', 0.06) : alpha('#000', 0.04), color: tc.f(d), fontSize: '0.6rem', height: 20 }
+                            : { bgcolor: d ? alpha('#fff', 0.06) : alpha('#000', 0.04), color: tc.f(t), fontSize: '0.6rem', height: 20 }
                           }
                         />
                         {unlocked && (
-                          <Typography sx={{ fontSize: '0.55rem', color: tc.f(d), mt: 0.3 }}>
+                          <Typography sx={{ fontSize: '0.55rem', color: tc.f(t), mt: 0.3 }}>
                             {new Date(a.unlockedAt!).toLocaleDateString('fr-FR')}
                           </Typography>
                         )}
@@ -551,27 +556,27 @@ function AchievementsTab({ achievements, d }: { achievements: AchievementData[];
 }
 
 /* ── XP History tab ── */
-function HistoryTab({ transactions, d }: { transactions: XpTransactionData[]; d: boolean }) {
+function HistoryTab({ transactions, t }: { transactions: XpTransactionData[]; t: ThemeId }) {
   return (
     <Box>
       {transactions.length === 0 ? (
         <Box sx={{ py: 6, textAlign: 'center' }}>
-          <TrendUp size={36} weight={W} color={tc.f(d)} />
-          <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.m(d), mt: 1, mb: 0.5 }}>
+          <TrendUp size={36} weight={W} color={tc.f(t)} />
+          <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.m(t), mt: 1, mb: 0.5 }}>
             Pas encore d&apos;XP
           </Typography>
-          <Typography sx={{ fontSize: '0.7rem', color: tc.f(d) }}>
+          <Typography sx={{ fontSize: '0.7rem', color: tc.f(t) }}>
             Commence à t&apos;entraîner pour gagner de l&apos;XP !
           </Typography>
         </Box>
       ) : (
         <Stack spacing={1}>
           {transactions.map((tx) => (
-            <Box key={tx.id} sx={card(d, { p: 1.5 })}>
+            <Box key={tx.id} sx={card(t, { p: 1.5 })}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: tc.h(d) }}>{xpReasonLabel(tx.reason)}</Typography>
-                  <Typography sx={{ fontSize: '0.65rem', color: tc.f(d) }}>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: tc.h(t) }}>{xpReasonLabel(tx.reason)}</Typography>
+                  <Typography sx={{ fontSize: '0.65rem', color: tc.f(t) }}>
                     {new Date(tx.createdAt as string).toLocaleDateString('fr-FR', {
                       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
                     })}
@@ -602,15 +607,19 @@ const GOLD_FIELD_SX = {
 };
 
 const THEME_OPTIONS = [
-  { value: 'system', label: 'Système', desc: 'Suit les préférences de ton appareil', Icon: Monitor },
-  { value: 'light', label: 'Clair', desc: 'Thème lumineux', Icon: Sun },
-  { value: 'dark', label: 'Sombre', desc: 'Thème sombre pour les yeux', Icon: Moon },
+  { value: 'system', label: 'Système', desc: 'Suit ton appareil', Icon: Monitor, preview: null },
+  { value: 'light', label: 'Clair', desc: 'Lumineux et aéré', Icon: Sun, preview: THEME_PRESETS.light },
+  { value: 'dark', label: 'Sombre', desc: 'Sombre pour les yeux', Icon: Moon, preview: THEME_PRESETS.dark },
+  { value: 'navy', label: 'Bleu Marine', desc: 'Premium et profond', Icon: Anchor, preview: THEME_PRESETS.navy },
+  { value: 'gray', label: 'Gris Clair', desc: 'Minimal et épuré', Icon: CloudSun, preview: THEME_PRESETS.gray },
+  { value: 'cream', label: 'Crème', desc: 'Chaleureux et élégant', Icon: Coffee, preview: THEME_PRESETS.cream },
 ];
 
 /* ── Settings tab ── */
 function SettingsTab() {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const d = resolvedTheme !== 'light';
+  const t = (resolvedTheme as ThemeId) || 'dark';
+  const d = DARK_THEMES.has(t);
   const [mounted, setMounted] = useState(false);
   const [groqKey, setGroqKey] = useState('');
   const [groqKeyLoaded, setGroqKeyLoaded] = useState(false);
@@ -652,7 +661,7 @@ function SettingsTab() {
     <Stack spacing={3}>
       {/* Theme */}
       <Box>
-        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), mb: 1.5, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(t), mb: 1.5, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           Apparence
         </Typography>
         <Stack spacing={0.75}>
@@ -662,7 +671,7 @@ function SettingsTab() {
               <Box
                 key={option.value}
                 onClick={() => setTheme(option.value)}
-                sx={card(d, {
+                sx={card(t, {
                   p: 0, overflow: 'hidden', cursor: 'pointer',
                   borderColor: sel ? GOLD : undefined,
                   transition: 'all 0.2s ease',
@@ -677,15 +686,22 @@ function SettingsTab() {
                   }} />
                   <Box sx={{ py: 1.5, px: 2, flex: 1 }}>
                     <Stack direction="row" alignItems="center" spacing={2}>
-                      <Box sx={{ display: 'flex', color: sel ? GOLD : tc.f(d) }}>
+                      <Box sx={{ display: 'flex', color: sel ? GOLD : tc.f(t) }}>
                         <option.Icon size={22} weight={W} />
                       </Box>
                       <Box sx={{ flex: 1 }}>
-                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: sel ? GOLD : tc.h(d) }}>
+                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: sel ? GOLD : tc.h(t) }}>
                           {option.label}
                         </Typography>
-                        <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>{option.desc}</Typography>
+                        <Typography sx={{ fontSize: '0.6rem', color: tc.f(t) }}>{option.desc}</Typography>
                       </Box>
+                      {option.preview && (
+                        <Stack direction="row" spacing={0.5} sx={{ mr: 1 }}>
+                          {[option.preview.previewBg, option.preview.previewCard, option.preview.previewText].map((c, i) => (
+                            <Box key={i} sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: c, border: '1px solid', borderColor: alpha('#888', 0.3) }} />
+                          ))}
+                        </Stack>
+                      )}
                       {sel && <Check size={18} weight="bold" color={GOLD} />}
                     </Stack>
                   </Box>
@@ -695,17 +711,22 @@ function SettingsTab() {
           })}
         </Stack>
         {theme === 'system' && (
-          <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mt: 1.5 }}>
+          <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), mt: 1.5 }}>
             Mode actuel : {resolvedTheme === 'dark' ? 'Sombre' : 'Clair'}
+          </Typography>
+        )}
+        {theme !== 'system' && theme !== 'light' && theme !== 'dark' && (
+          <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), mt: 1.5 }}>
+            Base : {DARK_THEMES.has(theme as ThemeId) ? 'sombre' : 'clair'}
           </Typography>
         )}
       </Box>
 
       {/* Intelligence IA */}
-      <Box sx={card(d, { p: 2 })}>
+      <Box sx={card(t, { p: 2 })}>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
           <Lightning size={20} weight={W} color={GOLD} />
-          <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(t), letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             Intelligence IA
           </Typography>
           {groqKey && (
@@ -715,7 +736,7 @@ function SettingsTab() {
             }} />
           )}
         </Stack>
-        <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mb: 1.5 }}>
+        <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), mb: 1.5 }}>
           Clé API Groq pour la reconnaissance photo et l{"'"}estimation nutritionnelle.
         </Typography>
         <Stack direction="row" spacing={1}>
@@ -730,7 +751,7 @@ function SettingsTab() {
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Key size={16} weight={W} color={tc.f(d)} />
+                    <Key size={16} weight={W} color={tc.f(t)} />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -768,10 +789,10 @@ function SettingsTab() {
 
       {/* About */}
       <Box>
-        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), mb: 0.5, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(t), mb: 0.5, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           À propos
         </Typography>
-        <Typography sx={{ fontSize: '0.75rem', color: tc.f(d) }}>Workout App v1.0.0</Typography>
+        <Typography sx={{ fontSize: '0.75rem', color: tc.f(t) }}>Workout App v1.0.0</Typography>
       </Box>
 
       {/* Logout */}

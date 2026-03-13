@@ -13,7 +13,7 @@ import { X, ArrowLeft, Barbell } from '@phosphor-icons/react';
 import { getExerciseImages } from '@/lib/exercise-images';
 import { GOLD, GOLD_CONTRAST, W, tc, card, panelBg, goldBtnSx } from '@/lib/design-tokens';
 import { MUSCLE_MAPPING, MUSCLE_LABELS, ANTERIOR_MUSCLES, POSTERIOR_MUSCLES, getMappedMuscles } from '@/lib/muscle-mapping';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 
 // Equipment labels for display
 const EQUIPMENT_LABELS: Record<string, string> = {
@@ -60,7 +60,7 @@ export default function ExerciseDetailModal({
   onClose,
   onSelect,
 }: ExerciseDetailModalProps) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   const [viewSide, setViewSide] = useState<'anterior' | 'posterior'>('anterior');
 
@@ -128,7 +128,7 @@ export default function ExerciseDetailModal({
         sx: {
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
-          bgcolor: panelBg(d),
+          bgcolor: panelBg(t),
           maxHeight: '90vh',
         },
       }}
@@ -154,17 +154,17 @@ export default function ExerciseDetailModal({
               size="small"
               sx={{
                 bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
-                color: tc.m(d),
+                color: tc.m(t),
                 '&:hover': { bgcolor: d ? alpha('#ffffff', 0.12) : alpha('#000000', 0.08) },
               }}
             >
               <ArrowLeft size={20} weight={W} />
             </IconButton>
-            <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(d) }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(t) }}>
               {exercise.nameFr}
             </Typography>
           </Stack>
-          <IconButton onClick={onClose} size="small" sx={{ color: tc.f(d) }}>
+          <IconButton onClick={onClose} size="small" sx={{ color: tc.f(t) }}>
             <X size={20} weight={W} />
           </IconButton>
         </Stack>
@@ -174,7 +174,7 @@ export default function ExerciseDetailModal({
 
         {/* Muscle Tags */}
         <Box sx={{ mb: 2 }}>
-          <Typography variant="caption" sx={{ mb: 1, display: 'block', color: tc.f(d) }}>
+          <Typography variant="caption" sx={{ mb: 1, display: 'block', color: tc.f(t) }}>
             Muscles ciblés
           </Typography>
           <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
@@ -210,7 +210,7 @@ export default function ExerciseDetailModal({
         {/* Body Model */}
         <Box
           sx={{
-            ...card(d),
+            ...card(t),
             p: 2,
             mb: 2,
           }}
@@ -223,7 +223,7 @@ export default function ExerciseDetailModal({
                 cursor: 'pointer',
                 fontSize: '0.85rem',
                 fontWeight: viewSide === 'anterior' ? 600 : 400,
-                color: viewSide === 'anterior' ? tc.h(d) : tc.f(d),
+                color: viewSide === 'anterior' ? tc.h(t) : tc.f(t),
                 opacity: hasAnterior ? 1 : 0.3,
               }}
             >
@@ -235,7 +235,7 @@ export default function ExerciseDetailModal({
                 cursor: 'pointer',
                 fontSize: '0.85rem',
                 fontWeight: viewSide === 'posterior' ? 600 : 400,
-                color: viewSide === 'posterior' ? tc.h(d) : tc.f(d),
+                color: viewSide === 'posterior' ? tc.h(t) : tc.f(t),
                 opacity: hasPosterior ? 1 : 0.3,
               }}
             >
@@ -267,11 +267,11 @@ export default function ExerciseDetailModal({
           <Stack direction="row" justifyContent="center" spacing={3} sx={{ mt: 1 }}>
             <Stack direction="row" alignItems="center" spacing={0.5}>
               <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#ef4444' }} />
-              <Typography variant="caption" sx={{ color: tc.m(d) }}>Principal</Typography>
+              <Typography variant="caption" sx={{ color: tc.m(t) }}>Principal</Typography>
             </Stack>
             <Stack direction="row" alignItems="center" spacing={0.5}>
               <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#f97316' }} />
-              <Typography variant="caption" sx={{ color: tc.m(d) }}>Secondaire</Typography>
+              <Typography variant="caption" sx={{ color: tc.m(t) }}>Secondaire</Typography>
             </Stack>
           </Stack>
         </Box>
@@ -279,7 +279,7 @@ export default function ExerciseDetailModal({
         {/* Equipment */}
         {exercise.equipment && exercise.equipment.length > 0 && (
           <Box sx={{ mb: 2 }}>
-            <Typography variant="caption" sx={{ mb: 1, display: 'block', color: tc.f(d) }}>
+            <Typography variant="caption" sx={{ mb: 1, display: 'block', color: tc.f(t) }}>
               Équipement
             </Typography>
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
@@ -289,7 +289,7 @@ export default function ExerciseDetailModal({
                   label={EQUIPMENT_LABELS[eq] || eq}
                   size="small"
                   variant="outlined"
-                  sx={{ fontSize: '0.75rem', borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12), color: tc.m(d) }}
+                  sx={{ fontSize: '0.75rem', borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12), color: tc.m(t) }}
                 />
               ))}
             </Stack>
@@ -299,10 +299,10 @@ export default function ExerciseDetailModal({
         {/* Difficulty */}
         {exercise.difficulty && (
           <Box sx={{ mb: 3 }}>
-            <Typography variant="caption" sx={{ mb: 1, display: 'block', color: tc.f(d) }}>
+            <Typography variant="caption" sx={{ mb: 1, display: 'block', color: tc.f(t) }}>
               Difficulté
             </Typography>
-            <Typography sx={{ fontSize: '0.9rem', textTransform: 'capitalize', color: tc.h(d) }}>
+            <Typography sx={{ fontSize: '0.9rem', textTransform: 'capitalize', color: tc.h(t) }}>
               {exercise.difficulty === 'beginner' && 'Débutant'}
               {exercise.difficulty === 'intermediate' && 'Intermédiaire'}
               {exercise.difficulty === 'expert' && 'Expert'}
@@ -336,7 +336,7 @@ export default function ExerciseDetailModal({
 
 // Animated image component for exercise demonstration
 function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   const [currentImage, setCurrentImage] = useState(0);
   const [imageError, setImageError] = useState(false);
@@ -377,10 +377,10 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
         }}
       >
         <Stack alignItems="center" spacing={1}>
-          <Box sx={{ color: tc.f(d) }}>
+          <Box sx={{ color: tc.f(t) }}>
             <Barbell size={48} weight={W} />
           </Box>
-          <Typography variant="caption" sx={{ color: tc.f(d) }}>
+          <Typography variant="caption" sx={{ color: tc.f(t) }}>
             Image non disponible
           </Typography>
         </Stack>
@@ -474,7 +474,7 @@ function ExerciseImageCarousel({ nameEn }: { nameEn: string | null }) {
           textAlign: 'center',
           mt: 1,
           fontSize: '0.7rem',
-          color: tc.f(d),
+          color: tc.f(t),
         }}
       >
         Tap pour {isPlaying ? 'pause' : 'play'} - Position {currentImage + 1}/{images.length}

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDark } from '@/hooks/useDark';
+import { useThemeTokens } from '@/hooks/useDark';
 import Link from 'next/link';
 import type { WorkoutTemplate } from '../types';
 import { useAuth } from '@/powersync/auth-context';
@@ -35,7 +35,7 @@ export default function ProgramsPage() {
 
 function ProgramsContent() {
   const router = useRouter();
-  const d = useDark();
+  const { t, d } = useThemeTokens();
   const { data: templateRows, isLoading } = useTemplates();
   const { data: exerciseRows } = useAllTemplateExercises();
   const mutations = useWorkoutMutations();
@@ -59,14 +59,14 @@ function ProgramsContent() {
       exercisesByTemplate.set(tid, list);
     }
 
-    return templateRows.map((t) => ({
-      id: t.id,
-      name: (t.name as string) || '',
-      description: t.description ?? null,
-      targetMuscles: parseJsonArray(t.target_muscles as string),
-      estimatedDuration: t.estimated_duration ?? null,
-      exercises: exercisesByTemplate.get(t.id) ?? [],
-      createdAt: new Date((t.created_at as string) || Date.now()),
+    return templateRows.map((row) => ({
+      id: row.id,
+      name: (row.name as string) || '',
+      description: row.description ?? null,
+      targetMuscles: parseJsonArray(row.target_muscles as string),
+      estimatedDuration: row.estimated_duration ?? null,
+      exercises: exercisesByTemplate.get(row.id) ?? [],
+      createdAt: new Date((row.created_at as string) || Date.now()),
     }));
   }, [templateRows, exerciseRows]);
 
@@ -91,7 +91,7 @@ function ProgramsContent() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(d) }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(t) }}>
       {/* Header */}
       <Box
         sx={{
@@ -99,15 +99,15 @@ function ProgramsContent() {
           py: 1.5,
           borderBottom: '1px solid',
           borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
-          bgcolor: panelBg(d),
+          bgcolor: panelBg(t),
         }}
       >
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" alignItems="center" spacing={1.5}>
             <IconButton component={Link} href="/workout" size="small">
-              <ArrowLeft weight={W} size={22} color={tc.h(d)} />
+              <ArrowLeft weight={W} size={22} color={tc.h(t)} />
             </IconButton>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(d) }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(t) }}>
               Programmes
             </Typography>
           </Stack>
@@ -131,12 +131,12 @@ function ProgramsContent() {
             ))}
           </Stack>
         ) : templates.length === 0 ? (
-          <Box sx={{ ...card(d), textAlign: 'center', py: 8, px: 3 }}>
+          <Box sx={{ ...card(t), textAlign: 'center', py: 8, px: 3 }}>
             <Typography variant="h1" sx={{ mb: 2 }}>📋</Typography>
-            <Typography variant="h6" sx={{ mb: 1, color: tc.h(d) }}>
+            <Typography variant="h6" sx={{ mb: 1, color: tc.h(t) }}>
               Aucun programme
             </Typography>
-            <Typography sx={{ mb: 3, color: tc.m(d) }}>
+            <Typography sx={{ mb: 3, color: tc.m(t) }}>
               Crée ton premier programme personnalisé basé sur ta morphologie
             </Typography>
             <Button
@@ -181,36 +181,36 @@ function ProgramCard({
   isStarting: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const d = useDark();
+  const { t, d } = useThemeTokens();
 
   const translateMuscle = (muscle: string) => MUSCLE_LABELS[muscle.toLowerCase()] || muscle;
 
   return (
-    <Box sx={card(d)}>
+    <Box sx={card(t)}>
       <Box sx={{ p: 2 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(d) }} noWrap>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(t) }} noWrap>
               {template.name}
             </Typography>
             {template.description && (
-              <Typography variant="caption" sx={{ color: tc.m(d), display: 'block' }} noWrap>
+              <Typography variant="caption" sx={{ color: tc.m(t), display: 'block' }} noWrap>
                 {template.description}
               </Typography>
             )}
           </Box>
-          <IconButton size="small" onClick={onDelete} sx={{ color: tc.f(d), ml: 1 }}>
+          <IconButton size="small" onClick={onDelete} sx={{ color: tc.f(t), ml: 1 }}>
             <Trash weight={W} size={18} />
           </IconButton>
         </Stack>
 
         {/* Stats + Muscles inline */}
         <Stack direction="row" spacing={2} sx={{ mt: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Typography variant="caption" sx={{ color: tc.m(d) }}>
+          <Typography variant="caption" sx={{ color: tc.m(t) }}>
             {template.exercises.length} exos
           </Typography>
           {template.estimatedDuration && (
-            <Typography variant="caption" sx={{ color: tc.m(d) }}>
+            <Typography variant="caption" sx={{ color: tc.m(t) }}>
               ~{template.estimatedDuration} min
             </Typography>
           )}
@@ -224,7 +224,7 @@ function ProgramCard({
                 sx={{
                   height: 20,
                   fontSize: '0.7rem',
-                  color: tc.m(d),
+                  color: tc.m(t),
                   borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12),
                 }}
               />
@@ -237,7 +237,7 @@ function ProgramCard({
                 sx={{
                   height: 20,
                   fontSize: '0.7rem',
-                  color: tc.m(d),
+                  color: tc.m(t),
                   borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12),
                 }}
               />
@@ -266,7 +266,7 @@ function ProgramCard({
             onClick={() => setExpanded(!expanded)}
             sx={{ border: '1px solid', borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }}
           >
-            {expanded ? <CaretUp weight={W} size={18} color={tc.m(d)} /> : <CaretDown weight={W} size={18} color={tc.m(d)} />}
+            {expanded ? <CaretUp weight={W} size={18} color={tc.m(t)} /> : <CaretDown weight={W} size={18} color={tc.m(t)} />}
           </IconButton>
         </Stack>
       </Box>
@@ -296,7 +296,7 @@ function ProgramCard({
                   >
                     {i + 1}
                   </Typography>
-                  <Typography variant="body2" noWrap sx={{ flex: 1, color: tc.h(d) }}>
+                  <Typography variant="body2" noWrap sx={{ flex: 1, color: tc.h(t) }}>
                     {ex.exerciseName}
                   </Typography>
                 </Stack>
@@ -307,7 +307,7 @@ function ProgramCard({
                     height: 18,
                     fontSize: '0.65rem',
                     ml: 1,
-                    color: tc.m(d),
+                    color: tc.m(t),
                     bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
                   }}
                 />
