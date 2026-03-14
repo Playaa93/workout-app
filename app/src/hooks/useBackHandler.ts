@@ -73,17 +73,23 @@ function removeEntry(entry: StackEntry) {
 }
 
 /**
- * Détache toutes les entrées du stack sans appeler history.back().
- * À appeler avant un router.push() programmatique pour éviter que
- * les cleanups au unmount n'annulent la navigation.
+ * Vide le stack d'overlays avant une navigation programmatique (router.push).
+ *
+ * Ne appelle PAS entry.close() — évite des re-renders inutiles juste avant
+ * l'unmount. Ne touche PAS à history — évite d'annuler le router.push.
+ *
+ * Les entrées pushState des overlays restent dans l'historique du navigateur.
+ * C'est bénin : au retour arrière l'utilisateur atterrit sur la même URL
+ * (pushState ne change pas l'URL) et l'overlay ne se rouvre pas car
+ * le composant a été unmonté.
+ *
+ * Au unmount, les cleanup effects appellent removeEntry() sur les entrées
+ * qui avaient un entryRef. Comme le stack est vide, indexOf retourne -1
+ * et removeEntry est un no-op — pas de history.back() parasite.
  */
 export function dismissAllOverlays(): void {
-  while (stack.length > 0) {
-    const entry = stack.pop()!;
-    entry.close();
-  }
-  // Les entrées historiques correspondantes deviennent orphelines
-  // et seront drainées par le prochain popstate.
+  if (stack.length === 0) return;
+  stack.length = 0;
   orphanCount = 0;
   ignoreCount = 0;
   cleanupListener();

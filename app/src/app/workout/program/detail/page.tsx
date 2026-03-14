@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, Suspense } from 'react';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useBackHandler, dismissAllOverlays } from '@/hooks/useBackHandler';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useThemeTokens } from '@/hooks/useDark';
 import { useAuth } from '@/powersync/auth-context';
@@ -116,6 +116,7 @@ function ProgramDetailContent() {
 
   const handleDelete = async () => {
     await mutations.deleteTemplate(templateId);
+    dismissAllOverlays();
     router.push('/workout');
   };
 
