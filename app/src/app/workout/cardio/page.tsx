@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useBackHandler, dismissAllOverlays } from '@/hooks/useBackHandler';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useThemeTokens } from '@/hooks/useDark';
 import { useAuth } from '@/powersync/auth-context';
@@ -146,10 +146,7 @@ function CardioContent() {
         avgHeartRate: avgHr || undefined,
         perceivedDifficulty: undefined,
       });
-      // Close dialog BEFORE navigating so useBackHandler cleanup doesn't
-      // call history.back() on unmount and cancel the router.push
-      setShowEndConfirm(false);
-      await new Promise(r => setTimeout(r, 50));
+      dismissAllOverlays();
       const activity = session?.cardioActivity || 'other';
       router.push(
         `/workout/summary?sessionId=${sessionId}&type=cardio&activity=${activity}&duration=${result.duration}&distance=${result.distanceMeters}&pace=${result.avgPaceSecondsPerKm}&calories=${result.caloriesBurned}&xp=${result.xpEarned}`

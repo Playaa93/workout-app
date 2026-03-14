@@ -72,6 +72,23 @@ function removeEntry(entry: StackEntry) {
   cleanupListener();
 }
 
+/**
+ * Détache toutes les entrées du stack sans appeler history.back().
+ * À appeler avant un router.push() programmatique pour éviter que
+ * les cleanups au unmount n'annulent la navigation.
+ */
+export function dismissAllOverlays(): void {
+  while (stack.length > 0) {
+    const entry = stack.pop()!;
+    entry.close();
+  }
+  // Les entrées historiques correspondantes deviennent orphelines
+  // et seront drainées par le prochain popstate.
+  orphanCount = 0;
+  ignoreCount = 0;
+  cleanupListener();
+}
+
 export function useBackHandler(
   open: boolean,
   onClose: () => void,

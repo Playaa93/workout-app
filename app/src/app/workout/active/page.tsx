@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useBackHandler, dismissAllOverlays } from '@/hooks/useBackHandler';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type {
   Exercise,
@@ -290,10 +290,7 @@ function ActiveWorkoutContent() {
     if (!sessionId) return;
     try {
       const result = await mutations.endWorkoutSession(sessionId);
-      // Close dialog BEFORE navigating so useBackHandler cleanup doesn't
-      // call history.back() on unmount and cancel the router.push
-      setShowEndConfirm(false);
-      await new Promise(r => setTimeout(r, 50));
+      dismissAllOverlays();
       router.push(`/workout/summary?sessionId=${sessionId}&xp=${result.xpEarned}&volume=${result.totalVolume}&duration=${result.duration}&prs=${result.prCount}`);
     } catch (error) {
       console.error('Error ending workout:', error);
