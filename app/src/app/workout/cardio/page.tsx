@@ -146,6 +146,10 @@ function CardioContent() {
         avgHeartRate: avgHr || undefined,
         perceivedDifficulty: undefined,
       });
+      // Close dialog BEFORE navigating so useBackHandler cleanup doesn't
+      // call history.back() on unmount and cancel the router.push
+      setShowEndConfirm(false);
+      await new Promise(r => setTimeout(r, 50));
       const activity = session?.cardioActivity || 'other';
       router.push(
         `/workout/summary?sessionId=${sessionId}&type=cardio&activity=${activity}&duration=${result.duration}&distance=${result.distanceMeters}&pace=${result.avgPaceSecondsPerKm}&calories=${result.caloriesBurned}&xp=${result.xpEarned}`

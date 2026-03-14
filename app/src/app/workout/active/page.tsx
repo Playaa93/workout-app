@@ -290,6 +290,10 @@ function ActiveWorkoutContent() {
     if (!sessionId) return;
     try {
       const result = await mutations.endWorkoutSession(sessionId);
+      // Close dialog BEFORE navigating so useBackHandler cleanup doesn't
+      // call history.back() on unmount and cancel the router.push
+      setShowEndConfirm(false);
+      await new Promise(r => setTimeout(r, 50));
       router.push(`/workout/summary?sessionId=${sessionId}&xp=${result.xpEarned}&volume=${result.totalVolume}&duration=${result.duration}&prs=${result.prCount}`);
     } catch (error) {
       console.error('Error ending workout:', error);
