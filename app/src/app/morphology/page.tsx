@@ -134,7 +134,7 @@ function MorphologyContent() {
           >
             <ArrowLeft size={24} weight={W} />
           </Box>
-          <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: tc.h(t), flex: 1, textAlign: 'center' }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: tc.h(t), flex: 1, letterSpacing: '-0.02em' }}>
             Analyse Morphologique
           </Typography>
         </Stack>
