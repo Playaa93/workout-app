@@ -13,12 +13,14 @@ import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
 import type { CardioActivity } from '@/db/schema';
 import { GOLD, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, dialogPaperSx } from '@/lib/design-tokens';
+import Link from 'next/link';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import {
   ArrowLeft,
   Trash,
   DotsThreeVertical,
   Trophy,
+  CaretRight,
   NoteBlank,
   GearSix,
   DownloadSimple,
@@ -266,6 +268,7 @@ function SessionDetailContent() {
     return {
       session: {
         id: s.id,
+        templateId: s.template_id ?? null,
         startedAt: new Date(s.started_at!),
         endedAt: s.ended_at ? new Date(s.ended_at) : null,
         durationMinutes: s.duration_minutes ?? null,
@@ -316,6 +319,7 @@ function SessionDetailContent() {
   const volume = session.totalVolume ? parseFloat(session.totalVolume) : 0;
   const distanceM = session.distanceMeters ? parseFloat(session.distanceMeters) : 0;
   const mins = session.durationMinutes || 0;
+  const workingSetCount = sets.filter(s => !s.isWarmup).length;
 
   // Group sets by exercise
   const setsByExercise = new Map<string, WorkoutSet[]>();
@@ -369,50 +373,58 @@ function SessionDetailContent() {
           </Menu>
         </Stack>
 
+        {/* Programme source (if linked) */}
+        {session.templateId && (
+          <Box
+            component={Link}
+            href={`/workout/program/detail?id=${session.templateId}`}
+            sx={card(t, { px: 2, py: 1.2, mb: 1.5, textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.85 } })}
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: GOLD, flexShrink: 0 }} />
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: tc.h(t), flex: 1 }}>Programme lié</Typography>
+              <CaretRight size={14} weight={W} color={tc.f(t)} />
+            </Stack>
+          </Box>
+        )}
+
         {/* Stats — clean inline */}
         <Box sx={card(t, { p: 2.5, mb: 2 })}>
           <Stack direction="row" justifyContent="space-around" textAlign="center">
             {isCardio ? (
               <>
                 <Box>
-                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
+                  <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
                     {distanceM > 0 ? formatDistance(distanceM) : '—'}
                   </Typography>
-                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Distance</Typography>
+                  <Typography sx={{ fontSize: '0.45rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Distance</Typography>
                 </Box>
-                <Box sx={{ borderLeft: 1, borderRight: 1, borderColor: alpha(d ? '#fff' : '#000', 0.06), px: 3 }}>
-                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
+                <Box sx={{ borderLeft: 1, borderColor: alpha(d ? '#fff' : '#000', 0.06), pl: 2 }}>
+                  <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
                     {session.avgPaceSecondsPerKm ? formatPace(session.avgPaceSecondsPerKm) : '—'}
                   </Typography>
-                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Allure</Typography>
+                  <Typography sx={{ fontSize: '0.45rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Allure</Typography>
                 </Box>
-                <Box>
-                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
+                <Box sx={{ borderLeft: 1, borderColor: alpha(d ? '#fff' : '#000', 0.06), pl: 2 }}>
+                  <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
                     {session.caloriesBurned ?? '—'}
                   </Typography>
-                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>kcal</Typography>
+                  <Typography sx={{ fontSize: '0.45rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>kcal</Typography>
                 </Box>
               </>
             ) : (
               <>
-                <Box>
-                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
-                    {volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`}
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Volume</Typography>
-                </Box>
-                <Box sx={{ borderLeft: 1, borderRight: 1, borderColor: alpha(d ? '#fff' : '#000', 0.06), px: 3 }}>
-                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
-                    {sets.filter(s => !s.isWarmup).length}
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Séries</Typography>
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
-                    {session.caloriesBurned ?? '—'}
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>kcal</Typography>
-                </Box>
+                {[
+                  { v: volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`, l: 'Volume' },
+                  { v: String(workingSetCount), l: 'Séries' },
+                  { v: mins > 0 ? formatDuration(mins) : '—', l: 'Durée' },
+                  { v: session.caloriesBurned != null ? String(session.caloriesBurned) : '—', l: 'kcal' },
+                ].map((s, i) => (
+                  <Box key={s.l} sx={i > 0 ? { borderLeft: 1, borderColor: alpha(d ? '#fff' : '#000', 0.06), pl: 2 } : undefined}>
+                    <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>{s.v}</Typography>
+                    <Typography sx={{ fontSize: '0.45rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.l}</Typography>
+                  </Box>
+                ))}
               </>
             )}
           </Stack>

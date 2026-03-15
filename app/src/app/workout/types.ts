@@ -32,6 +32,7 @@ export type WorkoutTemplate = {
 
 export type WorkoutSession = {
   id: string;
+  templateId?: string | null;
   startedAt: Date;
   endedAt: Date | null;
   durationMinutes: number | null;
