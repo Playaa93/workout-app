@@ -12,7 +12,7 @@ import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import { GOLD, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, goldOutlinedBtnSx, dialogPaperSx } from '@/lib/design-tokens';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { alpha } from '@mui/material/styles';
-import { ArrowLeft, Play, Trash, PencilSimple, Info, Timer } from '@phosphor-icons/react';
+import { ArrowLeft, Play, Trash, PencilSimple, Info } from '@phosphor-icons/react';
 import ExerciseDetailModal, { type ExerciseDetail } from '@/components/workout/ExerciseDetailModal';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -175,83 +175,37 @@ function ProgramDetailContent() {
         </Stack>
       </Box>
 
-      <Box sx={{ p: 2 }}>
-        {/* Info */}
-        <Box sx={{ mb: 3 }}>
-          {template.description && (
-            <Typography variant="body2" sx={{ mb: 1.5, color: tc.m(t) }}>
-              {template.description}
-            </Typography>
-          )}
+      <Box sx={{ px: 2, pt: 2, pb: 4 }}>
+        <Stack spacing={1.5}>
+          {/* Stats summary */}
+          <Box sx={card(t, { p: 2.5 })}>
+            <Stack direction="row" justifyContent="space-around" textAlign="center">
+              {[
+                { v: template.estimatedDuration ? String(template.estimatedDuration) : '—', u: 'min', l: 'Durée' },
+                { v: String(exerciseRows.length), u: '', l: 'Exercices' },
+                { v: String(exerciseRows.reduce((s, ex) => s + (ex.target_sets || 0), 0)), u: '', l: 'Séries' },
+              ].map((s, i) => (
+                <Box key={s.l} sx={i > 0 ? { borderLeft: 1, borderColor: d ? alpha('#fff', 0.06) : alpha('#000', 0.06), pl: 2.5 } : undefined}>
+                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
+                    {s.v}<Typography component="span" sx={{ fontSize: '0.55rem', color: tc.f(t), fontWeight: 500 }}>{s.u}</Typography>
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.45rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.l}</Typography>
+                </Box>
+              ))}
+            </Stack>
+          </Box>
+
+          {/* Muscles + description */}
           <Typography sx={{ fontSize: '0.65rem', color: tc.f(t) }}>
             {template.targetMuscles.map((m) => MUSCLE_LABELS[m] || m).join(' · ')}
           </Typography>
-          {template.estimatedDuration && (
-            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1 }}>
-              <Timer weight={W} size={16} color={tc.m(t)} />
-              <Typography variant="caption" sx={{ color: tc.m(t) }}>
-                ~{template.estimatedDuration} min
-              </Typography>
-            </Stack>
+          {template.description && (
+            <Typography sx={{ fontSize: '0.7rem', color: tc.m(t) }}>
+              {template.description}
+            </Typography>
           )}
-        </Box>
 
-        {/* Exercises */}
-        <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.1em', textTransform: 'uppercase', mb: 1.5 }}>
-          {exerciseRows.length} exercice{exerciseRows.length > 1 ? 's' : ''}
-        </Typography>
-
-        <Stack spacing={1}>
-          {exerciseRows.map((ex, i) => (
-            <Box
-              key={ex.id}
-              sx={card(t, { px: 2, py: 1.5 })}
-            >
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Box sx={{
-                  width: 28, height: 28, borderRadius: '50%',
-                  bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.8rem', fontWeight: 600, color: tc.m(t), flexShrink: 0,
-                }}>
-                  {i + 1}
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: tc.h(t) }} noWrap>
-                    {ex.exercise_name}
-                  </Typography>
-                  <Stack direction="row" spacing={1.5} sx={{ mt: 0.25 }}>
-                    <Typography variant="caption" sx={{ color: tc.m(t) }}>
-                      {ex.target_sets} × {ex.target_reps}
-                    </Typography>
-                    {(ex.rest_seconds ?? 0) > 0 && (
-                      <Typography variant="caption" sx={{ color: tc.f(t) }}>
-                        repos {formatRestTime(ex.rest_seconds!)}
-                      </Typography>
-                    )}
-                  </Stack>
-                </Box>
-                <IconButton
-                  size="small"
-                  onClick={() => setDetailExercise(toExerciseDetail(ex))}
-                  sx={{ color: tc.f(t), flexShrink: 0 }}
-                >
-                  <Info weight={W} size={18} />
-                </IconButton>
-              </Stack>
-              {ex.notes && (
-                <Typography variant="caption" sx={{ mt: 0.5, display: 'block', pl: 5.5, fontStyle: 'italic', color: tc.f(t) }}>
-                  {ex.notes}
-                </Typography>
-              )}
-            </Box>
-          ))}
-        </Stack>
-
-        <Box sx={{ my: 3 }} />
-
-        {/* Actions */}
-        <Stack spacing={1.5} sx={{ pb: 4 }}>
+          {/* CTA */}
           <Button
             fullWidth
             startIcon={starting ? <CircularProgress size={18} sx={{ color: surfaceBg(t) }} /> : <Play weight="fill" size={18} />}
@@ -266,11 +220,52 @@ function ProgramDetailContent() {
           >
             Démarrer la séance
           </Button>
+
+          {/* Exercise list */}
+          <Box sx={card(t, { p: 2.5 })}>
+            <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.1em', textTransform: 'uppercase', mb: 1.5 }}>
+              {exerciseRows.length} exercice{exerciseRows.length > 1 ? 's' : ''}
+            </Typography>
+            {exerciseRows.map((ex, i) => (
+              <Stack
+                key={ex.id}
+                direction="row"
+                alignItems="center"
+                sx={{
+                  py: 1,
+                  borderBottom: i < exerciseRows.length - 1 ? '1px solid' : 'none',
+                  borderColor: d ? alpha('#fff', 0.05) : alpha('#000', 0.05),
+                }}
+              >
+                <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.f(t), width: 16, flexShrink: 0 }}>
+                  {i + 1}
+                </Typography>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.h(t) }} noWrap>
+                    {ex.exercise_name}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t) }}>
+                    {ex.target_sets} × {ex.target_reps}
+                    {(ex.rest_seconds ?? 0) > 0 && ` · repos ${formatRestTime(ex.rest_seconds!)}`}
+                  </Typography>
+                </Box>
+                <IconButton
+                  size="small"
+                  onClick={() => setDetailExercise(toExerciseDetail(ex))}
+                  sx={{ color: tc.f(t), flexShrink: 0 }}
+                >
+                  <Info weight={W} size={16} />
+                </IconButton>
+              </Stack>
+            ))}
+          </Box>
+
+          {/* Delete */}
           <Button
             fullWidth
-            startIcon={<Trash weight={W} size={18} />}
+            startIcon={<Trash weight={W} size={16} />}
             onClick={() => setConfirmDelete(true)}
-            sx={{ opacity: 0.5, fontSize: '0.8rem', color: tc.f(t) }}
+            sx={{ opacity: 0.4, fontSize: '0.75rem', color: tc.f(t), textTransform: 'none' }}
           >
             Supprimer ce programme
           </Button>

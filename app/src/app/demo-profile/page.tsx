@@ -1,321 +1,476 @@
 'use client'
 
-import { useState } from 'react'
-import { alpha } from '@mui/material/styles'
+import React, { useState } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Stack from '@mui/material/Stack'
 import Avatar from '@mui/material/Avatar'
-import Chip from '@mui/material/Chip'
 import LinearProgress from '@mui/material/LinearProgress'
-import {
-  Barbell,
-  BowlSteam,
-  Ruler,
-  PersonArmsSpread,
-  Flame,
-  Trophy,
-  ShieldCheck,
-  Star,
-  Lightning,
-  GearSix,
-  CaretRight,
-  House,
-  User,
-  Sun,
-  Moon,
-} from '@phosphor-icons/react'
+import { alpha } from '@mui/material/styles'
+import { Sun, Moon, Flame, GearSix, Trophy, Star, Lightning, CaretRight, Lock, Barbell } from '@phosphor-icons/react'
 
-import { GOLD, GOLD_LIGHT, tc, card, surfaceBg } from '@/lib/design-tokens'
+const W = 'light' as const
+const GOLD = '#d4af37'
 
-// ── Mock Data ──
-const MOCK = {
-  displayName: 'Hazim ZUKIC',
-  initials: 'H',
-  level: 9,
-  totalXp: 5485,
-  xpProgress: 22,
-  currentStreak: 8,
-  longestStreak: 8,
-  morphotype: { abbr: 'Lo', title: 'Longiligne', strengths: ['Deadlift sumo : femurs longs avantageux', 'Ossature solide = bon potentiel'] },
-  stats: {
-    totalWorkouts: 2,
-    totalFoodEntries: 19,
-    totalMeasurements: 5,
-    totalPRs: 3,
-    bossFightsWon: 1,
-    achievements: '4/12',
-  },
-  recentAchievements: [
-    { name: 'Premier pas', desc: '1er entrainement complete', xp: 50 },
-    { name: 'Regulier', desc: '7 jours de streak', xp: 100 },
-    { name: 'Gourmet', desc: '10 repas logges', xp: 75 },
-  ],
+const USER = { name: 'Hazim ZUKIC', level: 9, xp: 5895, xpMax: 15300, streak: 8, morpho: 'Longiligne' }
+const STATS = [
+  { v: 3, l: 'PRs' }, { v: 0, l: 'Boss' }, { v: '5/16', l: 'Succès' }, { v: 2, l: 'Séances' },
+]
+const ACHIEVEMENTS = [
+  { name: 'Semaine parfaite', desc: 'Streak de 7 jours d\'affilée', xp: 150, unlocked: true },
+  { name: 'Prise de mesures', desc: 'Premières mensurations', xp: 50, unlocked: true },
+  { name: 'Premier log', desc: 'Premier repas enregistré', xp: 25, unlocked: true },
+  { name: 'Première séance', desc: 'Complète ta première séance', xp: 50, unlocked: false },
+]
+const XP_HISTORY = [
+  { reason: 'Séance terminée', xp: 75, date: '15 mars' },
+  { reason: 'Streak 7 jours', xp: 150, date: '14 mars' },
+  { reason: 'Repas enregistré', xp: 10, date: '13 mars' },
+]
+const QUICK_ACTIONS = [
+  { label: 'Training', sub: '2 séances' },
+  { label: 'Journal', sub: '27 repas' },
+  { label: 'Mesures', sub: '3 prises' },
+  { label: 'Morpho', sub: USER.morpho },
+]
+
+const TK = {
+  light: { bg: '#f3f1ec', cardBg: '#ffffff', cardBorder: 'rgba(0,0,0,0.08)', h: '#1a1715', m: '#7a7468', f: '#a09888' },
+  dark: { bg: '#0a0a09', cardBg: 'rgba(255,255,255,0.07)', cardBorder: 'rgba(255,255,255,0.1)', h: '#f5f0e6', m: '#9a9488', f: '#6b655c' },
 }
+type T = typeof TK.light
 
-// ── Page ──
-export default function DemoProfilePage() {
-  const [dark, setDark] = useState(true)
-  const [weight, setWeight] = useState<'duotone' | 'regular' | 'light' | 'bold'>('duotone')
-  const d = dark // isDark shorthand
+// ════════════════════════════════════════════════════════════════
+// A — MINIMAL ALIGNED (complet)
+// Tout le contenu actuel, restyled : avatar + name, streak+morpho,
+// actions rapides, tabs, stats, succès — même design system
+// ════════════════════════════════════════════════════════════════
+
+function DesignA({ tk, isDark }: { tk: T; isDark: boolean }) {
+  const [tab, setTab] = useState(0)
+  const cellSx = { bgcolor: tk.cardBg, border: '1px solid', borderColor: tk.cardBorder, borderRadius: '14px' }
+  const lblSx = { fontSize: '0.6rem', fontWeight: 600, color: tk.f, letterSpacing: '0.1em', textTransform: 'uppercase' as const }
+  const sep = { borderBottom: '1px solid', borderColor: isDark ? alpha('#fff', 0.05) : alpha('#000', 0.05) }
+  const tabs = ['En bref', 'Succès', 'XP', 'Param.']
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: d ? '#111' : '#eee', py: 2 }}>
-      {/* Controls */}
-      <Stack direction="row" justifyContent="center" alignItems="center" spacing={1.5} sx={{ mb: 2, flexWrap: 'wrap', px: 2 }}>
-        <Box
-          onClick={() => setDark(!dark)}
-          sx={{
-            cursor: 'pointer', color: d ? '#fff' : '#000',
-            p: 0.75, borderRadius: '10px',
-            bgcolor: d ? alpha('#fff', 0.08) : alpha('#000', 0.06),
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            '&:active': { opacity: 0.6 },
-          }}
-        >
-          {d ? <Sun size={18} /> : <Moon size={18} />}
-        </Box>
-        {(['duotone', 'regular', 'light', 'bold'] as const).map((w) => (
-          <Box
-            key={w}
-            onClick={() => setWeight(w)}
-            sx={{
-              px: 1.5, py: 0.5, borderRadius: '8px', cursor: 'pointer',
-              bgcolor: weight === w ? GOLD : (d ? alpha('#fff', 0.08) : alpha('#000', 0.06)),
-              color: weight === w ? '#1a1a1a' : (d ? '#aaa' : '#555'),
-              fontWeight: 600, fontSize: '0.65rem',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {w}
+    <Box>
+      {/* Header: avatar + name + gear */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Avatar sx={{ width: 44, height: 44, bgcolor: alpha(GOLD, 0.1), color: GOLD, fontSize: '1.1rem', fontWeight: 700, border: `2px solid ${GOLD}` }}>H</Avatar>
+          <Box>
+            <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tk.h, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{USER.name}</Typography>
+            <Stack direction="row" spacing={0.8} alignItems="center" sx={{ mt: 0.2 }}>
+              <Typography sx={{ fontSize: '0.55rem', fontWeight: 600, color: GOLD }}>Niv. {USER.level}</Typography>
+              <Typography sx={{ fontSize: '0.55rem', color: tk.f }}>{USER.xp} XP</Typography>
+            </Stack>
           </Box>
-        ))}
+        </Stack>
+        <GearSix size={20} weight={W} color={tk.f} />
       </Stack>
 
-      {/* Phone frame */}
-      <Box sx={{
-        maxWidth: 390, mx: 'auto',
-        borderRadius: '28px',
-        overflow: 'hidden',
-        border: `2px solid ${d ? '#333' : '#ccc'}`,
-        boxShadow: d ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 60px rgba(0,0,0,0.15)',
-      }}>
-        <Box sx={{ minHeight: 780, bgcolor: surfaceBg(d), display: 'flex', flexDirection: 'column' }}>
+      {/* XP bar */}
+      <Stack direction="row" alignItems="center" sx={{ mb: 0.3, px: 0.5 }}>
+        <LinearProgress variant="determinate" value={(USER.xp / USER.xpMax) * 100} sx={{
+          flex: 1, height: 3, borderRadius: 2, bgcolor: alpha(GOLD, 0.08),
+          '& .MuiLinearProgress-bar': { borderRadius: 2, bgcolor: GOLD },
+        }} />
+        <Typography sx={{ fontSize: '0.45rem', color: tk.f, ml: 1 }}>38% vers niv. 10</Typography>
+      </Stack>
 
-          {/* ── Header compact ── */}
-          <Box sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Avatar sx={{
-                  width: 52, height: 52,
-                  bgcolor: d ? '#1e1c16' : '#f0ece4',
-                  color: GOLD, fontSize: '1.2rem', fontWeight: 700,
-                  border: `2px solid ${GOLD}`,
-                  boxShadow: `0 0 20px ${alpha(GOLD, 0.2)}`,
-                }}>
-                  {MOCK.initials}
-                </Avatar>
-              <Box sx={{ flex: 1 }}>
-                <Typography sx={{ fontSize: '1.05rem', fontWeight: 700, color: tc.h(d) }}>
-                  {MOCK.displayName}
-                </Typography>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Chip label={`Niv. ${MOCK.level}`} size="small" sx={{
-                    bgcolor: GOLD, color: '#1a1a1a', fontWeight: 700, fontSize: '0.6rem', height: 20,
-                  }} />
-                  <Stack direction="row" alignItems="center" spacing={0.3}>
-                    <Lightning size={14} weight={weight} color={GOLD} />
-                    <Typography sx={{ fontSize: '0.7rem', color: tc.m(d) }}>
-                      {MOCK.totalXp.toLocaleString()} XP
-                    </Typography>
-                  </Stack>
-                </Stack>
-              </Box>
-              <Box
-                  sx={{ cursor: 'pointer', p: 0.5, color: tc.f(d), display: 'flex', '&:active': { opacity: 0.5 } }}
-              >
-                <GearSix size={22} weight={weight} />
-              </Box>
-            </Stack>
-
-            {/* XP bar */}
-            <Box sx={{ mt: 1.5 }}>
-              <LinearProgress variant="determinate" value={MOCK.xpProgress} sx={{
-                height: 4, borderRadius: 2,
-                bgcolor: d ? alpha('#fff', 0.06) : alpha('#000', 0.05),
-                '& .MuiLinearProgress-bar': {
-                  background: `linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT})`,
-                  borderRadius: 2,
-                },
-              }} />
-              <Typography sx={{ fontSize: '0.55rem', color: tc.f(d), mt: 0.3, textAlign: 'right' }}>
-                {MOCK.xpProgress}% vers niv. {MOCK.level + 1}
-              </Typography>
+      <Stack spacing={1.5} sx={{ mt: 2 }}>
+        {/* Streak + Morpho side by side */}
+        <Stack direction="row" spacing={1.2}>
+          <Box sx={{ ...cellSx, flex: 1, p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Flame size={16} weight={W} color="#ff9800" />
+            <Box>
+              <Typography sx={{ fontSize: '1.1rem', fontWeight: 800, color: tk.h, lineHeight: 1 }}>{USER.streak}</Typography>
+              <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>jours streak</Typography>
             </Box>
           </Box>
-
-          {/* ── Streak + Morpho row ── */}
-          <Stack direction="row" spacing={1} sx={{ px: 2.5, mt: 0.5 }}>
-            <Box sx={card(d, { flex: 1, p: 1.5 })}>
-              <Stack direction="row" alignItems="center" spacing={0.75}>
-                <Flame size={24} weight={weight} color="#ff9800" />
-                <Box>
-                  <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tc.h(d), lineHeight: 1 }}>
-                    {MOCK.currentStreak}
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.55rem', color: tc.f(d) }}>jours streak</Typography>
-                </Box>
-              </Stack>
+          <Box sx={{ ...cellSx, flex: 1.3, p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: alpha('#7c3aed', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: '#7c3aed' }}>Lo</Typography>
             </Box>
-            <Box
-              sx={card(d, {
-                flex: 1.5, p: 1.5, cursor: 'pointer',
-                borderColor: alpha(GOLD, 0.2),
-                '&:active': { transform: 'scale(0.98)' },
-                transition: 'transform 0.1s ease',
-              })}
-            >
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Box sx={{
-                  width: 36, height: 36, borderRadius: '10px',
-                  bgcolor: alpha(GOLD, 0.1),
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: GOLD }}>
-                    {MOCK.morphotype.abbr}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: tc.h(d) }}>
-                    {MOCK.morphotype.title}
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.55rem', color: tc.f(d) }}>Mon morphotype</Typography>
-                </Box>
-                <CaretRight size={16} weight="bold" color={tc.f(d)} />
-              </Stack>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: tk.h }}>{USER.morpho}</Typography>
+              <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>Mon morphotype</Typography>
             </Box>
-          </Stack>
-
-          {/* ── Actions grid — 2x2 big tiles ── */}
-          <Box sx={{ px: 2.5, mt: 2.5 }}>
-            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.06em', textTransform: 'uppercase', mb: 1.5 }}>
-              Actions rapides
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-              {[
-                { Icon: Barbell, label: 'Training', sub: `${MOCK.stats.totalWorkouts} seances`, accent: '#ff9800' },
-                { Icon: BowlSteam, label: 'Journal', sub: `${MOCK.stats.totalFoodEntries} repas`, accent: '#4caf50' },
-                { Icon: Ruler, label: 'Mesures', sub: `${MOCK.stats.totalMeasurements} prises`, accent: '#2196f3' },
-                { Icon: PersonArmsSpread, label: 'Morpho', sub: MOCK.morphotype.title, accent: '#9c27b0' },
-              ].map((item) => (
-                <Box
-                  key={item.label}
-                      sx={card(d, {
-                    p: 2, cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    '&:active': { transform: 'scale(0.96)', bgcolor: d ? alpha('#fff', 0.1) : alpha('#000', 0.03) },
-                  })}
-                >
-                  <Box sx={{ mb: 1.5, display: 'flex' }}>
-                    <item.Icon size={30} weight={weight} color={item.accent} />
-                  </Box>
-                  <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, color: tc.h(d) }}>{item.label}</Typography>
-                  <Typography sx={{ fontSize: '0.65rem', color: tc.f(d), mt: 0.2 }}>{item.sub}</Typography>
-                </Box>
-              ))}
-            </Box>
+            <CaretRight size={14} weight={W} color={tk.f} />
           </Box>
+        </Stack>
 
-          {/* ── Mini stats row ── */}
-          <Box sx={{ px: 2.5, mt: 2.5 }}>
-            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.06em', textTransform: 'uppercase', mb: 1 }}>
-              En bref
-            </Typography>
-            <Stack direction="row" spacing={1}>
-              {[
-                { val: MOCK.stats.totalPRs, label: 'PRs', Icon: Trophy },
-                { val: MOCK.stats.bossFightsWon, label: 'Boss', Icon: ShieldCheck },
-                { val: MOCK.stats.achievements, label: 'Succes', Icon: Star },
-                { val: MOCK.longestStreak, label: 'Record', Icon: Trophy },
-              ].map((s) => (
-                <Box key={s.label} sx={card(d, { flex: 1, py: 1.5, textAlign: 'center' })}>
-                  <Box sx={{ mb: 0.3, display: 'flex', justifyContent: 'center', color: GOLD }}>
-                    <s.Icon size={18} weight={weight} />
-                  </Box>
-                  <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: tc.h(d), lineHeight: 1 }}>{s.val}</Typography>
-                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(d), mt: 0.3 }}>{s.label}</Typography>
-                </Box>
-              ))}
-            </Stack>
-          </Box>
-
-          {/* ── Recent achievements ── */}
-          <Box sx={{ px: 2.5, mt: 2.5, pb: 10 }}>
-            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tc.m(d), letterSpacing: '0.06em', textTransform: 'uppercase', mb: 1 }}>
-              Derniers succes
-            </Typography>
-            {MOCK.recentAchievements.slice(0, 2).map((a) => (
-              <Box key={a.name} sx={card(d, { p: 1.5, mb: 1 })}>
-                <Stack direction="row" alignItems="center" spacing={1.5}>
-                  <Box sx={{
-                    width: 32, height: 32, borderRadius: '8px',
-                    bgcolor: alpha(GOLD, 0.1),
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: GOLD,
-                  }}>
-                    <Star size={18} weight={weight} />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.h(d) }}>{a.name}</Typography>
-                    <Typography sx={{ fontSize: '0.6rem', color: tc.f(d) }}>{a.desc}</Typography>
-                  </Box>
-                  <Chip label={`+${a.xp}`} size="small" sx={{ bgcolor: alpha(GOLD, 0.1), color: GOLD, fontWeight: 700, fontSize: '0.6rem', height: 20 }} />
-                </Stack>
+        {/* Actions rapides */}
+        <Box>
+          <Typography sx={{ ...lblSx, mb: 1 }}>Actions rapides</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+            {QUICK_ACTIONS.map((a) => (
+              <Box key={a.label} sx={{ ...cellSx, p: 2, cursor: 'pointer', '&:active': { opacity: 0.85 } }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: tk.h }}>{a.label}</Typography>
+                <Typography sx={{ fontSize: '0.55rem', color: tk.f, mt: 0.2 }}>{a.sub}</Typography>
               </Box>
             ))}
           </Box>
+        </Box>
 
-          {/* ── Bottom Nav ── */}
-          <Box sx={{ position: 'sticky', bottom: 0, p: 1.5, pt: 0 }}>
-            <Box sx={{
-              borderRadius: '22px',
-              backdropFilter: 'blur(28px)',
-              WebkitBackdropFilter: 'blur(28px)',
-              bgcolor: d ? alpha('#1c1a14', 0.85) : alpha('#ffffff', 0.85),
-              border: `1px solid ${d ? alpha(GOLD, 0.12) : alpha(GOLD, 0.18)}`,
-              boxShadow: d ? '0 -4px 30px rgba(0,0,0,0.4)' : '0 -4px 30px rgba(0,0,0,0.06)',
+        {/* Tabs */}
+        <Stack direction="row">
+          {tabs.map((t, i) => (
+            <Box key={t} onClick={() => setTab(i)} sx={{
+              flex: 1, textAlign: 'center', py: 1, cursor: 'pointer',
+              borderBottom: '2px solid', borderColor: tab === i ? GOLD : 'transparent',
             }}>
-              <Stack direction="row" sx={{ height: 56 }}>
-                {[
-                  { Icon: House, label: 'Accueil', active: false },
-                  { Icon: Barbell, label: 'Training', active: false },
-                  { Icon: BowlSteam, label: 'Journal', active: false },
-                  { Icon: User, label: 'Profil', active: true },
-                ].map((item) => (
-                  <Box key={item.label} sx={{
-                    flex: 1, display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', gap: 0.3,
-                  }}>
-                    <Box sx={{
-                      px: item.active ? 2 : 1, py: 0.5, borderRadius: '10px',
-                      bgcolor: item.active ? alpha(GOLD, 0.15) : 'transparent',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: item.active ? GOLD : (d ? '#6b6560' : '#9a9490'),
-                    }}>
-                      <item.Icon size={21} weight={item.active ? 'fill' : weight} />
-                    </Box>
-                    <Typography sx={{
-                      fontSize: '0.55rem', fontWeight: item.active ? 700 : 500,
-                      color: item.active ? GOLD : (d ? '#6b6560' : '#9a9490'),
-                    }}>
-                      {item.label}
-                    </Typography>
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tab === i ? tk.h : tk.f, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t}</Typography>
+            </Box>
+          ))}
+        </Stack>
+
+        {/* Tab: En bref */}
+        {tab === 0 && (
+          <>
+            {/* Stats row */}
+            <Box sx={{ ...cellSx, p: 2 }}>
+              <Stack direction="row" justifyContent="space-around" textAlign="center">
+                {STATS.map((s, i) => (
+                  <Box key={s.l} sx={i > 0 ? { borderLeft: 1, borderColor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.06), pl: 2 } : undefined}>
+                    <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tk.h, lineHeight: 1 }}>{s.v}</Typography>
+                    <Typography sx={{ fontSize: '0.45rem', color: tk.f, mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.l}</Typography>
                   </Box>
                 ))}
               </Stack>
             </Box>
-          </Box>
+            {/* Succès récents */}
+            <Box sx={{ ...cellSx, p: 2.5 }}>
+              <Typography sx={{ ...lblSx, mb: 1.5 }}>Derniers succès</Typography>
+              {ACHIEVEMENTS.filter(a => a.unlocked).map((a, i, arr) => (
+                <Stack key={a.name} direction="row" alignItems="center" sx={{ py: 0.8, ...(i < arr.length - 1 ? sep : {}) }}>
+                  <Star size={14} weight={W} color={GOLD} style={{ marginRight: 8, flexShrink: 0 }} />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tk.h }}>{a.name}</Typography>
+                    <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{a.desc}</Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: GOLD }}>+{a.xp}</Typography>
+                </Stack>
+              ))}
+            </Box>
+          </>
+        )}
 
+        {/* Tab: Succès */}
+        {tab === 1 && (
+          <Box sx={{ ...cellSx, p: 2.5 }}>
+            <Typography sx={{ ...lblSx, mb: 1.5 }}>Tous les succès</Typography>
+            {ACHIEVEMENTS.map((a, i) => (
+              <Stack key={a.name} direction="row" alignItems="center" sx={{ py: 0.8, ...(i < ACHIEVEMENTS.length - 1 ? sep : {}), opacity: a.unlocked ? 1 : 0.4 }}>
+                {a.unlocked ? <Star size={14} weight={W} color={GOLD} style={{ marginRight: 8 }} /> : <Lock size={14} weight={W} color={tk.f} style={{ marginRight: 8 }} />}
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tk.h }}>{a.name}</Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{a.desc}</Typography>
+                </Box>
+                <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: a.unlocked ? GOLD : tk.f }}>+{a.xp}</Typography>
+              </Stack>
+            ))}
+          </Box>
+        )}
+
+        {/* Tab: XP */}
+        {tab === 2 && (
+          <Box sx={{ ...cellSx, p: 2.5 }}>
+            <Typography sx={{ ...lblSx, mb: 1.5 }}>Historique XP</Typography>
+            {XP_HISTORY.map((x, i) => (
+              <Stack key={i} direction="row" alignItems="center" sx={{ py: 0.8, ...(i < XP_HISTORY.length - 1 ? sep : {}) }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: tk.h }}>{x.reason}</Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{x.date}</Typography>
+                </Box>
+                <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: GOLD }}>+{x.xp}</Typography>
+              </Stack>
+            ))}
+          </Box>
+        )}
+
+        {/* Tab: Param (placeholder) */}
+        {tab === 3 && (
+          <Box sx={{ ...cellSx, p: 2.5, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: tk.f }}>Thème, API keys, déconnexion...</Typography>
+          </Box>
+        )}
+      </Stack>
+    </Box>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════
+// B — COMPACT SECTIONS
+// Pas de tabs : toutes les sections visibles en scroll.
+// Actions rapides en liste au lieu de grille. Plus linéaire.
+// ════════════════════════════════════════════════════════════════
+
+function DesignB({ tk, isDark }: { tk: T; isDark: boolean }) {
+  const cellSx = { bgcolor: tk.cardBg, border: '1px solid', borderColor: tk.cardBorder, borderRadius: '14px' }
+  const lblSx = { fontSize: '0.6rem', fontWeight: 600, color: tk.f, letterSpacing: '0.1em', textTransform: 'uppercase' as const }
+  const sep = { borderBottom: '1px solid', borderColor: isDark ? alpha('#fff', 0.05) : alpha('#000', 0.05) }
+
+  return (
+    <Box>
+      {/* Header compact */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Avatar sx={{ width: 44, height: 44, bgcolor: alpha(GOLD, 0.1), color: GOLD, fontSize: '1.1rem', fontWeight: 700, border: `2px solid ${GOLD}` }}>H</Avatar>
+          <Box>
+            <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tk.h, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{USER.name}</Typography>
+            <Stack direction="row" spacing={0.8} alignItems="center" sx={{ mt: 0.2 }}>
+              <Typography sx={{ fontSize: '0.55rem', fontWeight: 600, color: GOLD }}>Niv. {USER.level}</Typography>
+              <Stack direction="row" spacing={0.3} alignItems="center">
+                <Flame size={10} weight={W} color="#ff9800" />
+                <Typography sx={{ fontSize: '0.55rem', fontWeight: 800, color: '#ff9800' }}>{USER.streak}</Typography>
+              </Stack>
+            </Stack>
+          </Box>
+        </Stack>
+        <GearSix size={20} weight={W} color={tk.f} />
+      </Stack>
+
+      <Stack spacing={1.5}>
+        {/* Stats + XP bar in one card */}
+        <Box sx={{ ...cellSx, p: 2.5 }}>
+          <Stack direction="row" justifyContent="space-around" textAlign="center" sx={{ mb: 2 }}>
+            {STATS.map((s, i) => (
+              <Box key={s.l} sx={i > 0 ? { borderLeft: 1, borderColor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.06), pl: 2 } : undefined}>
+                <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tk.h, lineHeight: 1 }}>{s.v}</Typography>
+                <Typography sx={{ fontSize: '0.45rem', color: tk.f, mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.l}</Typography>
+              </Box>
+            ))}
+          </Stack>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Typography sx={{ fontSize: '0.55rem', fontWeight: 600, color: GOLD }}>Niv.{USER.level}</Typography>
+            <LinearProgress variant="determinate" value={(USER.xp / USER.xpMax) * 100} sx={{
+              flex: 1, height: 3, borderRadius: 2, bgcolor: alpha(GOLD, 0.08),
+              '& .MuiLinearProgress-bar': { borderRadius: 2, bgcolor: GOLD },
+            }} />
+            <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{USER.xp} XP</Typography>
+          </Stack>
         </Box>
+
+        {/* Quick actions as list */}
+        <Box sx={{ ...cellSx, p: 2.5 }}>
+          <Typography sx={{ ...lblSx, mb: 1 }}>Raccourcis</Typography>
+          {QUICK_ACTIONS.map((a, i) => (
+            <Stack key={a.label} direction="row" alignItems="center" sx={{ py: 0.8, ...(i < QUICK_ACTIONS.length - 1 ? sep : {}) }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tk.h }}>{a.label}</Typography>
+                <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{a.sub}</Typography>
+              </Box>
+              <CaretRight size={14} weight={W} color={tk.f} />
+            </Stack>
+          ))}
+        </Box>
+
+        {/* Succès */}
+        <Box sx={{ ...cellSx, p: 2.5 }}>
+          <Typography sx={{ ...lblSx, mb: 1.5 }}>Succès</Typography>
+          {ACHIEVEMENTS.map((a, i) => (
+            <Stack key={a.name} direction="row" alignItems="center" sx={{ py: 0.8, ...(i < ACHIEVEMENTS.length - 1 ? sep : {}), opacity: a.unlocked ? 1 : 0.4 }}>
+              {a.unlocked ? <Star size={14} weight={W} color={GOLD} style={{ marginRight: 8 }} /> : <Lock size={14} weight={W} color={tk.f} style={{ marginRight: 8 }} />}
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: tk.h }}>{a.name}</Typography>
+                <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{a.desc}</Typography>
+              </Box>
+              <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: a.unlocked ? GOLD : tk.f }}>+{a.xp}</Typography>
+            </Stack>
+          ))}
+        </Box>
+
+        {/* XP récent */}
+        <Box sx={{ ...cellSx, p: 2.5 }}>
+          <Typography sx={{ ...lblSx, mb: 1.5 }}>XP récent</Typography>
+          {XP_HISTORY.map((x, i) => (
+            <Stack key={i} direction="row" alignItems="center" sx={{ py: 0.8, ...(i < XP_HISTORY.length - 1 ? sep : {}) }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: tk.h }}>{x.reason}</Typography>
+                <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{x.date}</Typography>
+              </Box>
+              <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: GOLD }}>+{x.xp}</Typography>
+            </Stack>
+          ))}
+        </Box>
+      </Stack>
+    </Box>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════
+// C — CARD PER SECTION
+// Chaque section a sa propre card. Actions rapides en grille 2x2
+// avec icônes. Streak+morpho intégrés dans le header card.
+// ════════════════════════════════════════════════════════════════
+
+function DesignC({ tk, isDark }: { tk: T; isDark: boolean }) {
+  const [tab, setTab] = useState(0)
+  const cellSx = { bgcolor: tk.cardBg, border: '1px solid', borderColor: tk.cardBorder, borderRadius: '14px' }
+  const lblSx = { fontSize: '0.6rem', fontWeight: 600, color: tk.f, letterSpacing: '0.1em', textTransform: 'uppercase' as const }
+  const sep = { borderBottom: '1px solid', borderColor: isDark ? alpha('#fff', 0.05) : alpha('#000', 0.05) }
+  const tabs = ['En bref', 'Succès', 'XP', 'Param.']
+
+  return (
+    <Box>
+      {/* Header card with everything */}
+      <Box sx={{ ...cellSx, p: 2.5, mb: 1.5 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Avatar sx={{ width: 44, height: 44, bgcolor: alpha(GOLD, 0.1), color: GOLD, fontSize: '1.1rem', fontWeight: 700, border: `2px solid ${GOLD}` }}>H</Avatar>
+            <Box>
+              <Typography sx={{ fontSize: '1.15rem', fontWeight: 800, color: tk.h, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{USER.name}</Typography>
+              <Typography sx={{ fontSize: '0.55rem', color: tk.f, mt: 0.2 }}>
+                Niv. {USER.level} · {USER.morpho} · <Typography component="span" sx={{ color: '#ff9800', fontWeight: 700 }}>{USER.streak}j streak</Typography>
+              </Typography>
+            </Box>
+          </Stack>
+          <GearSix size={20} weight={W} color={tk.f} />
+        </Stack>
+        {/* XP bar */}
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <LinearProgress variant="determinate" value={(USER.xp / USER.xpMax) * 100} sx={{
+            flex: 1, height: 3, borderRadius: 2, bgcolor: alpha(GOLD, 0.08),
+            '& .MuiLinearProgress-bar': { borderRadius: 2, bgcolor: GOLD },
+          }} />
+          <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{USER.xp}/{USER.xpMax}</Typography>
+        </Stack>
+      </Box>
+
+      <Stack spacing={1.5}>
+        {/* Stats card */}
+        <Box sx={{ ...cellSx, p: 2.5 }}>
+          <Stack direction="row" justifyContent="space-around" textAlign="center">
+            {STATS.map((s, i) => (
+              <Box key={s.l} sx={i > 0 ? { borderLeft: 1, borderColor: isDark ? alpha('#fff', 0.06) : alpha('#000', 0.06), pl: 2 } : undefined}>
+                <Typography sx={{ fontSize: '1.3rem', fontWeight: 800, color: tk.h, lineHeight: 1 }}>{s.v}</Typography>
+                <Typography sx={{ fontSize: '0.45rem', color: tk.f, mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.l}</Typography>
+              </Box>
+            ))}
+          </Stack>
+        </Box>
+
+        {/* Actions rapides — grille */}
+        <Box>
+          <Typography sx={{ ...lblSx, mb: 1 }}>Actions rapides</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+            {QUICK_ACTIONS.map((a) => (
+              <Box key={a.label} sx={{ ...cellSx, p: 2, cursor: 'pointer', '&:active': { opacity: 0.85 } }}>
+                <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: tk.h }}>{a.label}</Typography>
+                <Typography sx={{ fontSize: '0.5rem', color: tk.f, mt: 0.2 }}>{a.sub}</Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Tabs */}
+        <Stack direction="row">
+          {tabs.map((t, i) => (
+            <Box key={t} onClick={() => setTab(i)} sx={{
+              flex: 1, textAlign: 'center', py: 1, cursor: 'pointer',
+              borderBottom: '2px solid', borderColor: tab === i ? GOLD : 'transparent',
+            }}>
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: tab === i ? tk.h : tk.f, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t}</Typography>
+            </Box>
+          ))}
+        </Stack>
+
+        {tab === 0 && (
+          <Box sx={{ ...cellSx, p: 2.5 }}>
+            <Typography sx={{ ...lblSx, mb: 1.5 }}>Derniers succès</Typography>
+            {ACHIEVEMENTS.filter(a => a.unlocked).map((a, i, arr) => (
+              <Stack key={a.name} direction="row" alignItems="center" sx={{ py: 0.8, ...(i < arr.length - 1 ? sep : {}) }}>
+                <Star size={14} weight={W} color={GOLD} style={{ marginRight: 8, flexShrink: 0 }} />
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: tk.h }}>{a.name}</Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{a.desc}</Typography>
+                </Box>
+                <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: GOLD }}>+{a.xp}</Typography>
+              </Stack>
+            ))}
+          </Box>
+        )}
+        {tab === 1 && (
+          <Box sx={{ ...cellSx, p: 2.5 }}>
+            {ACHIEVEMENTS.map((a, i) => (
+              <Stack key={a.name} direction="row" alignItems="center" sx={{ py: 0.8, ...(i < ACHIEVEMENTS.length - 1 ? sep : {}), opacity: a.unlocked ? 1 : 0.4 }}>
+                {a.unlocked ? <Star size={14} weight={W} color={GOLD} style={{ marginRight: 8 }} /> : <Lock size={14} weight={W} color={tk.f} style={{ marginRight: 8 }} />}
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: tk.h }}>{a.name}</Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{a.desc}</Typography>
+                </Box>
+                <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: a.unlocked ? GOLD : tk.f }}>+{a.xp}</Typography>
+              </Stack>
+            ))}
+          </Box>
+        )}
+        {tab === 2 && (
+          <Box sx={{ ...cellSx, p: 2.5 }}>
+            {XP_HISTORY.map((x, i) => (
+              <Stack key={i} direction="row" alignItems="center" sx={{ py: 0.8, ...(i < XP_HISTORY.length - 1 ? sep : {}) }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: tk.h }}>{x.reason}</Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tk.f }}>{x.date}</Typography>
+                </Box>
+                <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: GOLD }}>+{x.xp}</Typography>
+              </Stack>
+            ))}
+          </Box>
+        )}
+        {tab === 3 && (
+          <Box sx={{ ...cellSx, p: 2.5, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: tk.f }}>Thème, API keys, déconnexion...</Typography>
+          </Box>
+        )}
+      </Stack>
+    </Box>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════
+// DEMO PAGE
+// ════════════════════════════════════════════════════════════════
+
+export default function DemoProfilePage() {
+  const [mode, setMode] = useState<'light' | 'dark'>('light')
+  const tk = TK[mode]
+  const isDark = mode === 'dark'
+
+  const approaches = [
+    { tag: 'A', name: 'Minimal Aligned', desc: 'Tout le contenu actuel restyled : avatar+name, streak+morpho, actions rapides en grille, tabs, stats, succès. Même design system.', el: <DesignA tk={tk} isDark={isDark} /> },
+    { tag: 'B', name: 'Scroll Complet', desc: 'Pas de tabs — tout visible en scroll. Actions rapides en liste. Stats + XP dans la même card. Plus simple.', el: <DesignB tk={tk} isDark={isDark} /> },
+    { tag: 'C', name: 'Header Card', desc: 'Avatar + name + streak + morpho + XP dans une card header. Stats séparés. Actions rapides en grille + tabs.', el: <DesignC tk={tk} isDark={isDark} /> },
+  ]
+
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: tk.bg, transition: 'background 0.3s', py: 3, px: 2 }}>
+      <Box sx={{ maxWidth: 420, mx: 'auto' }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 4 }}>
+          <Box>
+            <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: tk.h, letterSpacing: '-0.02em' }}>Profil — 3 Propositions</Typography>
+            <Typography sx={{ fontSize: '0.65rem', color: tk.m }}>Page profil complète — mobile-first</Typography>
+          </Box>
+          <Box onClick={() => setMode(isDark ? 'light' : 'dark')} sx={{ cursor: 'pointer', color: tk.m, '&:hover': { color: tk.h } }}>
+            {isDark ? <Sun size={20} weight={W} /> : <Moon size={20} weight={W} />}
+          </Box>
+        </Stack>
+
+        <Stack spacing={6}>
+          {approaches.map((a) => (
+            <Box key={a.tag}>
+              <Stack direction="row" spacing={1} alignItems="baseline" sx={{ mb: 0.5 }}>
+                <Typography sx={{ fontSize: '0.55rem', fontWeight: 700, color: GOLD, bgcolor: alpha(GOLD, isDark ? 0.12 : 0.08), px: 0.8, py: 0.2, borderRadius: '6px', lineHeight: 1.4 }}>{a.tag}</Typography>
+                <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, color: tk.h }}>{a.name}</Typography>
+              </Stack>
+              <Typography sx={{ fontSize: '0.62rem', color: tk.m, mb: 2, lineHeight: 1.4 }}>{a.desc}</Typography>
+              <Box sx={{ border: '2px solid', borderColor: isDark ? alpha('#fff', 0.1) : alpha('#000', 0.1), borderRadius: '28px', p: 2, overflow: 'hidden', bgcolor: tk.bg }}>
+                {a.el}
+              </Box>
+            </Box>
+          ))}
+        </Stack>
       </Box>
     </Box>
   )
