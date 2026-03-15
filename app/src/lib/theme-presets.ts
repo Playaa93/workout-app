@@ -1,6 +1,4 @@
-export type ThemeId = 'light' | 'dark' | 'navy' | 'navy-light' | 'gray' | 'gray-dark' | 'cream' | 'cream-dark'
-export const DARK_THEMES = new Set<ThemeId>(['dark', 'navy', 'gray-dark', 'cream-dark'])
-export const ALL_THEME_IDS: ThemeId[] = ['light', 'dark', 'navy', 'navy-light', 'gray', 'gray-dark', 'cream', 'cream-dark']
+export type ThemeId = 'light' | 'dark' | 'navy' | 'navy-light' | 'gray' | 'gray-dark' | 'cream' | 'cream-dark' | 'fleetzen' | 'fleetzen-dark' | 'lavender' | 'lavender-dark'
 
 export interface ThemePreset {
   id: ThemeId
@@ -226,19 +224,122 @@ export const THEME_PRESETS: Record<ThemeId, ThemePreset> = {
     previewCard: '#252018',
     previewText: '#f0e8d8',
   },
+  fleetzen: {
+    id: 'fleetzen',
+    label: 'Menthe Clair',
+    description: 'Teal frais et professionnel',
+    isDark: false,
+    surfaceBg: '#eef7f6',
+    panelBg: '#f7fcfb',
+    textHeading: '#0f2b28',
+    textMedium: '#4a706a',
+    textFaint: '#7a9e98',
+    glassBase: '#f7fcfb',
+    glassBorderAlpha: 0.20,
+    cardBg: '#f7fcfb',
+    cardBorder: 'rgba(0,0,0,0.07)',
+    meshTint: '#e8f5f3',
+    muiBackground: '#eef7f6',
+    muiPaper: '#f7fcfb',
+    muiDivider: '#cce5e1',
+    muiTextPrimary: '#0f2b28',
+    muiTextSecondary: '#4a706a',
+    previewBg: '#eef7f6',
+    previewCard: '#f7fcfb',
+    previewText: '#0f2b28',
+  },
+  'fleetzen-dark': {
+    id: 'fleetzen-dark',
+    label: 'Menthe Sombre',
+    description: 'Teal profond et immersif',
+    isDark: true,
+    surfaceBg: '#0a1a18',
+    panelBg: '#122624',
+    textHeading: '#e0f2ef',
+    textMedium: '#7eb8b0',
+    textFaint: '#4d8a82',
+    glassBase: '#122624',
+    glassBorderAlpha: 0.14,
+    cardBg: 'rgba(255,255,255,0.06)',
+    cardBorder: 'rgba(255,255,255,0.08)',
+    meshTint: '#091816',
+    muiBackground: '#0a1a18',
+    muiPaper: '#122624',
+    muiDivider: '#1e3d38',
+    muiTextPrimary: '#e0f2ef',
+    muiTextSecondary: '#7eb8b0',
+    previewBg: '#0a1a18',
+    previewCard: '#122624',
+    previewText: '#e0f2ef',
+  },
+  lavender: {
+    id: 'lavender',
+    label: 'Lavande Clair',
+    description: 'Doux et raffiné',
+    isDark: false,
+    surfaceBg: '#f0eef6',
+    panelBg: '#f8f7fc',
+    textHeading: '#1e1a2e',
+    textMedium: '#5e5680',
+    textFaint: '#8a82a8',
+    glassBase: '#f8f7fc',
+    glassBorderAlpha: 0.20,
+    cardBg: '#f8f7fc',
+    cardBorder: 'rgba(0,0,0,0.07)',
+    meshTint: '#ece9f4',
+    muiBackground: '#f0eef6',
+    muiPaper: '#f8f7fc',
+    muiDivider: '#d8d4e6',
+    muiTextPrimary: '#1e1a2e',
+    muiTextSecondary: '#5e5680',
+    previewBg: '#f0eef6',
+    previewCard: '#f8f7fc',
+    previewText: '#1e1a2e',
+  },
+  'lavender-dark': {
+    id: 'lavender-dark',
+    label: 'Lavande Sombre',
+    description: 'Violet profond et apaisant',
+    isDark: true,
+    surfaceBg: '#12101c',
+    panelBg: '#1e1a2e',
+    textHeading: '#e8e4f2',
+    textMedium: '#9a90b8',
+    textFaint: '#5e5680',
+    glassBase: '#1e1a2e',
+    glassBorderAlpha: 0.14,
+    cardBg: 'rgba(255,255,255,0.06)',
+    cardBorder: 'rgba(255,255,255,0.08)',
+    meshTint: '#100e1a',
+    muiBackground: '#12101c',
+    muiPaper: '#1e1a2e',
+    muiDivider: '#2e2845',
+    muiTextPrimary: '#e8e4f2',
+    muiTextSecondary: '#9a90b8',
+    previewBg: '#12101c',
+    previewCard: '#1e1a2e',
+    previewText: '#e8e4f2',
+  },
 }
+
+export const ALL_THEME_IDS = Object.keys(THEME_PRESETS) as ThemeId[]
+export const DARK_THEMES = new Set<ThemeId>(
+  ALL_THEME_IDS.filter(id => THEME_PRESETS[id].isDark)
+)
 
 /* ── Theme Families ─────────────────────────────────────────────── */
 
-export type ThemeFamilyId = 'default' | 'navy' | 'gray' | 'cream'
+export type ThemeFamilyId = 'default' | 'cream' | 'gray' | 'navy' | 'fleetzen' | 'lavender'
 export const THEME_FAMILIES: Record<ThemeFamilyId, { label: string; light: ThemeId; dark: ThemeId }> = {
   default: { label: 'Défaut', light: 'light', dark: 'dark' },
-  navy: { label: 'Marine', light: 'navy-light', dark: 'navy' },
-  gray: { label: 'Gris', light: 'gray', dark: 'gray-dark' },
   cream: { label: 'Crème', light: 'cream', dark: 'cream-dark' },
+  gray: { label: 'Gris', light: 'gray', dark: 'gray-dark' },
+  navy: { label: 'Marine', light: 'navy-light', dark: 'navy' },
+  fleetzen: { label: 'Menthe', light: 'fleetzen', dark: 'fleetzen-dark' },
+  lavender: { label: 'Lavande', light: 'lavender', dark: 'lavender-dark' },
 }
 
-export const ALL_FAMILY_IDS: ThemeFamilyId[] = ['default', 'navy', 'gray', 'cream']
+export const ALL_FAMILY_IDS: ThemeFamilyId[] = ['default', 'cream', 'gray', 'navy', 'fleetzen', 'lavender']
 
 /** Given a resolved ThemeId, find which family it belongs to */
 export function themeFamily(id: ThemeId): ThemeFamilyId {

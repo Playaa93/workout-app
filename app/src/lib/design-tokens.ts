@@ -20,6 +20,12 @@ function resolvePreset(d: boolean | ThemeId) {
   return THEME_PRESETS[d] ?? THEME_PRESETS.dark
 }
 
+// Semantic colors (trend indicators, status)
+export const sc = {
+  green: (dark: boolean | ThemeId) => resolvePreset(dark).isDark ? '#4ade80' : '#22c55e',
+  red:   (dark: boolean | ThemeId) => resolvePreset(dark).isDark ? '#f87171' : '#ef4444',
+}
+
 // Explicit text color tokens (independent of MUI theme)
 export const tc = {
   h: (dark: boolean | ThemeId) => resolvePreset(dark).textHeading,

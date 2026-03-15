@@ -13,7 +13,7 @@ import { useMorphoProfile } from '@/powersync/queries/morphology-queries'
 import { calculateLevel } from '@/lib/xp-utils'
 import { getISOWeekStart } from '@/lib/date-utils'
 import { toSqliteTimestamp } from '@/powersync/helpers'
-import { GOLD, GOLD_LIGHT, tc, glass, meshBg, W } from '@/lib/design-tokens'
+import { GOLD, GOLD_LIGHT, tc, sc, glass, meshBg, surfaceBg, W } from '@/lib/design-tokens'
 import { alpha } from '@mui/material/styles'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -56,18 +56,17 @@ const STAT_ITEMS = [
 // =========================================================
 
 function ChangeIndicator({ cur, prev }: { cur: number; prev: number }) {
-  const { t, d: isDark } = useThemeTokens()
-  const green = isDark ? '#4ade80' : '#22c55e'
-  const red = isDark ? '#f87171' : '#ef4444'
-  const blue = isDark ? '#60a5fa' : '#3b82f6'
+  const { t } = useThemeTokens()
+  const green = sc.green(t)
+  const red = sc.red(t)
 
   let icon: React.ReactNode = null
   let color = tc.f(t)
   let text = '='
 
   if (prev === 0 && cur > 0) {
-    icon = <TrendUp size={12} weight={W} color={blue} />
-    color = blue
+    icon = <TrendUp size={12} weight={W} color={GOLD} />
+    color = GOLD
     text = 'Nouveau'
   } else if (prev > 0) {
     const pct = Math.round(((cur - prev) / prev) * 100)
@@ -236,7 +235,7 @@ function HomeContentInner() {
                 component={Link}
                 href="/profile"
                 sx={{
-                  width: 46, height: 46, bgcolor: isDark ? '#1e1c16' : '#f0ece4',
+                  width: 46, height: 46, bgcolor: alpha(tc.f(t), 0.08),
                   color: GOLD, fontSize: '1.15rem', fontWeight: 700,
                   border: `2px solid ${GOLD}`,
                   boxShadow: `0 0 16px ${alpha(GOLD, 0.3)}`,
@@ -251,7 +250,7 @@ function HomeContentInner() {
                   bgcolor: '#ff9800', color: '#fff', borderRadius: '10px',
                   px: 0.6, py: 0.15, display: 'flex', alignItems: 'center', gap: 0.25,
                   fontSize: '0.58rem', fontWeight: 800,
-                  border: `2px solid ${isDark ? '#0a0a0a' : '#f5f3ef'}`,
+                  border: `2px solid ${surfaceBg(t)}`,
                   boxShadow: '0 2px 8px rgba(255,152,0,0.4)',
                 }}>
                   <Flame size={10} weight={W} />{streak}
@@ -367,7 +366,7 @@ function HomeContentInner() {
             </Stack>
             <Stack direction="row" justifyContent="space-around" textAlign="center">
               {STAT_ITEMS.map((item, i) => (
-                <Box key={item.field} sx={i === 1 ? { borderLeft: 1, borderRight: 1, borderColor: isDark ? alpha(GOLD, 0.1) : alpha(GOLD, 0.15), px: 4 } : undefined}>
+                <Box key={item.field} sx={i === 1 ? { borderLeft: 1, borderRight: 1, borderColor: alpha(GOLD, isDark ? 0.1 : 0.15), px: 4 } : undefined}>
                   <Typography sx={{ fontSize: '1.75rem', fontWeight: 800, color: item.color, letterSpacing: '-0.02em', lineHeight: 1 }}>
                     {statValues[item.field]}
                   </Typography>
@@ -397,7 +396,7 @@ function HomeContentInner() {
                     borderRadius: '14px',
                     py: 1.8, px: 1.5,
                     border: '1px solid',
-                    borderColor: isDark ? alpha(GOLD, 0.07) : alpha(GOLD, 0.1),
+                    borderColor: alpha(GOLD, isDark ? 0.07 : 0.1),
                   }}>
                     <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), letterSpacing: '-0.02em', lineHeight: 1 }}>
                       {weeklyComparison.thisWeek[m.field]}
