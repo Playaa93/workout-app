@@ -127,7 +127,7 @@ import ListItemText from '@mui/material/ListItemText';
 import { alpha } from '@mui/material/styles';
 import {
   ArrowLeft, Plus, X, CaretDown, TrendDown, TrendUp, Minus,
-  Camera, Images, Ruler, Scales, Info, Trash, PencilSimple,
+  Camera, Images, Ruler, Scales, Trash, PencilSimple,
   DownloadSimple, Table, BracketsCurly, FilePdf,
 } from '@phosphor-icons/react';
 import BottomNav from '@/components/BottomNav';
@@ -223,7 +223,7 @@ function MeasurementsContent() {
           <IconButton component={Link} href="/" size="small" sx={{ color: tc.m(t) }}>
             <ArrowLeft size={20} weight={W} />
           </IconButton>
-          <Typography sx={{ flex: 1, fontSize: '1.5rem', fontWeight: 700, color: tc.h(t), letterSpacing: '-0.02em' }}>
+          <Typography sx={{ flex: 1, fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), letterSpacing: '-0.03em' }}>
             Mensurations
           </Typography>
           <IconButton
@@ -921,25 +921,25 @@ function PhotosTab({
     setSelectedPhoto(null);
   };
 
+  const lblSx = { fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.1em', textTransform: 'uppercase' as const };
+
   if (photos.length === 0 && !showUpload) {
     return (
       <Box sx={{ px: 2.5, textAlign: 'center', py: 6 }}>
-        <Camera size={48} weight={W} color={tc.f(t)} style={{ marginBottom: 12 }} />
-        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5, color: tc.h(t) }}>
+        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t), mb: 0.5 }}>
           Aucune photo
         </Typography>
-        <Typography variant="body2" sx={{ mb: 3, color: tc.m(t) }}>
+        <Typography sx={{ fontSize: '0.65rem', color: tc.m(t), mb: 3 }}>
           Prends des photos pour suivre ta transformation
         </Typography>
         <Button
-          variant="contained"
-          startIcon={<Camera size={18} weight={W} />}
+          fullWidth
+          startIcon={<Camera size={16} weight={W} />}
           onClick={() => { triggerHaptic('light'); setShowUpload(true); }}
           sx={{
-            px: 4, py: 1.5, borderRadius: 3, fontWeight: 700,
-            bgcolor: GOLD, color: GOLD_CONTRAST,
-            background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
-            '&:hover': { bgcolor: GOLD_LIGHT },
+            py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,
+            bgcolor: tc.h(t), color: surfaceBg(t), textTransform: 'none',
+            '&:hover': { bgcolor: tc.h(t), opacity: 0.9 },
           }}
         >
           Ajouter une photo
@@ -948,77 +948,94 @@ function PhotosTab({
     );
   }
 
-  const photosByDate = photos.reduce((acc, photo) => {
-    const date = new Date(photo.takenAt).toLocaleDateString('fr-FR');
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(photo);
-    return acc;
-  }, {} as Record<string, ProgressPhotoData[]>);
+  // Sort photos newest first for comparison
+  const sortedPhotos = [...photos].sort((a, b) => new Date(b.takenAt).getTime() - new Date(a.takenAt).getTime());
+  const newest = sortedPhotos[0];
+  const oldest = sortedPhotos[sortedPhotos.length - 1];
+  const showComparison = photos.length >= 2 && newest.id !== oldest.id;
 
   return (
     <Box sx={{ px: 2.5 }}>
-      <Stack spacing={3}>
-        <Box
-          onClick={() => { triggerHaptic('light'); setShowUpload(true); }}
-          sx={{
-            cursor: 'pointer',
-            ...card(d, { py: 2, textAlign: 'center' }),
-            '&:active': { transform: 'scale(0.98)' },
-          }}
-        >
-          <Stack alignItems="center" spacing={0.5}>
-            <Box sx={{
-              width: 40, height: 40, borderRadius: '50%',
-              bgcolor: alpha(GOLD, 0.1),
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Plus size={20} weight="bold" color={GOLD} />
-            </Box>
-            <Typography sx={{ fontSize: '0.75rem', color: tc.m(t), fontWeight: 600 }}>
-              Ajouter une photo
-            </Typography>
-          </Stack>
+      <Stack spacing={2}>
+        {/* Transformation comparison */}
+        {showComparison && (
+          <Box sx={card(t, { p: 2 })}>
+            <Typography sx={{ ...lblSx, mb: 1, textAlign: 'center' }}>Transformation</Typography>
+            <Stack direction="row" spacing={1}>
+              <Box
+                sx={{
+                  flex: 1, aspectRatio: '3/4', borderRadius: '10px', overflow: 'hidden',
+                  position: 'relative', bgcolor: d ? alpha('#fff', 0.05) : alpha('#000', 0.03),
+                }}
+              >
+                <Box component="img" src={oldest.photoUrl} alt="avant" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: 1, background: 'linear-gradient(transparent, rgba(0,0,0,0.6))' }}>
+                  <Typography sx={{ fontSize: '0.55rem', fontWeight: 700, color: '#fff' }}>
+                    {new Date(oldest.takenAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                  </Typography>
+                </Box>
+              </Box>
+              <Box
+                sx={{
+                  flex: 1, aspectRatio: '3/4', borderRadius: '10px', overflow: 'hidden',
+                  position: 'relative', bgcolor: d ? alpha('#fff', 0.05) : alpha('#000', 0.03),
+                }}
+              >
+                <Box component="img" src={newest.photoUrl} alt="après" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: 1, background: 'linear-gradient(transparent, rgba(0,0,0,0.6))' }}>
+                  <Typography sx={{ fontSize: '0.55rem', fontWeight: 700, color: '#fff' }}>
+                    {new Date(newest.takenAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                  </Typography>
+                </Box>
+              </Box>
+            </Stack>
+          </Box>
+        )}
+
+        {/* All photos grid (3 columns) */}
+        <Box>
+          <Typography sx={{ ...lblSx, mb: 1 }}>Toutes les photos</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.8 }}>
+            {sortedPhotos.map((photo) => (
+              <Box
+                key={photo.id}
+                onClick={() => { triggerHaptic('light'); setSelectedPhoto(photo); }}
+                sx={{
+                  aspectRatio: '3/4',
+                  bgcolor: d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.03),
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  cursor: 'pointer',
+                }}
+              >
+                <Box component="img" src={photo.photoUrl} alt={photo.photoType} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: 0.8, background: 'linear-gradient(transparent, rgba(0,0,0,0.5))' }}>
+                  <Typography sx={{ fontSize: '0.5rem', fontWeight: 600, color: '#fff', textTransform: 'capitalize' }}>
+                    {photo.photoType.replace('_', ' ')}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.4rem', color: alpha('#fff', 0.7) }}>
+                    {new Date(photo.takenAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
         </Box>
 
-        {Object.entries(photosByDate).map(([date, datePhotos]) => (
-          <Box key={date}>
-            <Typography variant="caption" fontWeight={500} sx={{ mb: 1, display: 'block', color: tc.m(t) }}>
-              {date}
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
-              {datePhotos.map((photo) => (
-                <Box
-                  key={photo.id}
-                  onClick={() => { triggerHaptic('light'); setSelectedPhoto(photo); }}
-                  sx={{
-                    aspectRatio: '3/4',
-                    bgcolor: d ? alpha('#ffffff', 0.05) : alpha('#000000', 0.03),
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    position: 'relative',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={photo.photoUrl}
-                    alt={photo.photoType}
-                    sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  <Chip
-                    label={photo.photoType.replace('_', ' ')}
-                    size="small"
-                    sx={{
-                      position: 'absolute', bottom: 8, left: 8,
-                      bgcolor: alpha('#000000', 0.7), color: '#fff', textTransform: 'capitalize',
-                      fontSize: '0.7rem',
-                    }}
-                  />
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        ))}
+        {/* CTA */}
+        <Button
+          fullWidth
+          startIcon={<Camera size={16} weight={W} />}
+          onClick={() => { triggerHaptic('light'); setShowUpload(true); }}
+          sx={{
+            py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,
+            bgcolor: tc.h(t), color: surfaceBg(t), textTransform: 'none',
+            '&:hover': { bgcolor: tc.h(t), opacity: 0.9 },
+          }}
+        >
+          Ajouter une photo
+        </Button>
       </Stack>
 
       {showUpload && (
