@@ -322,7 +322,7 @@ function DietContent() {
     >
       {/* Header */}
       <Box sx={{ px: 3, pt: 3, pb: 1 }}>
-        <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: tc.h(t), letterSpacing: '-0.02em' }}>
+        <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), letterSpacing: '-0.03em' }}>
           Journal
         </Typography>
       </Box>

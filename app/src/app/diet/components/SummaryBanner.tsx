@@ -6,30 +6,10 @@ import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
 import { tc, card, GOLD } from '@/lib/design-tokens';
 import { useThemeTokens } from '@/hooks/useDark';
-import { MacroPill, MACRO_COLORS } from './shared';
+import { MACRO_COLORS } from './shared';
 import type { DailySummaryData, NutritionProfileData } from './shared';
 
-function CalorieRing({ size, stroke, pct, d }: { size: number; stroke: number; pct: number; d: boolean }) {
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - Math.min(pct, 100) / 100);
-  return (
-    <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={d ? alpha('#ffffff', 0.06) : alpha('#000000', 0.06)} strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={GOLD} strokeWidth={stroke}
-          strokeDasharray={`${circ}`} strokeDashoffset={offset} strokeLinecap="round"
-          style={{ filter: `drop-shadow(0 0 4px ${alpha(GOLD, 0.4)})` }}
-        />
-      </svg>
-      <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: tc.h(d), lineHeight: 1 }}>
-          {pct}%
-        </Typography>
-      </Box>
-    </Box>
-  );
-}
+const MC = { P: MACRO_COLORS.protein, G: MACRO_COLORS.carbs, L: MACRO_COLORS.fat };
 
 export default function SummaryBanner({
   summary,
@@ -43,13 +23,21 @@ export default function SummaryBanner({
   onTap?: () => void;
 }) {
   const { t, d } = useThemeTokens();
+  const lblSx = { fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.1em', textTransform: 'uppercase' as const };
 
   const targetCals = profile?.targetCalories
     ? profile.targetCalories + workoutCalories
     : 2000;
   const consumed = Math.round(summary.totalCalories);
   const remaining = Math.max(0, targetCals - consumed);
-  const pct = Math.min(Math.round((consumed / targetCals) * 100), 100);
+  const over = consumed > targetCals;
+
+  const prot = Math.round(summary.totalProtein);
+  const carbs = Math.round(summary.totalCarbs);
+  const fat = Math.round(summary.totalFat);
+  const targetProt = profile?.targetProtein ?? 150;
+  const targetCarbs = profile?.targetCarbs ?? 250;
+  const targetFat = profile?.targetFat ?? 70;
 
   return (
     <Box
@@ -57,25 +45,52 @@ export default function SummaryBanner({
       sx={card(t, {
         p: 2.5,
         cursor: onTap ? 'pointer' : 'default',
-        transition: 'all 0.15s ease',
-        ...(onTap && { '&:active': { transform: 'scale(0.98)' } }),
+        ...(onTap && { '&:active': { opacity: 0.85 } }),
       })}
     >
-      <Stack direction="row" alignItems="center" spacing={2.5}>
-        <CalorieRing size={72} stroke={6} pct={pct} d={d} />
-        <Box sx={{ flex: 1 }}>
-          <Typography sx={{ fontSize: '1.8rem', fontWeight: 800, color: tc.h(t), lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-            {consumed}
-          </Typography>
-          <Typography sx={{ fontSize: '0.7rem', color: tc.m(t), mt: 0.3 }}>
-            sur {targetCals} kcal · reste {remaining}
-          </Typography>
-        </Box>
+      <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1 }}>
+        <Typography sx={lblSx}>Nutrition</Typography>
+        <Typography sx={{ fontSize: '0.6rem', color: over ? '#f87171' : tc.m(t), fontWeight: 600 }}>
+          {over ? `${consumed - targetCals} en trop` : `${remaining} restant`}
+        </Typography>
       </Stack>
-      <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-        <MacroPill label="Prot" value={Math.round(summary.totalProtein)} target={profile?.targetProtein ?? 150} color={MACRO_COLORS.protein} isDark={d} />
-        <MacroPill label="Gluc" value={Math.round(summary.totalCarbs)} target={profile?.targetCarbs ?? 250} color={MACRO_COLORS.carbs} isDark={d} />
-        <MacroPill label="Lip" value={Math.round(summary.totalFat)} target={profile?.targetFat ?? 70} color={MACRO_COLORS.fat} isDark={d} />
+
+      {/* Big calorie number */}
+      <Stack direction="row" alignItems="baseline" spacing={0.5} sx={{ mb: 1 }}>
+        <Typography sx={{ fontSize: '2rem', fontWeight: 900, color: tc.h(t), lineHeight: 1, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+          {consumed}
+        </Typography>
+        <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), fontWeight: 500 }}>
+          / {targetCals} kcal
+        </Typography>
+      </Stack>
+
+      {/* Calorie bar */}
+      <Box sx={{ height: 4, borderRadius: 2, bgcolor: alpha(GOLD, 0.08), overflow: 'hidden', mb: 1.2 }}>
+        <Box sx={{
+          width: `${Math.min((consumed / targetCals) * 100, 100)}%`,
+          height: '100%', borderRadius: 2, bgcolor: over ? '#f87171' : GOLD,
+          transition: 'width 0.5s',
+        }} />
+      </Box>
+
+      {/* Macro bars inline */}
+      <Stack direction="row" spacing={2}>
+        {[
+          { k: 'Prot', v: prot, target: targetProt, c: MC.P },
+          { k: 'Gluc', v: carbs, target: targetCarbs, c: MC.G },
+          { k: 'Lip', v: fat, target: targetFat, c: MC.L },
+        ].map((m) => (
+          <Box key={m.k} sx={{ flex: 1 }}>
+            <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.2 }}>
+              <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), fontWeight: 500 }}>{m.k}</Typography>
+              <Typography sx={{ fontSize: '0.5rem', color: tc.m(t), fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{m.v}/{m.target}g</Typography>
+            </Stack>
+            <Box sx={{ height: 3, borderRadius: 2, bgcolor: alpha(m.c, 0.15), overflow: 'hidden' }}>
+              <Box sx={{ width: `${Math.min((m.v / m.target) * 100, 100)}%`, height: '100%', borderRadius: 2, bgcolor: m.c, transition: 'width 0.5s' }} />
+            </Box>
+          </Box>
+        ))}
       </Stack>
     </Box>
   );

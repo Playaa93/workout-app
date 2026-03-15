@@ -7,7 +7,7 @@ import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import { Plus, X } from '@phosphor-icons/react';
 import { alpha } from '@mui/material/styles';
-import { tc, card, GOLD, W } from '@/lib/design-tokens';
+import { tc, card, W } from '@/lib/design-tokens';
 import { useThemeTokens } from '@/hooks/useDark';
 import { MEAL_CONFIG, EXTRA_MEALS, MACRO_COLORS, triggerHaptic } from './shared';
 import type { MealType, FoodEntryData } from './shared';
@@ -45,13 +45,13 @@ export default function MealSlotCard({
 
   return (
     <Box sx={card(t, { p: 2 })}>
-      <Stack direction="row" alignItems="center" spacing={1}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.4 }}>
         <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: meal.color, flexShrink: 0 }} />
-        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(t), flex: 1 }}>
+        <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: tc.h(t), flex: 1 }}>
           {meal.label}
         </Typography>
-        <Typography sx={{ fontSize: '0.7rem', color: tc.m(t), fontVariantNumeric: 'tabular-nums' }}>
-          {Math.round(mealCals)}/{mealTarget}
+        <Typography sx={{ fontSize: '0.65rem', color: tc.m(t), fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+          {Math.round(mealCals)} kcal
         </Typography>
         <IconButton
           size="small"
@@ -59,11 +59,15 @@ export default function MealSlotCard({
             triggerHaptic('light');
             onAddPress(mealType);
           }}
-          sx={{ width: 28, height: 28, bgcolor: alpha(GOLD, 0.1) }}
+          sx={{ width: 28, height: 28 }}
         >
-          <Plus size={16} weight={W} color={GOLD} />
+          <Plus size={16} weight={W} color={tc.f(t)} />
         </IconButton>
       </Stack>
+      {/* Mini progress bar */}
+      <Box sx={{ height: 2.5, borderRadius: 2, bgcolor: alpha(meal.color, 0.1), overflow: 'hidden', ml: 1.75, mr: 4.5 }}>
+        <Box sx={{ width: `${mealTarget > 0 ? Math.min((mealCals / mealTarget) * 100, 100) : 0}%`, height: '100%', borderRadius: 2, bgcolor: meal.color, transition: 'width 0.3s' }} />
+      </Box>
 
       {hasMacros && (
         <Stack direction="row" spacing={1.5} sx={{ mt: 0.5, ml: 1.75, mb: entries.length > 0 ? 0.5 : 0 }}>
