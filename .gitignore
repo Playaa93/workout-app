@@ -50,3 +50,6 @@ yarn-error.log*
 *.pem
 powersync-jwks.json
 .env*.local
+
+# Docs internes
+AMELIORATIONS.md

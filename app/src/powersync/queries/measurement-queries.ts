@@ -58,6 +58,14 @@ export function useMeasurementCount() {
   );
 }
 
+export function useFirstMeasurement() {
+  const userId = useUserId();
+  return useQuery<MeasurementRow>(
+    `SELECT * FROM measurements WHERE user_id = ? ORDER BY measured_at ASC LIMIT 1`,
+    [userId]
+  );
+}
+
 export function useFirstAndLastMeasurement() {
   const userId = useUserId();
   // Get first measurement

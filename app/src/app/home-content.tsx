@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useId, useMemo, useState } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useThemeTokens } from '@/hooks/useDark'
 import { useAuth } from '@/powersync/auth-context'
 import {
@@ -10,10 +10,14 @@ import {
   useWeeklyComparison,
 } from '@/powersync/queries/profile-queries'
 import { useMorphoProfile } from '@/powersync/queries/morphology-queries'
+import { useDailySummary, useNutritionProfile } from '@/powersync/queries/diet-queries'
+import { useRecentSessions, usePersonalRecords } from '@/powersync/queries/workout-queries'
+import { useLatestMeasurement, useFirstMeasurement } from '@/powersync/queries/measurement-queries'
 import { calculateLevel } from '@/lib/xp-utils'
 import { getISOWeekStart } from '@/lib/date-utils'
 import { toSqliteTimestamp } from '@/powersync/helpers'
-import { GOLD, GOLD_LIGHT, tc, sc, glass, meshBg, surfaceBg, W } from '@/lib/design-tokens'
+import { GOLD, GOLD_LIGHT, tc, sc, card, surfaceBg, W } from '@/lib/design-tokens'
+import { MUSCLE_LABELS } from '@/lib/workout-constants'
 import { alpha } from '@mui/material/styles'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -21,110 +25,18 @@ import Stack from '@mui/material/Stack'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
-import Avatar from '@mui/material/Avatar'
 import CircularProgress from '@mui/material/CircularProgress'
-import Collapse from '@mui/material/Collapse'
-import { Barbell, GearSix, TrendUp, TrendDown, CaretDown, Flame, Trophy } from '@phosphor-icons/react'
+import { GearSix, TrendUp, TrendDown, CaretRight, Flame, Trophy, Scales } from '@phosphor-icons/react'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
 
 const WEEKLY_GOAL = 4
-
-type WeekMetrics = {
-  sessions: number
-  volumeKg: number
-  durationMin: number
-  calories: number
-  prCount: number
-}
-
-const WEEKLY_METRICS: { label: string; unit: string; field: keyof WeekMetrics }[] = [
-  { label: 'Séances', unit: '', field: 'sessions' },
-  { label: 'Volume', unit: 'kg', field: 'volumeKg' },
-  { label: 'Durée', unit: 'min', field: 'durationMin' },
-  { label: 'Calories', unit: '', field: 'calories' },
-]
 
 const STAT_ITEMS = [
   { field: 'totalWorkouts' as const, label: 'Workouts', color: GOLD },
   { field: 'streak' as const, label: 'Streak', color: '#ff9800' },
   { field: 'totalPRs' as const, label: 'Records', color: GOLD_LIGHT },
 ]
-
-// =========================================================
-// Sub-components
-// =========================================================
-
-function ChangeIndicator({ cur, prev }: { cur: number; prev: number }) {
-  const { t } = useThemeTokens()
-  const green = sc.green(t)
-  const red = sc.red(t)
-
-  let icon: React.ReactNode = null
-  let color = tc.f(t)
-  let text = '='
-
-  if (prev === 0 && cur > 0) {
-    icon = <TrendUp size={12} weight={W} color={GOLD} />
-    color = GOLD
-    text = 'Nouveau'
-  } else if (prev > 0) {
-    const pct = Math.round(((cur - prev) / prev) * 100)
-    if (pct > 0) {
-      icon = <TrendUp size={12} weight={W} color={green} />
-      color = green
-      text = `+${pct}%`
-    } else if (pct < 0) {
-      icon = <TrendDown size={12} weight={W} color={red} />
-      color = red
-      text = `${pct}%`
-    }
-  }
-
-  return (
-    <Stack direction="row" spacing={0.3} alignItems="center" justifyContent="center">
-      {icon}
-      <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color }}>{text}</Typography>
-    </Stack>
-  )
-}
-
-function SessionRing({ size, sw, workouts, goal }: {
-  size: number; sw: number; workouts: number; goal: number
-}) {
-  const { t } = useThemeTokens()
-  const gradId = useId()
-  const r = (size / 2) - sw - 4
-  const circ = 2 * Math.PI * r
-  const ctr = size / 2
-  return (
-    <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      <svg viewBox={`0 0 ${size} ${size}`} style={{ position: 'absolute', top: 0, left: 0, transform: 'rotate(-90deg)' }}>
-        <defs>
-          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={GOLD} />
-            <stop offset="100%" stopColor={GOLD_LIGHT} />
-          </linearGradient>
-        </defs>
-        <circle cx={ctr} cy={ctr} r={r} fill="none" stroke={alpha(GOLD, 0.12)} strokeWidth={sw} />
-        <circle cx={ctr} cy={ctr} r={r} fill="none"
-          stroke={`url(#${gradId})`} strokeWidth={sw} strokeLinecap="round"
-          strokeDasharray={`${circ}`}
-          strokeDashoffset={`${circ * (1 - Math.min(workouts, goal) / goal)}`}
-          style={{ transition: 'stroke-dashoffset 0.8s ease-out', filter: `drop-shadow(0 0 10px ${alpha(GOLD, 0.5)})` }}
-        />
-      </svg>
-      <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography sx={{ fontSize: '3rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', color: tc.h(t) }}>
-          {workouts}<Typography component="span" sx={{ fontSize: '1rem', fontWeight: 500, color: tc.m(t) }}>/{goal}</Typography>
-        </Typography>
-        <Typography sx={{ fontSize: '0.62rem', color: tc.m(t), fontWeight: 500, mt: 0.4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-          séances
-        </Typography>
-      </Box>
-    </Box>
-  )
-}
 
 // =========================================================
 // Main
@@ -152,6 +64,12 @@ function HomeContentInner() {
   const { data: gamificationRows } = useGamification()
   const { data: statsRows } = useUserStats()
   const { data: morphoRows } = useMorphoProfile()
+  const { data: nutritionRows } = useDailySummary()
+  const { data: nutritionProfileRows } = useNutritionProfile()
+  const { data: recentSessionRows } = useRecentSessions(3)
+  const { data: prRows } = usePersonalRecords()
+  const { data: latestMeasRows } = useLatestMeasurement()
+  const { data: firstMeasRows } = useFirstMeasurement()
 
   const [thisWeekStart, lastWeekStart] = useMemo(() => {
     const now = new Date()
@@ -162,8 +80,6 @@ function HomeContentInner() {
     return [tw, lw]
   }, [])
   const { data: weeklyRows } = useWeeklyComparison(thisWeekStart, lastWeekStart)
-
-  const [statsOpen, setStatsOpen] = useState(false)
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -191,28 +107,15 @@ function HomeContentInner() {
     return { totalWorkouts: r.total_workouts || 0, totalPRs: r.total_prs || 0 }
   }, [statsRows])
 
-  const morphoProfile = useMemo(() => {
-    if (morphoRows.length === 0) return null
-    return { primaryMorphotype: (morphoRows[0] as any).primary_morphotype }
-  }, [morphoRows])
+  const hasMorphoProfile = morphoRows.length > 0
 
-  const weeklyComparison = useMemo(() => {
-    const empty: WeekMetrics = { sessions: 0, volumeKg: 0, durationMin: 0, calories: 0, prCount: 0 }
-    const thisWeek: WeekMetrics = { ...empty }
-    const lastWeek: WeekMetrics = { ...empty }
-    for (const row of weeklyRows as any[]) {
-      const target = row.week === 'this' ? thisWeek : lastWeek
-      target.sessions = row.sessions || 0
-      target.volumeKg = Math.round(parseFloat(row.volume_kg || '0'))
-      target.durationMin = parseInt(row.duration_min || '0')
-      target.calories = parseInt(row.calories || '0')
-      target.prCount = row.pr_count || 0
-    }
-    return { thisWeek, lastWeek }
+  const weeklySessionCount = useMemo(() => {
+    const thisWeekRow = (weeklyRows as any[]).find(r => r.week === 'this')
+    return thisWeekRow?.sessions || 0
   }, [weeklyRows])
 
   const displayName = authDisplayName || (profileRows[0] as any)?.display_name || 'Guerrier'
-  const weeklyWorkouts = Math.min(weeklyComparison.thisWeek.sessions, WEEKLY_GOAL)
+  const weeklyWorkouts = Math.min(weeklySessionCount, WEEKLY_GOAL)
   const streak = gamification?.currentStreak || 0
   const totalWorkouts = stats?.totalWorkouts || 0
   const totalPRs = stats?.totalPRs || 0
@@ -223,154 +126,121 @@ function HomeContentInner() {
 
   const statValues = { totalWorkouts, streak, totalPRs }
 
+  // Nutrition today
+  const nutrition = useMemo(() => {
+    const summary = nutritionRows[0] as any
+    const profile = nutritionProfileRows[0] as any
+    if (!profile) return null
+    const cal = Math.round(parseFloat(summary?.total_calories || '0'))
+    const prot = Math.round(parseFloat(summary?.total_protein || '0'))
+    const carbs = Math.round(parseFloat(summary?.total_carbs || '0'))
+    const fat = Math.round(parseFloat(summary?.total_fat || '0'))
+    const targetCal = profile.target_calories || 2200
+    const targetProt = profile.target_protein || 140
+    return { cal, prot, carbs, fat, targetCal, targetProt }
+  }, [nutritionRows, nutritionProfileRows])
+
+  // Recent sessions
+  const recentSessions = useMemo(() => {
+    return recentSessionRows
+      .filter((s: any) => s.ended_at)
+      .slice(0, 3)
+      .map((s: any) => ({
+        id: s.id,
+        templateName: s.template_name || null,
+        exerciseNames: s.exercise_names ? (s.exercise_names as string).split(',') : [],
+        muscleGroups: s.muscle_groups ? (s.muscle_groups as string).split(',').filter(Boolean) : [],
+        startedAt: new Date(s.started_at),
+        sessionType: s.session_type,
+        cardioActivity: s.cardio_activity,
+      }))
+  }, [recentSessionRows])
+
+  // Recent PRs (last 5)
+  const recentPRs = useMemo(() => {
+    return prRows.slice(0, 5).map((r: any) => ({
+      exerciseName: r.exercise_name || '—',
+      value: r.value ? parseFloat(r.value) : 0,
+      recordType: r.record_type,
+      achievedAt: new Date(r.achieved_at),
+    }))
+  }, [prRows])
+
+  // Body evolution
+  const bodyEvolution = useMemo(() => {
+    const latest = latestMeasRows[0] as any
+    if (!latest?.weight) return null
+    const weight = parseFloat(latest.weight)
+    const bodyFat = latest.body_fat_percentage ? parseFloat(latest.body_fat_percentage) : null
+    const firstRow = firstMeasRows[0] as any
+    const firstWeight = firstRow?.weight ? parseFloat(firstRow.weight) : null
+    const weightDiff = firstWeight ? weight - firstWeight : null
+    return { weight, bodyFat, weightDiff }
+  }, [latestMeasRows, firstMeasRows])
+
+  const MC = { P: GOLD, G: sc.green(t), L: '#f97316' }
+  const cellSx = card(t, { p: 2.5 })
+  const lblSx = { fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.1em', textTransform: 'uppercase' as const }
+
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: meshBg(t) }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(t) }}>
+      <Box sx={{ px: 3, pt: 3, pb: 12 }}>
 
-      {/* Header */}
-      <Box sx={{ px: 3, pt: 3, pb: 1 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Box sx={{ position: 'relative' }}>
-              <Avatar
-                component={Link}
-                href="/profile"
-                sx={{
-                  width: 46, height: 46, bgcolor: alpha(tc.f(t), 0.08),
-                  color: GOLD, fontSize: '1.15rem', fontWeight: 700,
-                  border: `2px solid ${GOLD}`,
-                  boxShadow: `0 0 16px ${alpha(GOLD, 0.3)}`,
-                  textDecoration: 'none',
-                }}
-              >
-                {displayName[0].toUpperCase()}
-              </Avatar>
-              {streak > 0 && (
-                <Box sx={{
-                  position: 'absolute', top: -5, right: -10,
-                  bgcolor: '#ff9800', color: '#fff', borderRadius: '10px',
-                  px: 0.6, py: 0.15, display: 'flex', alignItems: 'center', gap: 0.25,
-                  fontSize: '0.58rem', fontWeight: 800,
-                  border: `2px solid ${surfaceBg(t)}`,
-                  boxShadow: '0 2px 8px rgba(255,152,0,0.4)',
-                }}>
-                  <Flame size={10} weight={W} />{streak}
-                </Box>
-              )}
-            </Box>
-            <Box>
-              <Typography sx={{ fontSize: '0.65rem', color: tc.m(t), lineHeight: 1.3, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                Bonjour
-              </Typography>
-              <Typography sx={{ fontSize: '1.2rem', fontWeight: 700, lineHeight: 1.15, color: tc.h(t), letterSpacing: '-0.01em' }}>
-                {displayName}
-              </Typography>
-            </Box>
-          </Stack>
-          <IconButton component={Link} href="/profile" size="small">
-            <GearSix size={20} weight={W} color={tc.f(t)} />
-          </IconButton>
-        </Stack>
-      </Box>
-
-      {/* Hero Ring */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', pt: 2.5, pb: 3 }}>
-        <SessionRing size={170} sw={12} workouts={weeklyWorkouts} goal={WEEKLY_GOAL} />
-      </Box>
-
-      {/* CTA */}
-      <Box sx={{ px: 3, pb: 2.5 }}>
-        <Button
-          component={Link}
-          href="/workout"
-          variant="contained"
-          size="large"
-          fullWidth
-          startIcon={<Barbell size={22} weight={W} />}
-          sx={{
-            py: 1.8, fontSize: '0.95rem', fontWeight: 700, letterSpacing: '0.02em',
-            borderRadius: '14px',
-            background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
-            color: '#1a1a1a',
-            boxShadow: `0 4px 24px ${alpha(GOLD, 0.45)}`,
-            textDecoration: 'none',
-            '&:hover': { background: `linear-gradient(135deg, ${GOLD_LIGHT}, ${GOLD})` },
-          }}
-        >
-          Lancer une Séance
-        </Button>
-      </Box>
-
-      {/* Morpho CTA (conditionnel) */}
-      {!morphoProfile && (
-        <Box sx={{ px: 3, pb: 2.5 }}>
-          <Box
-            component={Link}
-            href="/morphology"
-            sx={{
-              ...glass(t),
-              display: 'flex', alignItems: 'center', gap: 2,
-              p: 2.5, textDecoration: 'none',
-              borderLeft: `3px solid ${GOLD}`,
-            }}
-          >
-            <Box sx={{ fontSize: '1.5rem' }}>🧬</Box>
-            <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t) }}>
-                Découvre ton morphotype
-              </Typography>
-              <Typography sx={{ fontSize: '0.65rem', color: tc.m(t), fontWeight: 500 }}>
-                Optimise tes exercices selon ta morphologie
-              </Typography>
-            </Box>
+        {/* Header */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2.5 }}>
+          <Box>
+            <Typography sx={{ fontSize: '0.6rem', color: GOLD, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', mb: 0.3 }}>
+              Bonjour
+            </Typography>
+            <Typography
+              component={Link}
+              href="/profile"
+              sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), letterSpacing: '-0.03em', lineHeight: 1, textDecoration: 'none' }}
+            >
+              {displayName}
+            </Typography>
           </Box>
-        </Box>
-      )}
-
-      {/* XP strip */}
-      <Box sx={{ px: 3, pb: 2.5 }}>
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: GOLD, minWidth: 44, letterSpacing: '0.04em' }}>
-            Niv. {level}
-          </Typography>
-          <LinearProgress variant="determinate" value={xpPct} sx={{
-            flex: 1, height: 4, borderRadius: 2, bgcolor: alpha(GOLD, 0.08),
-            '& .MuiLinearProgress-bar': { borderRadius: 2, background: `linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT})` },
-          }} />
-          <Typography sx={{ fontSize: '0.6rem', color: tc.f(t), fontWeight: 500 }}>
-            {xpCur}/{xpMax} XP
-          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            {streak > 0 && (
+              <Stack direction="row" spacing={0.3} alignItems="center" sx={{ bgcolor: alpha('#ff9800', 0.1), px: 1, py: 0.4, borderRadius: '10px' }}>
+                <Flame size={12} weight={W} color="#ff9800" />
+                <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: '#ff9800' }}>{streak}</Typography>
+              </Stack>
+            )}
+            <IconButton component={Link} href="/profile" size="small">
+              <GearSix size={18} weight={W} color={tc.f(t)} />
+            </IconButton>
+          </Stack>
         </Stack>
-      </Box>
 
-      {/* Stats card (expandable) */}
-      <Box sx={{ px: 3, pb: 3 }}>
-        <Box sx={glass(t, { overflow: 'hidden' })}>
-          <Box onClick={() => setStatsOpen(!statsOpen)} sx={{ p: 3, cursor: 'pointer', userSelect: 'none' }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2.5 }}>
-              <Typography sx={{
-                fontSize: '0.68rem', fontWeight: 600, color: tc.m(t),
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-              }}>
-                Ton activité
+        <Stack spacing={1.5}>
+          {/* Big number + stats in card */}
+          <Box sx={cellSx}>
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <Typography sx={{ fontSize: '4rem', fontWeight: 900, color: tc.h(t), lineHeight: 1, letterSpacing: '-0.04em' }}>
+                {weeklyWorkouts}
+                <Typography component="span" sx={{ fontSize: '1.2rem', color: tc.f(t), fontWeight: 500 }}> / {WEEKLY_GOAL}</Typography>
               </Typography>
-              <CaretDown
-                size={20}
-                weight={W}
-                color={GOLD}
-                style={{
-                  opacity: 0.6,
-                  transform: statsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.3s ease',
-                }}
-              />
-            </Stack>
-            <Stack direction="row" justifyContent="space-around" textAlign="center">
+              <Typography sx={{ fontSize: '0.6rem', color: tc.m(t), fontWeight: 500, mt: 0.5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                séances cette semaine
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1.5, maxWidth: 200, mx: 'auto' }}>
+                <Typography sx={{ fontSize: '0.55rem', fontWeight: 600, color: GOLD }}>Niv.{level}</Typography>
+                <LinearProgress variant="determinate" value={xpPct} sx={{
+                  flex: 1, height: 2.5, borderRadius: 2, bgcolor: alpha(GOLD, 0.08),
+                  '& .MuiLinearProgress-bar': { borderRadius: 2, bgcolor: GOLD },
+                }} />
+              </Stack>
+            </Box>
+            <Stack direction="row" justifyContent="space-around" textAlign="center" sx={{
+              pt: 2, borderTop: '1px solid', borderColor: alpha(isDark ? '#fff' : '#000', 0.06),
+            }}>
               {STAT_ITEMS.map((item, i) => (
-                <Box key={item.field} sx={i === 1 ? { borderLeft: 1, borderRight: 1, borderColor: alpha(GOLD, isDark ? 0.1 : 0.15), px: 4 } : undefined}>
-                  <Typography sx={{ fontSize: '1.75rem', fontWeight: 800, color: item.color, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                <Box key={item.field} sx={i === 1 ? { borderLeft: 1, borderRight: 1, borderColor: alpha(isDark ? '#fff' : '#000', 0.06), px: 4 } : undefined}>
+                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
                     {statValues[item.field]}
                   </Typography>
-                  <Typography sx={{ fontSize: '0.62rem', color: tc.m(t), mt: 0.6, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     {item.label}
                   </Typography>
                 </Box>
@@ -378,64 +248,158 @@ function HomeContentInner() {
             </Stack>
           </Box>
 
-          {/* Expanded: weekly tiles */}
-          <Collapse in={statsOpen}>
-            <Box sx={{ px: 2.5, pb: 2.5, pt: 1 }}>
-              <Typography sx={{
-                fontSize: '0.6rem', fontWeight: 600, color: GOLD, opacity: 0.7,
-                letterSpacing: '0.12em', textTransform: 'uppercase', mb: 1.5, px: 0.5,
-              }}>
-                Hebdo
-              </Typography>
+          {/* CTA */}
+          <Button
+            component={Link}
+            href="/workout"
+            fullWidth
+            sx={{
+              py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,
+              bgcolor: tc.h(t), color: surfaceBg(t), textTransform: 'none', textDecoration: 'none',
+              '&:hover': { bgcolor: tc.h(t), opacity: 0.9 },
+            }}
+          >
+            Lancer une Séance
+          </Button>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                {WEEKLY_METRICS.map((m) => (
-                  <Box key={m.field} sx={{
-                    textAlign: 'center',
-                    bgcolor: isDark ? alpha('#ffffff', 0.035) : alpha('#000000', 0.025),
-                    borderRadius: '14px',
-                    py: 1.8, px: 1.5,
-                    border: '1px solid',
-                    borderColor: alpha(GOLD, isDark ? 0.07 : 0.1),
-                  }}>
-                    <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), letterSpacing: '-0.02em', lineHeight: 1 }}>
-                      {weeklyComparison.thisWeek[m.field]}
-                      {m.unit && <Typography component="span" sx={{ fontSize: '0.6rem', color: tc.f(t), fontWeight: 500 }}> {m.unit}</Typography>}
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.6rem', color: tc.m(t), mt: 0.6, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                      {m.label}
-                    </Typography>
-                    <Box sx={{ mt: 0.4 }}>
-                      <ChangeIndicator cur={weeklyComparison.thisWeek[m.field]} prev={weeklyComparison.lastWeek[m.field]} />
+          {/* Morpho CTA (conditionnel) */}
+          {!hasMorphoProfile && (
+            <Box
+              component={Link}
+              href="/morphology"
+              sx={{ ...cellSx, display: 'flex', alignItems: 'center', gap: 2, textDecoration: 'none', borderLeft: `3px solid ${GOLD}` }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.h(t) }}>Découvre ton morphotype</Typography>
+                <Typography sx={{ fontSize: '0.6rem', color: tc.m(t), fontWeight: 500 }}>Optimise tes exercices selon ta morphologie</Typography>
+              </Box>
+            </Box>
+          )}
+
+          {/* Nutrition */}
+          {nutrition && (
+            <Box
+              component={Link}
+              href="/diet"
+              sx={{ ...cellSx, textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.85 } }}
+            >
+              <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1 }}>
+                <Typography sx={lblSx}>Nutrition</Typography>
+                <Typography sx={{ fontSize: '0.6rem', color: GOLD, fontWeight: 600 }}>
+                  {nutrition.cal} / {nutrition.targetCal} kcal
+                </Typography>
+              </Stack>
+              <Box sx={{ height: 4, borderRadius: 2, bgcolor: alpha(GOLD, 0.08), overflow: 'hidden', mb: 1.2 }}>
+                <Box sx={{ width: `${Math.min((nutrition.cal / nutrition.targetCal) * 100, 100)}%`, height: '100%', borderRadius: 2, bgcolor: GOLD, transition: 'width 0.5s' }} />
+              </Box>
+              <Stack direction="row" spacing={2}>
+                {[
+                  { k: 'Prot', v: nutrition.prot, target: nutrition.targetProt, c: MC.P },
+                  { k: 'Gluc', v: nutrition.carbs, target: Math.round(nutrition.targetCal * 0.45 / 4), c: MC.G },
+                  { k: 'Lip', v: nutrition.fat, target: Math.round(nutrition.targetCal * 0.3 / 9), c: MC.L },
+                ].map((m) => (
+                  <Box key={m.k} sx={{ flex: 1 }}>
+                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.2 }}>
+                      <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), fontWeight: 500 }}>{m.k}</Typography>
+                      <Typography sx={{ fontSize: '0.5rem', color: tc.m(t), fontWeight: 600 }}>{m.v}/{m.target}g</Typography>
+                    </Stack>
+                    <Box sx={{ height: 3, borderRadius: 2, bgcolor: alpha(m.c, 0.1), overflow: 'hidden' }}>
+                      <Box sx={{ width: `${Math.min((m.v / m.target) * 100, 100)}%`, height: '100%', borderRadius: 2, bgcolor: m.c, transition: 'width 0.5s' }} />
                     </Box>
                   </Box>
                 ))}
-              </Box>
-
-              {/* PR highlight tile */}
-              <Box sx={{
-                mt: 1.5,
-                bgcolor: alpha(GOLD, 0.07),
-                borderRadius: '14px',
-                py: 1.5, px: 2.5,
-                border: '1px solid',
-                borderColor: alpha(GOLD, 0.15),
-                display: 'flex', alignItems: 'center', gap: 2,
-              }}>
-                <Trophy size={22} weight={W} color={GOLD} style={{ filter: `drop-shadow(0 0 6px ${alpha(GOLD, 0.4)})` }} />
-                <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ fontSize: '1.1rem', fontWeight: 800, color: GOLD, letterSpacing: '-0.01em' }}>
-                    {weeklyComparison.thisWeek.prCount} PRs
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.58rem', color: tc.m(t), fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                    cette semaine
-                  </Typography>
-                </Box>
-                <ChangeIndicator cur={weeklyComparison.thisWeek.prCount} prev={weeklyComparison.lastWeek.prCount} />
-              </Box>
+              </Stack>
             </Box>
-          </Collapse>
-        </Box>
+          )}
+
+          {/* Recent sessions */}
+          {recentSessions.length > 0 && (
+            <Box sx={cellSx}>
+              <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                <Typography sx={lblSx}>Dernières séances</Typography>
+                <Typography component={Link} href="/workout" sx={{ fontSize: '0.55rem', color: GOLD, fontWeight: 600, textDecoration: 'none' }}>Tout</Typography>
+              </Stack>
+              {recentSessions.map((s, i) => {
+                const dateStr = s.startedAt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
+                const isCardio = s.sessionType === 'cardio'
+                const title = s.templateName || (isCardio ? s.cardioActivity || 'Cardio' : dateStr)
+                const muscles = s.muscleGroups.map((m: string) => MUSCLE_LABELS[m] || m).filter(Boolean)
+                const isLast = i === recentSessions.length - 1
+                return (
+                  <Stack
+                    key={s.id}
+                    component={Link}
+                    href={`/workout/session?id=${s.id}`}
+                    direction="row"
+                    alignItems="center"
+                    sx={{
+                      py: 0.8, textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.85 },
+                      borderBottom: isLast ? 'none' : '1px solid',
+                      borderColor: alpha(isDark ? '#fff' : '#000', 0.05),
+                    }}
+                  >
+                    <Box sx={{ flex: 1 }}>
+                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: tc.h(t) }}>{title}</Typography>
+                      <Typography sx={{ fontSize: '0.5rem', color: tc.f(t) }}>
+                        {muscles.length > 0 ? muscles.join(' · ') + ' · ' : ''}{s.templateName ? dateStr : ''}
+                      </Typography>
+                    </Box>
+                    <CaretRight size={14} weight={W} color={tc.f(t)} />
+                  </Stack>
+                )
+              })}
+            </Box>
+          )}
+
+          {/* PRs + Body — side by side in cards */}
+          <Stack direction="row" spacing={1.5}>
+            {recentPRs.length > 0 && (
+              <Box sx={{ ...cellSx, flex: 1 }}>
+                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
+                  <Trophy size={12} weight={W} color={GOLD} />
+                  <Typography sx={lblSx}>Records</Typography>
+                </Stack>
+                {recentPRs.slice(0, 3).map((pr, i) => (
+                  <Stack key={i} direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.4 }}>
+                    <Typography sx={{ fontSize: '0.6rem', color: tc.m(t), fontWeight: 500 }} noWrap>{pr.exerciseName}</Typography>
+                    <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: tc.h(t), ml: 1, flexShrink: 0 }}>
+                      {pr.value % 1 === 0 ? pr.value : pr.value.toFixed(1)}kg
+                    </Typography>
+                  </Stack>
+                ))}
+              </Box>
+            )}
+
+            {bodyEvolution && (
+              <Box
+                component={Link}
+                href="/measurements"
+                sx={{ ...cellSx, flex: 1, textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.85 } }}
+              >
+                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
+                  <Scales size={12} weight={W} color={GOLD} />
+                  <Typography sx={lblSx}>Poids</Typography>
+                </Stack>
+                <Typography sx={{ fontSize: '2rem', fontWeight: 900, color: tc.h(t), lineHeight: 1, letterSpacing: '-0.03em' }}>
+                  {bodyEvolution.weight.toFixed(1)}
+                  <Typography component="span" sx={{ fontSize: '0.6rem', color: tc.m(t), fontWeight: 500 }}> kg</Typography>
+                </Typography>
+                {bodyEvolution.weightDiff !== null && (
+                  <Stack direction="row" spacing={0.3} alignItems="center" sx={{ mt: 0.5 }}>
+                    {bodyEvolution.weightDiff <= 0
+                      ? <TrendDown size={12} weight={W} color={tc.m(t)} />
+                      : <TrendUp size={12} weight={W} color={sc.red(t)} />
+                    }
+                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: bodyEvolution.weightDiff <= 0 ? tc.m(t) : sc.red(t) }}>
+                      {bodyEvolution.weightDiff > 0 ? '+' : ''}{bodyEvolution.weightDiff.toFixed(1)} kg
+                    </Typography>
+                  </Stack>
+                )}
+              </Box>
+            )}
+          </Stack>
+
+        </Stack>
       </Box>
 
       <BottomNav />
