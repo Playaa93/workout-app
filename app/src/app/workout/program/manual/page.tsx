@@ -13,17 +13,16 @@ import { useQuery } from '@powersync/react';
 import { ExercisePicker } from '@/components/workout/ExercisePicker';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
 import { triggerHaptic } from '@/lib/haptic';
-import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, goldBtnSx, goldOutlinedBtnSx, goldFieldSx } from '@/lib/design-tokens';
+import { GOLD, W, tc, card, surfaceBg, panelBg, goldFieldSx } from '@/lib/design-tokens';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { alpha } from '@mui/material/styles';
-import { ArrowLeft, Plus, X, CaretUp, CaretDown, CaretDown as CaretDownIcon } from '@phosphor-icons/react';
+import { ArrowLeft, Plus, X, CaretUp, CaretDown } from '@phosphor-icons/react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
-import Chip from '@mui/material/Chip';
 import Drawer from '@mui/material/Drawer';
 import Collapse from '@mui/material/Collapse';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -182,6 +181,10 @@ function ManualProgramContent() {
     return <FullScreenLoader />;
   }
 
+  const lblSx = { fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.1em', textTransform: 'uppercase' as const };
+  const sepSx = { borderBottom: '1px solid', borderColor: d ? alpha('#fff', 0.05) : alpha('#000', 0.05) };
+  const totalSets = selectedExercises.reduce((s, ex) => s + (ex.targetSets || 0), 0);
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(t), display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
@@ -197,7 +200,7 @@ function ManualProgramContent() {
           <IconButton onClick={() => router.back()} size="small" sx={{ mr: 1 }}>
             <ArrowLeft weight={W} size={22} color={tc.h(t)} />
           </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem', color: tc.h(t) }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: tc.h(t), letterSpacing: '-0.02em', flex: 1 }}>
             {isEdit ? 'Modifier le programme' : 'Nouveau programme'}
           </Typography>
         </Stack>
@@ -205,184 +208,192 @@ function ManualProgramContent() {
 
       {/* Content */}
       <Box sx={{ flex: 1, overflow: 'auto', px: 2, py: 2, pb: 12 }}>
-        <Stack spacing={2.5}>
-          {/* Name */}
-          <TextField
-            label="Nom du programme"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            fullWidth
-            required
-            size="small"
-            placeholder="Ex: Push Day, Full Body..."
-            sx={goldFieldSx(t)}
-          />
+        <Stack spacing={1.5}>
+          {/* Name input in card */}
+          <Box sx={card(t, { p: 2 })}>
+            <TextField
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              fullWidth
+              required
+              size="small"
+              placeholder="Nom du programme *"
+              variant="standard"
+              slotProps={{ input: { disableUnderline: true } }}
+              sx={{
+                '& .MuiInputBase-input': {
+                  fontSize: '1rem', fontWeight: 700, color: tc.h(t),
+                  '&::placeholder': { color: tc.f(t), opacity: 1 },
+                },
+              }}
+            />
+            <TextField
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              fullWidth
+              multiline
+              minRows={1}
+              maxRows={3}
+              size="small"
+              placeholder="Description (optionnel)"
+              variant="standard"
+              slotProps={{ input: { disableUnderline: true } }}
+              sx={{
+                mt: 0.5,
+                '& .MuiInputBase-input': {
+                  fontSize: '0.7rem', color: tc.m(t),
+                  '&::placeholder': { color: tc.f(t), opacity: 1 },
+                },
+              }}
+            />
+          </Box>
 
-          {/* Description */}
-          <TextField
-            label="Description (optionnel)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            fullWidth
-            multiline
-            minRows={2}
-            maxRows={4}
-            size="small"
-            placeholder="Notes sur ce programme..."
-            sx={goldFieldSx(t)}
-          />
+          {/* Auto stats */}
+          {selectedExercises.length > 0 && (
+            <Stack direction="row" spacing={1}>
+              {[
+                { v: String(selectedExercises.length), l: 'Exercices' },
+                { v: String(totalSets), l: 'Séries' },
+              ].map((s) => (
+                <Box key={s.l} sx={card(t, { flex: 1, py: 1.2, textAlign: 'center' })}>
+                  <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>{s.v}</Typography>
+                  <Typography sx={{ fontSize: '0.4rem', color: tc.f(t), mt: 0.2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.l}</Typography>
+                </Box>
+              ))}
+            </Stack>
+          )}
 
-          {/* Exercise List */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: tc.m(t) }}>
-              Exercices ({selectedExercises.length})
-            </Typography>
-
-            {selectedExercises.length === 0 ? (
-              <Box sx={{
-                border: '1px dashed',
-                borderColor: d ? alpha('#ffffff', 0.15) : alpha('#000000', 0.12),
-                borderRadius: '14px',
-                py: 4,
-                textAlign: 'center',
+          {/* Exercise table */}
+          {selectedExercises.length === 0 ? (
+            <Box sx={{
+              border: '1px dashed',
+              borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+              borderRadius: '14px', py: 4, textAlign: 'center',
+            }}>
+              <Typography sx={{ fontSize: '0.75rem', color: tc.f(t) }}>
+                Aucun exercice ajouté
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={card(t, { overflow: 'hidden' })}>
+              {/* Table header */}
+              <Stack direction="row" alignItems="center" sx={{
+                px: 2, py: 0.8,
+                bgcolor: d ? alpha('#fff', 0.03) : alpha('#000', 0.02),
               }}>
-                <Typography variant="body2" sx={{ color: tc.f(t) }}>
-                  Aucun exercice ajouté
-                </Typography>
-              </Box>
-            ) : (
-              <Stack spacing={1}>
-                {selectedExercises.map((ex, index) => (
-                  <Box
-                    key={`${ex.exerciseId}-${index}`}
-                    sx={card(t, { overflow: 'hidden' })}
+                <Box sx={{ width: 24 }} />
+                <Typography sx={{ fontSize: '0.45rem', color: tc.f(t), fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', flex: 1 }}>Exercice</Typography>
+                <Typography sx={{ fontSize: '0.45rem', color: tc.f(t), fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', width: 50, textAlign: 'center' }}>Sets</Typography>
+                <Typography sx={{ fontSize: '0.45rem', color: tc.f(t), fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', width: 40, textAlign: 'center' }}>Repos</Typography>
+                <Box sx={{ width: 28 }} />
+              </Stack>
+
+              {selectedExercises.map((ex, index) => (
+                <Box key={`${ex.exerciseId}-${index}`}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setExpandedIndex(expandedIndex === index ? null : index);
+                    }}
+                    sx={{
+                      px: 2, py: 1, cursor: 'pointer',
+                      ...(index < selectedExercises.length - 1 && expandedIndex !== index ? sepSx : {}),
+                      '&:active': { bgcolor: d ? alpha('#fff', 0.02) : alpha('#000', 0.01) },
+                    }}
                   >
-                    {/* Exercise header row */}
-                    <Box
-                      onClick={() => {
-                        triggerHaptic('light');
-                        setExpandedIndex(expandedIndex === index ? null : index);
-                      }}
-                      sx={{
-                        px: 2, py: 1.5,
-                        display: 'flex',
-                        alignItems: 'center',
-                        cursor: 'pointer',
-                        '&:active': { bgcolor: d ? alpha('#ffffff', 0.03) : alpha('#000000', 0.02) },
-                      }}
-                    >
-                      {/* Order controls */}
-                      <Stack sx={{ mr: 1 }}>
-                        <IconButton
-                          size="small"
-                          disabled={index === 0}
-                          onClick={(e) => { e.stopPropagation(); handleMoveExercise(index, 'up'); }}
-                          sx={{ p: 0 }}
-                        >
-                          <CaretUp weight={W} size={18} color={index === 0 ? tc.f(t) : tc.m(t)} />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          disabled={index === selectedExercises.length - 1}
-                          onClick={(e) => { e.stopPropagation(); handleMoveExercise(index, 'down'); }}
-                          sx={{ p: 0 }}
-                        >
-                          <CaretDown weight={W} size={18} color={index === selectedExercises.length - 1 ? tc.f(t) : tc.m(t)} />
-                        </IconButton>
-                      </Stack>
-
-                      {/* Exercise info */}
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 500, fontSize: '0.95rem', color: tc.h(t) }} noWrap>
-                          {ex.exerciseName}
-                        </Typography>
-                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.25 }}>
-                          <Chip
-                            label={MUSCLE_LABELS[ex.muscleGroup] || ex.muscleGroup}
-                            size="small"
-                            sx={{
-                              height: 18,
-                              fontSize: '0.65rem',
-                              color: tc.m(t),
-                              bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
-                            }}
-                          />
-                          <Typography variant="caption" sx={{ color: tc.f(t) }}>
-                            {ex.targetSets}x{ex.targetReps} · {ex.restSeconds}s
-                          </Typography>
-                        </Stack>
-                      </Box>
-
-                      {/* Expand icon */}
-                      <CaretDownIcon
-                        weight={W}
-                        size={20}
-                        color={tc.f(t)}
-                        style={{
-                          transition: 'transform 0.2s',
-                          transform: expandedIndex === index ? 'rotate(180deg)' : 'rotate(0deg)',
-                          marginRight: 4,
-                        }}
-                      />
-
-                      {/* Remove button */}
+                    {/* Order controls */}
+                    <Stack sx={{ width: 24, flexShrink: 0 }}>
                       <IconButton
                         size="small"
-                        onClick={(e) => { e.stopPropagation(); handleRemoveExercise(index); }}
-                        sx={{ color: tc.f(t) }}
+                        disabled={index === 0}
+                        onClick={(e) => { e.stopPropagation(); handleMoveExercise(index, 'up'); }}
+                        sx={{ p: 0 }}
                       >
-                        <X weight={W} size={18} />
+                        <CaretUp weight={W} size={14} color={index === 0 ? tc.f(t) : tc.m(t)} />
                       </IconButton>
+                      <IconButton
+                        size="small"
+                        disabled={index === selectedExercises.length - 1}
+                        onClick={(e) => { e.stopPropagation(); handleMoveExercise(index, 'down'); }}
+                        sx={{ p: 0 }}
+                      >
+                        <CaretDown weight={W} size={14} color={index === selectedExercises.length - 1 ? tc.f(t) : tc.m(t)} />
+                      </IconButton>
+                    </Stack>
+
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: tc.h(t) }} noWrap>{ex.exerciseName}</Typography>
+                      <Typography sx={{ fontSize: '0.42rem', color: tc.f(t) }}>{MUSCLE_LABELS[ex.muscleGroup] || ex.muscleGroup}</Typography>
                     </Box>
+                    <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: tc.m(t), width: 50, textAlign: 'center' }}>
+                      {ex.targetSets}×{ex.targetReps}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.6rem', color: tc.f(t), width: 40, textAlign: 'center' }}>
+                      {ex.restSeconds}s
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => { e.stopPropagation(); handleRemoveExercise(index); }}
+                      sx={{ color: tc.f(t), p: 0.25, width: 28 }}
+                    >
+                      <X weight={W} size={14} />
+                    </IconButton>
+                  </Stack>
 
-                    {/* Expanded config */}
-                    <Collapse in={expandedIndex === index}>
-                      <Box sx={{ px: 2, pb: 2 }}>
-                        <Stack direction="row" spacing={1.5}>
-                          <TextField
-                            label="Séries"
-                            type="number"
-                            size="small"
-                            value={ex.targetSets}
-                            onChange={(e) => handleUpdateExercise(index, 'targetSets', Math.max(1, parseInt(e.target.value) || 1))}
-                            slotProps={{ htmlInput: { min: 1, max: 20 } }}
-                            sx={{ width: 80, ...goldFieldSx(t) }}
-                          />
-                          <TextField
-                            label="Reps"
-                            size="small"
-                            value={ex.targetReps}
-                            onChange={(e) => handleUpdateExercise(index, 'targetReps', e.target.value)}
-                            placeholder="8-12"
-                            sx={{ width: 90, ...goldFieldSx(t) }}
-                          />
-                          <TextField
-                            label="Repos (s)"
-                            type="number"
-                            size="small"
-                            value={ex.restSeconds}
-                            onChange={(e) => handleUpdateExercise(index, 'restSeconds', Math.max(0, parseInt(e.target.value) || 0))}
-                            slotProps={{ htmlInput: { min: 0, max: 600, step: 15 } }}
-                            sx={{ width: 100, ...goldFieldSx(t) }}
-                          />
-                        </Stack>
-                      </Box>
-                    </Collapse>
-                  </Box>
-                ))}
-              </Stack>
-            )}
+                  {/* Expanded config */}
+                  <Collapse in={expandedIndex === index}>
+                    <Box sx={{ px: 2, pb: 2, pt: 0.5 }}>
+                      <Stack direction="row" spacing={1.5}>
+                        <TextField
+                          label="Séries"
+                          type="number"
+                          size="small"
+                          value={ex.targetSets}
+                          onChange={(e) => handleUpdateExercise(index, 'targetSets', Math.max(1, parseInt(e.target.value) || 1))}
+                          slotProps={{ htmlInput: { min: 1, max: 20 } }}
+                          sx={{ width: 80, ...goldFieldSx(t) }}
+                        />
+                        <TextField
+                          label="Reps"
+                          size="small"
+                          value={ex.targetReps}
+                          onChange={(e) => handleUpdateExercise(index, 'targetReps', e.target.value)}
+                          placeholder="8-12"
+                          sx={{ width: 90, ...goldFieldSx(t) }}
+                        />
+                        <TextField
+                          label="Repos (s)"
+                          type="number"
+                          size="small"
+                          value={ex.restSeconds}
+                          onChange={(e) => handleUpdateExercise(index, 'restSeconds', Math.max(0, parseInt(e.target.value) || 0))}
+                          slotProps={{ htmlInput: { min: 0, max: 600, step: 15 } }}
+                          sx={{ width: 100, ...goldFieldSx(t) }}
+                        />
+                      </Stack>
+                    </Box>
+                  </Collapse>
+                </Box>
+              ))}
+            </Box>
+          )}
 
-            {/* Add exercise button */}
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<Plus weight="bold" size={18} />}
-              onClick={() => setShowPicker(true)}
-              sx={{ ...goldOutlinedBtnSx, mt: 1.5, borderStyle: 'dashed' }}
-            >
-              Ajouter un exercice
-            </Button>
+          {/* Add exercise */}
+          <Box
+            onClick={() => setShowPicker(true)}
+            sx={{
+              border: '1px dashed',
+              borderColor: d ? alpha('#fff', 0.1) : alpha('#000', 0.08),
+              borderRadius: '14px', py: 2, textAlign: 'center', cursor: 'pointer',
+              '&:active': { bgcolor: alpha(GOLD, 0.05) },
+            }}
+          >
+            <Stack direction="row" justifyContent="center" alignItems="center" spacing={0.8}>
+              <Plus size={16} weight={W} color={tc.f(t)} />
+              <Typography sx={{ fontSize: '0.72rem', color: tc.f(t), fontWeight: 500 }}>Ajouter un exercice</Typography>
+            </Stack>
           </Box>
         </Stack>
       </Box>
@@ -392,20 +403,22 @@ function ManualProgramContent() {
         sx={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
           p: 2, pb: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-          borderTop: '1px solid',
-          borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
           bgcolor: panelBg(t),
           zIndex: 10,
         }}
       >
         <Button
           fullWidth
-          variant="contained"
           disabled={!canSave}
           onClick={handleSave}
-          sx={{ ...goldBtnSx, py: 1.5, fontSize: '1rem' }}
+          sx={{
+            py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,
+            bgcolor: tc.h(t), color: surfaceBg(t), textTransform: 'none',
+            '&:hover': { bgcolor: tc.h(t), opacity: 0.9 },
+            '&.Mui-disabled': { bgcolor: alpha(tc.h(t), 0.3), color: surfaceBg(t) },
+          }}
         >
-          {saving ? <CircularProgress size={24} sx={{ color: GOLD_CONTRAST }} /> : (isEdit ? 'Enregistrer' : 'Sauvegarder')}
+          {saving ? <CircularProgress size={20} sx={{ color: surfaceBg(t) }} /> : (isEdit ? 'Enregistrer' : 'Sauvegarder')}
         </Button>
       </Box>
 
