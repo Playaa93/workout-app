@@ -39,9 +39,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import {
   ArrowLeft,
-  Barbell,
   Lightning,
-  Plus,
   CaretRight,
   X,
   Trash,
@@ -245,30 +243,32 @@ function WorkoutContent() {
   const inProgressSessions = sessions.filter(s => !s.endedAt);
   const completedSessions = sessions.filter(s => !!s.endedAt);
 
+  const cellSx = card(t, { p: 2.5 })
+  const lblSx = { fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.1em', textTransform: 'uppercase' as const }
+  const sepSx = { borderBottom: '1px solid', borderColor: alpha(d ? '#fff' : '#000', 0.05) }
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: surfaceBg(t) }}>
       {/* Header */}
       <Box sx={{ px: 3, pt: 3, pb: 2.5 }}>
-        <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: tc.h(t), letterSpacing: '-0.02em' }}>
+        <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), letterSpacing: '-0.03em' }}>
           Entraînement
         </Typography>
       </Box>
 
       <Box sx={{ px: 3 }}>
-        <Stack spacing={2.5}>
-          {/* CTA Nouvelle séance */}
+        <Stack spacing={1.5}>
+          {/* CTA — inverted */}
           <Button
             fullWidth
             onClick={() => { setDrawerView('main'); setShowNewSessionDrawer(true); }}
-            startIcon={<Plus size={18} weight={W} />}
             sx={{
-              py: 2, borderRadius: '16px', fontSize: '0.95rem', fontWeight: 600,
-              bgcolor: GOLD, color: GOLD_CONTRAST, textTransform: 'none',
-              boxShadow: `0 4px 20px ${alpha(GOLD, 0.3)}`,
-              '&:hover': { bgcolor: GOLD_LIGHT },
+              py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,
+              bgcolor: tc.h(t), color: surfaceBg(t), textTransform: 'none',
+              '&:hover': { bgcolor: tc.h(t), opacity: 0.9 },
             }}
           >
-            Nouvelle séance
+            + Nouvelle séance
           </Button>
 
           {/* Session en cours */}
@@ -282,16 +282,14 @@ function WorkoutContent() {
               ? CARDIO_ACTIVITIES[session.cardioActivity as CardioActivity]
               : null;
             return (
-              <Box key={session.id} sx={card(t, {
-                borderRadius: '16px', borderColor: alpha(GOLD, 0.3), p: 2.5,
-              })}>
-                <Stack direction="row" alignItems="center" spacing={2}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: GOLD, boxShadow: `0 0 8px ${alpha(GOLD, 0.5)}`, flexShrink: 0 }} />
+              <Box key={session.id} sx={card(t, { p: 2, borderColor: alpha(GOLD, 0.3) })}>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: GOLD, boxShadow: `0 0 8px ${alpha(GOLD, 0.5)}`, flexShrink: 0 }} />
                   <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(t) }}>
+                    <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: tc.h(t) }}>
                       {isCardio ? `Cardio en cours — ${activityInfo?.label || 'Cardio'}` : 'Séance en cours'}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.75rem', color: tc.m(t) }}>
+                    <Typography sx={{ fontSize: '0.5rem', color: tc.f(t) }}>
                       Depuis {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </Typography>
                   </Box>
@@ -299,12 +297,12 @@ function WorkoutContent() {
                     component={Link}
                     href={resumeHref}
                     size="small"
-                    sx={{ fontWeight: 600, textTransform: 'none', borderRadius: '10px', bgcolor: alpha(GOLD, 0.1), color: GOLD }}
+                    sx={{ fontWeight: 600, textTransform: 'none', fontSize: '0.7rem', color: GOLD }}
                   >
                     Reprendre
                   </Button>
                   <IconButton size="small" onClick={() => handleDeleteClick(session.id)} sx={{ color: tc.f(t) }}>
-                    <Trash size={18} weight={W} />
+                    <Trash size={16} weight={W} />
                   </IconButton>
                 </Stack>
               </Box>
@@ -318,43 +316,37 @@ function WorkoutContent() {
               <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
             </Stack>
           ) : templates.length > 0 && (
-            <Box>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(t) }}>
-                  Programmes
-                </Typography>
-                <Button
+            <Box sx={cellSx}>
+              <Stack direction="row" justifyContent="space-between" sx={{ mb: 1.5 }}>
+                <Typography sx={lblSx}>Programmes</Typography>
+                <Typography
                   onClick={() => setShowCreateDrawer(true)}
-                  size="small"
-                  startIcon={<Plus size={14} weight={W} />}
-                  sx={{ fontSize: '0.7rem', textTransform: 'none', color: GOLD, fontWeight: 600 }}
+                  sx={{ fontSize: '0.55rem', color: GOLD, fontWeight: 600, cursor: 'pointer' }}
                 >
-                  Créer
-                </Button>
+                  + Créer
+                </Typography>
               </Stack>
-              <Stack spacing={1}>
-                {templates.map((tpl) => (
-                  <Box
-                    key={tpl.id}
-                    component={Link}
-                    href={`/workout/program/detail?id=${tpl.id}`}
-                    sx={card(t, {
-                      p: 2, textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.8 },
-                    })}
-                  >
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Barbell size={20} weight={W} color={GOLD} />
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: tc.h(t) }} noWrap>{tpl.name}</Typography>
-                        <Typography sx={{ fontSize: '0.7rem', color: tc.m(t), mt: 0.3 }}>
-                          {tpl.targetMuscles.map((m) => MUSCLE_LABELS[m] || m).join(' · ')}
-                        </Typography>
-                      </Box>
-                      <CaretRight size={18} weight={W} style={{ color: tc.f(t) }} />
-                    </Stack>
+              {templates.map((tpl, i) => (
+                <Stack
+                  key={tpl.id}
+                  component={Link}
+                  href={`/workout/program/detail?id=${tpl.id}`}
+                  direction="row"
+                  alignItems="center"
+                  sx={{
+                    py: 1, textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.85 },
+                    ...(i < templates.length - 1 ? sepSx : {}),
+                  }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: tc.h(t) }} noWrap>{tpl.name}</Typography>
+                    <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.2 }}>
+                      {tpl.targetMuscles.map((m) => MUSCLE_LABELS[m] || m).join(' · ')}
+                    </Typography>
                   </Box>
-                ))}
-              </Stack>
+                  <CaretRight size={14} weight={W} style={{ color: tc.f(t) }} />
+                </Stack>
+              ))}
             </Box>
           )}
 
@@ -368,50 +360,37 @@ function WorkoutContent() {
                 '&:active': { bgcolor: alpha(GOLD, 0.05) },
               }}
             >
-              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
-                <Plus size={20} weight={W} color={GOLD} />
-                <Typography sx={{ fontSize: '0.85rem', color: tc.m(t), fontWeight: 500 }}>
-                  Créer un programme
-                </Typography>
-              </Stack>
+              <Typography sx={{ fontSize: '0.7rem', color: tc.f(t), fontWeight: 500 }}>
+                + Créer un programme
+              </Typography>
             </Box>
           )}
 
           {/* Historique */}
-          <Box sx={{ pb: 4 }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: tc.m(t), mb: 1.5 }}>
-              Récent
-            </Typography>
-
-            {isLoading ? (
-              <Stack spacing={1}>
-                <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
-                <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
-              </Stack>
-            ) : completedSessions.length === 0 ? (
-              <Stack alignItems="center" spacing={1} sx={{ py: 5 }}>
-                <Box sx={{
-                  width: 56, height: 56, borderRadius: '50%',
-                  bgcolor: alpha(GOLD, 0.1),
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Barbell size={26} weight={W} color={GOLD} />
+          {isLoading ? (
+            <Stack spacing={1}>
+              <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
+              <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
+            </Stack>
+          ) : completedSessions.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 5 }}>
+              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t) }}>
+                Pas encore de séance
+              </Typography>
+              <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), mt: 0.3 }}>
+                Ta première séance t&apos;attend !
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ ...cellSx, pb: 4 }}>
+              <Typography sx={{ ...lblSx, mb: 1.5 }}>Récent</Typography>
+              {completedSessions.map((session, i) => (
+                <Box key={session.id} sx={i < completedSessions.length - 1 ? sepSx : {}}>
+                  <SessionCard session={session} />
                 </Box>
-                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t) }}>
-                  Pas encore de séance
-                </Typography>
-                <Typography sx={{ fontSize: '0.75rem', color: tc.f(t) }}>
-                  Ta première séance t&apos;attend !
-                </Typography>
-              </Stack>
-            ) : (
-              <Stack spacing={1}>
-                {completedSessions.map((session) => (
-                  <SessionCard key={session.id} session={session} />
-                ))}
-              </Stack>
-            )}
-          </Box>
+              ))}
+            </Box>
+          )}
         </Stack>
       </Box>
 

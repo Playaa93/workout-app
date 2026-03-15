@@ -12,14 +12,13 @@ import { parseJsonArray } from '@/powersync/helpers';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
 import type { CardioActivity } from '@/db/schema';
-import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, dialogPaperSx } from '@/lib/design-tokens';
+import { GOLD, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, dialogPaperSx } from '@/lib/design-tokens';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import {
   ArrowLeft,
   Trash,
   DotsThreeVertical,
   Trophy,
-  Barbell,
   NoteBlank,
   GearSix,
   DownloadSimple,
@@ -326,19 +325,6 @@ function SessionDetailContent() {
     else setsByExercise.set(set.exerciseId, [set]);
   });
 
-  const pillSx = (bg: string) => ({
-    display: 'inline-block',
-    bgcolor: alpha(bg, 0.15),
-    color: bg,
-    px: 1.5,
-    py: 0.5,
-    borderRadius: '4px',
-    fontWeight: 900,
-    fontSize: '0.75rem',
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1,
-  });
-
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: surfaceBg(t) }}>
       {/* Header */}
@@ -349,13 +335,13 @@ function SessionDetailContent() {
               <ArrowLeft size={22} weight={W} />
             </IconButton>
             <Box>
-              <Typography variant="h6" fontWeight={700} sx={{ color: tc.h(t) }}>
+              <Typography sx={{ fontWeight: 800, color: tc.h(t), fontSize: '1.1rem', letterSpacing: '-0.02em', textTransform: 'capitalize' }}>
                 {isCardio && activityInfo
                   ? `${activityInfo.emoji} ${activityInfo.label}`
                   : date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
                 }
               </Typography>
-              <Typography variant="body2" sx={{ color: tc.m(t) }}>
+              <Typography sx={{ fontSize: '0.7rem', color: tc.f(t) }}>
                 {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 {mins > 0 && ` · ${formatDuration(mins)}`}
               </Typography>
@@ -383,40 +369,50 @@ function SessionDetailContent() {
           </Menu>
         </Stack>
 
-        {/* Stats pills bar */}
-        <Box sx={card(t, { p: 2, mb: 2 })}>
-          <Stack direction="row" spacing={1.5} justifyContent="center">
+        {/* Stats — clean inline */}
+        <Box sx={card(t, { p: 2.5, mb: 2 })}>
+          <Stack direction="row" justifyContent="space-around" textAlign="center">
             {isCardio ? (
               <>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Box sx={pillSx(GOLD)}>{distanceM > 0 ? formatDistance(distanceM) : '—'}</Box>
-                  <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Distance</Typography>
+                <Box>
+                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
+                    {distanceM > 0 ? formatDistance(distanceM) : '—'}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Distance</Typography>
                 </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Box sx={pillSx(GOLD_LIGHT)}>{session.avgPaceSecondsPerKm ? formatPace(session.avgPaceSecondsPerKm) : '—'}</Box>
-                  <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Allure</Typography>
+                <Box sx={{ borderLeft: 1, borderRight: 1, borderColor: alpha(d ? '#fff' : '#000', 0.06), px: 3 }}>
+                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
+                    {session.avgPaceSecondsPerKm ? formatPace(session.avgPaceSecondsPerKm) : '—'}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Allure</Typography>
                 </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Box sx={pillSx('#ff9800')}>{session.caloriesBurned != null ? String(session.caloriesBurned) : '—'}</Box>
-                  <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>kcal</Typography>
+                <Box>
+                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
+                    {session.caloriesBurned ?? '—'}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>kcal</Typography>
                 </Box>
               </>
             ) : (
               <>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Box sx={pillSx(GOLD)}>{volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`}</Box>
-                  <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Volume</Typography>
+                <Box>
+                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
+                    {volume > 1000 ? `${(volume / 1000).toFixed(1)}t` : `${volume.toFixed(0)}kg`}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Volume</Typography>
                 </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Box sx={pillSx(GOLD_LIGHT)}>{String(sets.filter(s => !s.isWarmup).length)}</Box>
-                  <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>Séries</Typography>
+                <Box sx={{ borderLeft: 1, borderRight: 1, borderColor: alpha(d ? '#fff' : '#000', 0.06), px: 3 }}>
+                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
+                    {sets.filter(s => !s.isWarmup).length}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Séries</Typography>
                 </Box>
-                {session.caloriesBurned != null && session.caloriesBurned > 0 && (
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Box sx={pillSx('#ff9800')}>{String(session.caloriesBurned)}</Box>
-                    <Typography variant="caption" sx={{ color: tc.m(t), fontWeight: 700, display: 'block', mt: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.6rem' }}>kcal</Typography>
-                  </Box>
-                )}
+                <Box>
+                  <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: tc.h(t), lineHeight: 1 }}>
+                    {session.caloriesBurned ?? '—'}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: tc.f(t), mt: 0.3, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>kcal</Typography>
+                </Box>
               </>
             )}
           </Stack>
@@ -434,13 +430,10 @@ function SessionDetailContent() {
             return (
               <Box key={exerciseId} sx={card(t, { p: 2 })}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Barbell size={18} weight={W} color={tc.f(t)} />
-                    <Typography variant="subtitle2" fontWeight={600} sx={{ color: tc.h(t) }}>
-                      {exercise?.nameFr || exSets[0]?.exerciseName || 'Exercice'}
-                    </Typography>
-                  </Stack>
-                  <Typography variant="caption" sx={{ color: tc.m(t) }}>
+                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: tc.h(t) }}>
+                    {exercise?.nameFr || exSets[0]?.exerciseName || 'Exercice'}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), fontWeight: 500 }}>
                     {exVolume > 0 && `${exVolume.toLocaleString()}kg`}
                   </Typography>
                 </Stack>

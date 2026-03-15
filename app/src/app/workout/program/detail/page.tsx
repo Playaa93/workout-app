@@ -9,7 +9,7 @@ import { useQuery } from '@powersync/react';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { parseJsonArray } from '@/powersync/helpers';
 import { MUSCLE_LABELS } from '@/lib/workout-constants';
-import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, goldBtnSx, goldOutlinedBtnSx, dialogPaperSx } from '@/lib/design-tokens';
+import { GOLD, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, goldOutlinedBtnSx, dialogPaperSx } from '@/lib/design-tokens';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { alpha } from '@mui/material/styles';
 import { ArrowLeft, Play, Trash, PencilSimple, Info, Timer } from '@phosphor-icons/react';
@@ -19,7 +19,6 @@ import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -86,14 +85,14 @@ function ProgramDetailContent() {
   );
 
   const template = useMemo(() => {
-    const t = templateRows?.[0] as Record<string, unknown> | undefined;
-    if (!t) return null;
+    const row = templateRows?.[0] as Record<string, unknown> | undefined;
+    if (!row) return null;
     return {
-      id: t.id as string,
-      name: (t.name as string) || '',
-      description: (t.description as string) || null,
-      targetMuscles: parseJsonArray<string>(t.target_muscles as string | null),
-      estimatedDuration: t.estimated_duration as number | null,
+      id: row.id as string,
+      name: (row.name as string) || '',
+      description: (row.description as string) || null,
+      targetMuscles: parseJsonArray<string>(row.target_muscles as string | null),
+      estimatedDuration: row.estimated_duration as number | null,
     };
   }, [templateRows]);
 
@@ -167,7 +166,7 @@ function ProgramDetailContent() {
           <IconButton onClick={() => router.back()} edge="start">
             <ArrowLeft weight={W} size={22} color={tc.h(t)} />
           </IconButton>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, flex: 1, color: tc.h(t) }} noWrap>
+          <Typography sx={{ fontWeight: 800, flex: 1, color: tc.h(t), fontSize: '1.1rem', letterSpacing: '-0.02em' }} noWrap>
             {template.name}
           </Typography>
           <IconButton onClick={() => router.push(`/workout/program/manual?id=${templateId}`)} size="small">
@@ -184,21 +183,9 @@ function ProgramDetailContent() {
               {template.description}
             </Typography>
           )}
-          <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
-            {template.targetMuscles.map((m) => (
-              <Chip
-                key={m}
-                label={MUSCLE_LABELS[m] || m}
-                size="small"
-                sx={{
-                  height: 24,
-                  fontSize: '0.7rem',
-                  color: tc.m(t),
-                  bgcolor: d ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05),
-                }}
-              />
-            ))}
-          </Stack>
+          <Typography sx={{ fontSize: '0.65rem', color: tc.f(t) }}>
+            {template.targetMuscles.map((m) => MUSCLE_LABELS[m] || m).join(' · ')}
+          </Typography>
           {template.estimatedDuration && (
             <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1 }}>
               <Timer weight={W} size={16} color={tc.m(t)} />
@@ -210,7 +197,7 @@ function ProgramDetailContent() {
         </Box>
 
         {/* Exercises */}
-        <Typography variant="subtitle2" sx={{ mb: 1.5, color: tc.m(t) }}>
+        <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.1em', textTransform: 'uppercase', mb: 1.5 }}>
           {exerciseRows.length} exercice{exerciseRows.length > 1 ? 's' : ''}
         </Typography>
 
@@ -266,13 +253,16 @@ function ProgramDetailContent() {
         {/* Actions */}
         <Stack spacing={1.5} sx={{ pb: 4 }}>
           <Button
-            variant="contained"
             fullWidth
-            size="large"
-            startIcon={starting ? <CircularProgress size={20} sx={{ color: GOLD_CONTRAST }} /> : <Play weight="fill" size={20} />}
+            startIcon={starting ? <CircularProgress size={18} sx={{ color: surfaceBg(t) }} /> : <Play weight="fill" size={18} />}
             onClick={handleStart}
             disabled={starting}
-            sx={{ ...goldBtnSx, py: 1.5 }}
+            sx={{
+              py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,
+              bgcolor: tc.h(t), color: surfaceBg(t), textTransform: 'none',
+              '&:hover': { bgcolor: tc.h(t), opacity: 0.9 },
+              '&.Mui-disabled': { bgcolor: alpha(tc.h(t), 0.3), color: surfaceBg(t) },
+            }}
           >
             Démarrer la séance
           </Button>
