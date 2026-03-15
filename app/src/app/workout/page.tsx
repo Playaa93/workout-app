@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type {
-  WorkoutSession,
+  EnrichedWorkoutSession,
   WorkoutTemplate,
 } from './types';
 import { useAuth } from '@/powersync/auth-context';
@@ -57,6 +57,8 @@ import BottomNav from '@/components/BottomNav';
 import { GOLD, GOLD_LIGHT, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg } from '@/lib/design-tokens';
 import { formatDuration } from '@/lib/export-utils';
 
+const MAX_EXERCISES_SHOWN = 3;
+
 export default function WorkoutPage() {
   const { userId, loading: authLoading } = useAuth();
 
@@ -82,7 +84,7 @@ function WorkoutContent() {
   const isLoading = sessionsLoading || templatesLoading;
 
   // Map sessions
-  const sessions = useMemo<WorkoutSession[]>(() => {
+  const sessions = useMemo<EnrichedWorkoutSession[]>(() => {
     return sessionRows.map((s: any) => ({
       id: s.id,
       startedAt: new Date(s.started_at),
@@ -96,6 +98,10 @@ function WorkoutContent() {
       distanceMeters: s.distance_meters,
       avgPaceSecondsPerKm: s.avg_pace_seconds_per_km,
       avgSpeedKmh: s.avg_speed_kmh,
+      templateName: s.template_name || null,
+      exerciseNames: s.exercise_names ? s.exercise_names.split(',') : [],
+      muscleGroups: s.muscle_groups ? s.muscle_groups.split(',').filter(Boolean) : [],
+      exerciseCount: s.exercise_count ?? 0,
     }));
   }, [sessionRows]);
 
@@ -710,7 +716,7 @@ function WorkoutContent() {
 }
 
 
-function SessionCard({ session }: { session: WorkoutSession }) {
+function SessionCard({ session }: { session: EnrichedWorkoutSession }) {
   const router = useRouter();
   const { t, d } = useThemeTokens();
   const date = new Date(session.startedAt);
@@ -735,7 +741,9 @@ function SessionCard({ session }: { session: WorkoutSession }) {
   const durationFormatted = formatDuration(mins);
 
   // Build inline stats text
-  const stats: string[] = [durationFormatted];
+  const stats: string[] = [];
+  if (session.exerciseCount > 0 && !isCardio) stats.push(`${session.exerciseCount} exo`);
+  stats.push(durationFormatted);
   if (isCardio) {
     if (distanceM > 0) stats.push(formatDistance(distanceM));
     if (session.avgPaceSecondsPerKm) stats.push(formatPace(session.avgPaceSecondsPerKm));
@@ -744,29 +752,81 @@ function SessionCard({ session }: { session: WorkoutSession }) {
   }
   if (session.caloriesBurned) stats.push(`${session.caloriesBurned} kcal`);
 
+  // Title: template name or cardio activity or date
+  const title = session.templateName
+    ? session.templateName
+    : isCardio && activityInfo
+      ? activityInfo.label
+      : formattedDate;
+
+  // Exercise preview (first 3 names + overflow)
+  const exercisePreview = session.exerciseNames.length > 0
+    ? session.exerciseNames.slice(0, MAX_EXERCISES_SHOWN).join(' · ')
+      + (session.exerciseNames.length > MAX_EXERCISES_SHOWN
+        ? ` +${session.exerciseNames.length - MAX_EXERCISES_SHOWN}`
+        : '')
+    : null;
+
+  // Muscle group labels
+  const muscleLabels = session.muscleGroups
+    .map((m) => MUSCLE_LABELS[m] || m)
+    .filter(Boolean);
+
   return (
     <Box
       onClick={() => router.push(`/workout/session?id=${session.id}`)}
       sx={card(t, { px: 2, py: 1.8, cursor: 'pointer', '&:active': { opacity: 0.85 } })}
     >
       <Stack direction="row" alignItems="center">
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          {/* Row 1: Title + date/time */}
           <Stack direction="row" spacing={0.75} alignItems="center">
             {isCardio && activityInfo && (
               <Typography component="span" sx={{ fontSize: '0.95rem' }}>{activityInfo.emoji}</Typography>
             )}
-            <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t), textTransform: 'capitalize' }}>
-              {isCardio && activityInfo ? activityInfo.label : formattedDate}
+            <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t), textTransform: 'capitalize' }} noWrap>
+              {title}
             </Typography>
-            <Typography sx={{ fontSize: '0.7rem', color: tc.f(t) }}>
-              {isCardio ? formattedDate : formattedTime}
+            <Typography sx={{ fontSize: '0.7rem', color: tc.f(t), flexShrink: 0 }}>
+              {session.templateName ? formattedDate : (isCardio ? formattedDate : formattedTime)}
             </Typography>
           </Stack>
-          <Typography sx={{ fontSize: '0.7rem', color: tc.m(t), mt: 0.2 }}>
+
+          {/* Row 2: Exercise preview */}
+          {exercisePreview && (
+            <Typography sx={{ fontSize: '0.7rem', color: tc.m(t), mt: 0.3 }} noWrap>
+              {exercisePreview}
+            </Typography>
+          )}
+
+          {/* Row 3: Muscle chips */}
+          {muscleLabels.length > 0 && (
+            <Stack direction="row" sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
+              {muscleLabels.map((label) => (
+                <Box
+                  key={label}
+                  sx={{
+                    px: 0.8, py: 0.15,
+                    borderRadius: '6px',
+                    bgcolor: alpha(GOLD, d ? 0.12 : 0.08),
+                    border: '1px solid',
+                    borderColor: alpha(GOLD, d ? 0.2 : 0.15),
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 500, color: GOLD, lineHeight: 1.4 }}>
+                    {label}
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
+          )}
+
+          {/* Row 4: Stats */}
+          <Typography sx={{ fontSize: '0.65rem', color: tc.f(t), mt: 0.4 }}>
             {stats.join(' · ')}
           </Typography>
         </Box>
-        <CaretRight size={18} weight={W} style={{ color: tc.f(t) }} />
+        <CaretRight size={18} weight={W} style={{ color: tc.f(t), flexShrink: 0 }} />
       </Stack>
     </Box>
   );

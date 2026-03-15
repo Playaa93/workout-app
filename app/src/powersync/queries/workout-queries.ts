@@ -27,10 +27,30 @@ export function useExercisesByMuscle(muscle: string) {
   );
 }
 
+export type RecentSessionRow = WorkoutSessionRow & {
+  template_name: string | null;
+  exercise_names: string | null;
+  muscle_groups: string | null;
+  exercise_count: number;
+};
+
 export function useRecentSessions(limit = 10) {
   const userId = useUserId();
-  return useQuery<WorkoutSessionRow>(
-    `SELECT * FROM workout_sessions WHERE user_id = ? ORDER BY started_at DESC LIMIT ?`,
+  return useQuery<RecentSessionRow>(
+    `SELECT
+       ws.*,
+       wt.name as template_name,
+       GROUP_CONCAT(DISTINCT e.name_fr) as exercise_names,
+       GROUP_CONCAT(DISTINCT e.muscle_group) as muscle_groups,
+       COUNT(DISTINCT e.id) as exercise_count
+     FROM workout_sessions ws
+     LEFT JOIN workout_templates wt ON ws.template_id = wt.id
+     LEFT JOIN workout_sets wsets ON wsets.session_id = ws.id
+     LEFT JOIN exercises e ON wsets.exercise_id = e.id
+     WHERE ws.user_id = ?
+     GROUP BY ws.id
+     ORDER BY ws.started_at DESC
+     LIMIT ?`,
     [userId, limit]
   );
 }

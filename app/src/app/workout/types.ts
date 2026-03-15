@@ -45,6 +45,13 @@ export type WorkoutSession = {
   avgSpeedKmh: string | null;
 };
 
+export type EnrichedWorkoutSession = WorkoutSession & {
+  templateName: string | null;
+  exerciseNames: string[];
+  muscleGroups: string[];
+  exerciseCount: number;
+};
+
 export type WorkoutSet = {
   id: string;
   exerciseId: string;
