@@ -378,10 +378,10 @@ function SessionDetailContent() {
           <Box
             component={Link}
             href={`/workout/program/detail?id=${session.templateId}`}
-            sx={card(t, { px: 2, py: 1.2, mb: 1.5, textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.85 } })}
+            sx={card(t, { px: 2, py: 1.2, mb: 1.5, display: 'block', textDecoration: 'none', color: 'inherit', '&:active': { opacity: 0.85 } })}
           >
             <Stack direction="row" alignItems="center" spacing={1}>
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: GOLD, flexShrink: 0 }} />
+              <Box component="span" sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: GOLD, flexShrink: 0, display: 'inline-block' }} />
               <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: tc.h(t), flex: 1 }}>Programme lié</Typography>
               <CaretRight size={14} weight={W} color={tc.f(t)} />
             </Stack>
