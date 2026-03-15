@@ -22,7 +22,7 @@ export default function SummaryBanner({
   workoutCalories: number;
   onTap?: () => void;
 }) {
-  const { t, d } = useThemeTokens();
+  const { t } = useThemeTokens();
   const lblSx = { fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.1em', textTransform: 'uppercase' as const };
 
   const targetCals = profile?.targetCalories

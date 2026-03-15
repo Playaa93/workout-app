@@ -275,7 +275,7 @@ export function Results({ result, onRetake }: Props) {
 }
 
 function InsertionBar({ label, potential }: { label: string; potential: InsertionPotential }) {
-  const { t, d } = useThemeTokens();
+  const { t } = useThemeTokens();
   const valueMap: Record<InsertionPotential, number> = { high: 100, medium: 60, low: 30 };
 
   return (
@@ -298,7 +298,7 @@ function InsertionBar({ label, potential }: { label: string; potential: Insertio
 }
 
 function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendation }) {
-  const { t, d } = useThemeTokens();
+  const { t } = useThemeTokens();
   const subLbl = { fontSize: '0.55rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.08em', textTransform: 'uppercase' as const };
   const hasContent =
     recommendation.advantages.length > 0 ||
@@ -374,7 +374,7 @@ function ExerciseCard({ recommendation }: { recommendation: ExerciseRecommendati
 }
 
 function MobilityWorkItem({ work }: { work: MobilityWork }) {
-  const { t, d } = useThemeTokens();
+  const { t } = useThemeTokens();
   const priorityLabels: Record<string, string> = {
     high: 'Prioritaire',
     medium: 'Recommandé',
