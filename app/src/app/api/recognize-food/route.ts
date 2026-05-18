@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getGroqContext, callGroqVision } from '@/lib/groq';
+import { validateAndSanitizeMacros } from '@/lib/macro-validator';
 
 export async function POST(request: Request) {
   type Body = { imageBase64?: string; hint?: string };
@@ -60,15 +61,35 @@ Si tu ne vois aucun aliment, réponds: {"foods": []}`;
       return NextResponse.json({ error: 'Format de réponse invalide' }, { status: 502 });
     }
 
-    const foods = (parsed.foods as Record<string, unknown>[]).map((f) => ({
-      name: (f.name as string) || 'Aliment inconnu',
-      portionGrams: Math.max(0, Math.round((f.portionGrams as number) || 100)),
-      calories: Math.max(0, Math.round((f.calories as number) || 0)),
-      protein: Math.max(0, Math.round((f.protein as number) || 0)),
-      carbs: Math.max(0, Math.round((f.carbs as number) || 0)),
-      fat: Math.max(0, Math.round((f.fat as number) || 0)),
-      confidence: Math.min(1, Math.max(0, (f.confidence as number) || 0.5)),
-    }));
+    const foods = (parsed.foods as Record<string, unknown>[])
+      .map((f) => ({
+        name: (f.name as string) || 'Aliment inconnu',
+        portionGrams: Math.max(0, Math.round((f.portionGrams as number) || 100)),
+        calories: Math.max(0, Math.round((f.calories as number) || 0)),
+        protein: Math.max(0, Math.round((f.protein as number) || 0)),
+        carbs: Math.max(0, Math.round((f.carbs as number) || 0)),
+        fat: Math.max(0, Math.round((f.fat as number) || 0)),
+        confidence: Math.min(1, Math.max(0, (f.confidence as number) || 0.5)),
+      }))
+      .filter((f) => {
+        if (f.portionGrams <= 0) {
+          console.warn(`[recognize-food] Aliment rejeté "${f.name}": portion invalide`);
+          return false;
+        }
+        const scale = 100 / f.portionGrams;
+        const check = validateAndSanitizeMacros({
+          name: f.name,
+          calories: f.calories * scale,
+          protein: f.protein * scale,
+          carbohydrates: f.carbs * scale,
+          fat: f.fat * scale,
+        });
+        if (!check.valid) {
+          console.warn(`[recognize-food] Aliment rejeté "${f.name}":`, check.errors);
+          return false;
+        }
+        return true;
+      });
 
     return NextResponse.json({ foods });
   } catch (err) {

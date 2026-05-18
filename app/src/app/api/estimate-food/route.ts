@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getGroqContext, callGroqChat, GROQ_TEXT_MODEL } from '@/lib/groq';
+import { validateAndSanitizeMacros } from '@/lib/macro-validator';
 
 export async function POST(request: Request) {
   const ctx = await getGroqContext();
@@ -44,12 +45,26 @@ JSON exact : {"name":"nom normalisé en français","caloriesPer100g":0,"proteinP
       { model: GROQ_TEXT_MODEL, max_tokens: 256, jsonMode: true }
     );
 
+    const cal = Math.max(0, Math.round((parsed.caloriesPer100g as number) || 0));
+    const prot = Math.max(0, Math.round(((parsed.proteinPer100g as number) || 0) * 10) / 10);
+    const carbs = Math.max(0, Math.round(((parsed.carbsPer100g as number) || 0) * 10) / 10);
+    const fat = Math.max(0, Math.round(((parsed.fatPer100g as number) || 0) * 10) / 10);
+
+    const check = validateAndSanitizeMacros({
+      name: (parsed.name as string) || foodName,
+      calories: cal, protein: prot, carbohydrates: carbs, fat: fat,
+    });
+    if (!check.valid) {
+      console.warn(`[estimate-food] "${foodName}" refusé:`, check.errors);
+      return NextResponse.json({ error: 'Estimation IA invalide' }, { status: 422 });
+    }
+
     return NextResponse.json({
       name: (parsed.name as string) || foodName,
-      caloriesPer100g: Math.max(0, Math.round((parsed.caloriesPer100g as number) || 0)),
-      proteinPer100g: Math.max(0, Math.round(((parsed.proteinPer100g as number) || 0) * 10) / 10),
-      carbsPer100g: Math.max(0, Math.round(((parsed.carbsPer100g as number) || 0) * 10) / 10),
-      fatPer100g: Math.max(0, Math.round(((parsed.fatPer100g as number) || 0) * 10) / 10),
+      caloriesPer100g: cal,
+      proteinPer100g: prot,
+      carbsPer100g: carbs,
+      fatPer100g: fat,
       typicalPortionGrams: Math.max(50, Math.round((parsed.typicalPortionGrams as number) || 200)),
       confidence: Math.min(1, Math.max(0, (parsed.confidence as number) || 0.5)),
       description: (parsed.description as string) || '',

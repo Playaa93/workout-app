@@ -5,6 +5,7 @@ import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
 import { requireUserId } from '@/lib/auth';
 import { getLocalDateStr } from '@/lib/date-utils';
 import { updateStreak } from '@/app/profile/actions';
+import { validateAndSanitizeMacros } from '@/lib/macro-validator';
 
 // XP rewards for diet actions
 const XP_REWARDS = {
@@ -804,6 +805,20 @@ export async function searchOpenFoodFacts(query: string, limit = 20): Promise<Fo
 
 // Save an Open Food Facts product to the local DB (cache on select)
 export async function cacheFoodProduct(product: FoodData): Promise<FoodData> {
+  const check = validateAndSanitizeMacros({
+    name: product.nameFr,
+    brand: product.brand,
+    calories: product.calories,
+    protein: product.protein,
+    carbohydrates: product.carbohydrates,
+    fat: product.fat,
+  });
+  if (!check.valid) {
+    console.warn(`[cacheFoodProduct] "${product.nameFr}" refusé:`, check.errors);
+    throw new Error('Valeurs nutritionnelles invalides');
+  }
+  const cleanBrand = check.sanitized.brand;
+
   // Check if already cached (by name + brand combo)
   const existing = await db
     .select({ id: foods.id })
@@ -811,13 +826,13 @@ export async function cacheFoodProduct(product: FoodData): Promise<FoodData> {
     .where(
       and(
         eq(foods.nameFr, product.nameFr),
-        product.brand ? eq(foods.brand, product.brand) : sql`${foods.brand} IS NULL`
+        cleanBrand ? eq(foods.brand, cleanBrand) : sql`${foods.brand} IS NULL`
       )
     )
     .limit(1);
 
   if (existing.length > 0) {
-    return { ...product, id: existing[0].id };
+    return { ...product, brand: cleanBrand, id: existing[0].id };
   }
 
   const [saved] = await db
@@ -825,7 +840,7 @@ export async function cacheFoodProduct(product: FoodData): Promise<FoodData> {
     .values({
       nameFr: product.nameFr,
       nameEn: product.nameEn,
-      brand: product.brand,
+      brand: cleanBrand,
       calories: product.calories,
       protein: product.protein,
       carbohydrates: product.carbohydrates,
@@ -834,7 +849,7 @@ export async function cacheFoodProduct(product: FoodData): Promise<FoodData> {
     })
     .returning();
 
-  return { ...product, id: saved.id };
+  return { ...product, brand: cleanBrand, id: saved.id };
 }
 
 // =====================================================
@@ -865,12 +880,23 @@ export async function lookupBarcode(barcode: string): Promise<FoodData | null> {
     const mapped = mapOFFProduct(data.product);
     const nameFr = mapped?.nameFr || 'Produit scanné';
 
+    const check = validateAndSanitizeMacros({
+      name: nameFr,
+      brand: mapped?.brand ?? null,
+      calories: mapped?.calories ?? null,
+      protein: mapped?.protein ?? null,
+      carbohydrates: mapped?.carbohydrates ?? null,
+      fat: mapped?.fat ?? null,
+    });
+    if (!check.valid) return null;
+    const cleanBrand = check.sanitized.brand;
+
     const [saved] = await db
       .insert(foods)
       .values({
         nameFr,
         nameEn: mapped?.nameEn ?? null,
-        brand: mapped?.brand ?? null,
+        brand: cleanBrand,
         barcode,
         calories: mapped?.calories ?? null,
         protein: mapped?.protein ?? null,
