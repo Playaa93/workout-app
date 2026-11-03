@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useThemeTokens } from '@/hooks/useDark'
-import { PowerSyncConnector } from '@/powersync/connector'
-import { usePowerSync, useStatus } from '@powersync/react'
+import { useStatus } from '@powersync/react'
 import { getHomeSnapshot } from './home-actions'
 import type { HomeSnapshot } from './home-snapshot'
 import { useAuth } from '@/powersync/auth-context'
@@ -64,7 +63,6 @@ export default function HomeContent() {
 function HomeContentInner({ userId }: { userId: string }) {
   const { displayName } = useAuth()
   const { hasSynced, connected } = useStatus()
-  const db = usePowerSync()
   const profile = useUserProfile()
   const game = useGamification()
   const stats = useUserStats()
@@ -104,10 +102,7 @@ function HomeContentInner({ userId }: { userId: string }) {
   }, [localReady, day, connected, attempt])
 
   if (!localReady) {
-    if (remote?.day === day && remote.data) return <HomeView data={remote.data} retrySync={() => {
-      void db.connect(new PowerSyncConnector()).catch(err => console.error('PowerSync reconnect failed:', err))
-      setAttempt(n => n + 1)
-    }} />
+    if (remote?.day === day && remote.data) return <HomeView data={remote.data} serverData />
     return (
       <Box sx={{ p: 3 }} aria-live="polite">
         <Typography variant="h5" sx={{ mb: 2 }}>{displayName || 'Accueil'}</Typography>
@@ -152,7 +147,7 @@ function HomeContentInner({ userId }: { userId: string }) {
   return <HomeView data={data} />
 }
 
-function HomeView({ data, retrySync }: { data: HomeSnapshot; retrySync?: () => void }) {
+function HomeView({ data, serverData = false }: { data: HomeSnapshot; serverData?: boolean }) {
   const { t, d: isDark } = useThemeTokens()
   const { streak, totalWorkouts, totalPRs, hasMorphoProfile, activeSession, nutrition, recentSessions, recentPRs, bodyEvolution } = data
   const displayName = data.displayName || 'Guerrier'
@@ -232,8 +227,8 @@ function HomeView({ data, retrySync }: { data: HomeSnapshot; retrySync?: () => v
 
           {/* CTA */}
           <Button
-            component={retrySync && activeSession ? 'a' : Link}
-            href={activeSession ? `/workout/${activeSession.sessionType === 'cardio' ? 'cardio' : retrySync ? 'active/en-ligne' : 'active'}?id=${activeSession.id}` : '/workout'}
+            component={serverData && activeSession ? 'a' : Link}
+            href={activeSession ? `/workout/${activeSession.sessionType === 'cardio' ? 'cardio' : serverData ? 'active/en-ligne' : 'active'}?id=${activeSession.id}` : '/workout'}
             fullWidth
             sx={{
               py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,
@@ -243,12 +238,6 @@ function HomeView({ data, retrySync }: { data: HomeSnapshot; retrySync?: () => v
           >
             {activeSession ? 'Reprendre ma séance' : 'Lancer une Séance'}
           </Button>
-
-          {retrySync && (
-            <Alert severity="info" action={<Button size="small" onClick={retrySync}>Réessayer</Button>}>
-              Données du compte affichées en attendant la synchronisation de cet appareil.
-            </Alert>
-          )}
 
           {/* Morpho CTA (conditionnel) */}
           {!hasMorphoProfile && (
