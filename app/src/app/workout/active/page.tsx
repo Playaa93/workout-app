@@ -47,6 +47,7 @@ import {
   type MorphoRecommendation,
 } from '@/lib/morpho-exercise-scoring';
 import { triggerHaptic } from '@/lib/haptic';
+import SavedWorkout from './SavedWorkout';
 import { getExerciseProgress } from './exercise-progress';
 import { useSetRestTimer } from '@/hooks/useSetRestTimer';
 import { useThemeTokens } from '@/hooks/useDark';
@@ -830,9 +831,10 @@ function ActiveWorkoutContent({ sessionId, storageKey, sessionRows, setRows }: {
 }
 
 function SessionWorkout({ sessionId, storageKey }: { sessionId: string | null; storageKey: string }) {
-  const { data: sessionRows, isLoading: sessionLoading } = useActiveSession(sessionId);
-  const { data: setRows, isLoading: setsLoading } = useSessionSets(sessionId);
+  const { data: sessionRows, isLoading: sessionLoading, error: sessionError } = useActiveSession(sessionId);
+  const { data: setRows, isLoading: setsLoading, error: setsError } = useSessionSets(sessionId);
   if (sessionLoading || setsLoading) return <FullScreenLoader />;
+  if (sessionId && (!sessionRows.length || sessionError || setsError)) return <SavedWorkout sessionId={sessionId} />;
 
   return <ActiveWorkoutContent storageKey={storageKey} sessionId={sessionId} sessionRows={sessionRows} setRows={setRows} />;
 }

@@ -34,7 +34,7 @@ export type RecentSessionRow = WorkoutSessionRow & {
   exercise_count: number;
 };
 
-export function useRecentSessions(limit = 10) {
+export function useRecentSessions(limit = 10, includeAllOpen = false) {
   const userId = useUserId();
   return useQuery<RecentSessionRow>(
     `SELECT
@@ -48,19 +48,24 @@ export function useRecentSessions(limit = 10) {
      LEFT JOIN workout_sets wsets ON wsets.session_id = ws.id
      LEFT JOIN exercises e ON wsets.exercise_id = e.id
      WHERE ws.user_id = ?
+       ${includeAllOpen ? `AND (ws.ended_at IS NULL OR ws.id IN (
+         SELECT id FROM workout_sessions WHERE user_id = ? AND ended_at IS NOT NULL
+         ORDER BY started_at DESC LIMIT ?
+       ))` : ''}
      GROUP BY ws.id
      ORDER BY ws.started_at DESC
-     LIMIT ?`,
-    [userId, limit]
+     ${includeAllOpen ? '' : 'LIMIT ?'}`,
+    includeAllOpen ? [userId, userId, limit] : [userId, limit]
   );
 }
 
 export function useActiveSession(sessionId: string | null) {
+  const userId = useUserId();
   return useQuery<WorkoutSessionRow>(
     sessionId
-      ? `SELECT * FROM workout_sessions WHERE id = ?`
+      ? `SELECT * FROM workout_sessions WHERE id = ? AND user_id = ?`
       : `SELECT * FROM workout_sessions WHERE 0`,
-    [sessionId]
+    sessionId ? [sessionId, userId] : []
   );
 }
 

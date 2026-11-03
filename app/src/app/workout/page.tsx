@@ -12,6 +12,8 @@ import {
   useRecentSessions,
   useTemplates,
 } from '@/powersync/queries/workout-queries';
+import { useWorkoutOverviewFallback } from './use-workout-overview';
+import { useStatus } from '@powersync/react';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 import { CARDIO_ACTIVITIES, formatPace, formatDistance } from '@/lib/cardio-utils';
 import { compressImage } from '@/lib/image-utils';
@@ -68,7 +70,7 @@ export default function WorkoutPage() {
     );
   }
 
-  return <WorkoutContent />;
+  return <WorkoutContent key={userId} />;
 }
 
 function WorkoutContent() {
@@ -77,12 +79,17 @@ function WorkoutContent() {
   const { t, d } = useThemeTokens();
 
   // PowerSync reactive hooks
-  const { data: sessionRows, isLoading: sessionsLoading } = useRecentSessions();
-  const { data: templateRows, isLoading: templatesLoading } = useTemplates();
-  const isLoading = sessionsLoading || templatesLoading;
+  const { data: sessionRows, isLoading: sessionsLoading, error: sessionsError } = useRecentSessions(10, true);
+  const { data: templateRows, isLoading: templatesLoading, error: templatesError } = useTemplates();
+  const { hasSynced, connected } = useStatus();
+  const localLoading = sessionsLoading || templatesLoading;
+  const checkServer = !!sessionsError || !!templatesError || !hasSynced || !connected || !sessionRows.length;
+  const fallback = useWorkoutOverviewFallback(checkServer, connected);
+  const isLoading = (localLoading || fallback.waiting) && !fallback.server;
+  const unconfirmed = fallback.failed;
 
   // Map sessions
-  const sessions = useMemo<EnrichedWorkoutSession[]>(() => {
+  const localSessions = useMemo<EnrichedWorkoutSession[]>(() => {
     return sessionRows.map((s: any) => ({
       id: s.id,
       startedAt: new Date(s.started_at),
@@ -104,7 +111,7 @@ function WorkoutContent() {
   }, [sessionRows]);
 
   // Map templates
-  const templates = useMemo<WorkoutTemplate[]>(() => {
+  const localTemplates = useMemo<WorkoutTemplate[]>(() => {
     return templateRows.map((tpl: any) => ({
       id: tpl.id,
       name: tpl.name,
@@ -115,6 +122,11 @@ function WorkoutContent() {
       createdAt: new Date(tpl.created_at),
     }));
   }, [templateRows]);
+
+  // Local copies take priority, including sessions edited or finished offline.
+  const sessions = [...localSessions, ...(fallback.server?.sessions ?? []).filter(row => !localSessions.some(local => local.id === row.id))]
+    .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+  const templates = [...localTemplates, ...(fallback.server?.templates ?? []).filter(row => !localTemplates.some(local => local.id === row.id))];
 
   const [isStarting, setIsStarting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -258,20 +270,12 @@ function WorkoutContent() {
 
       <Box sx={{ px: 3 }}>
         <Stack spacing={1.5}>
-          {/* CTA — inverted */}
-          <Button
-            fullWidth
-            onClick={() => { setDrawerView('main'); setShowNewSessionDrawer(true); }}
-            sx={{
-              py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,
-              bgcolor: tc.h(t), color: surfaceBg(t), textTransform: 'none',
-              '&:hover': { bgcolor: tc.h(t), opacity: 0.9 },
-            }}
-          >
-            + Nouvelle séance
-          </Button>
-
-          {/* Session en cours */}
+          <Typography component="h2" variant="subtitle1" sx={{ fontWeight: 700, color: tc.h(t) }}>Mes séances</Typography>
+          {unconfirmed && (
+            <Alert severity="info" action={<Button color="inherit" onClick={fallback.retry}>Réessayer</Button>}>
+              La liste du compte est momentanément indisponible.
+            </Alert>
+          )}
           {inProgressSessions.map((session) => {
             const date = new Date(session.startedAt);
             const isCardio = session.sessionType === 'cardio';
@@ -287,10 +291,10 @@ function WorkoutContent() {
                   <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: GOLD, boxShadow: `0 0 8px ${alpha(GOLD, 0.5)}`, flexShrink: 0 }} />
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: tc.h(t) }}>
-                      {isCardio ? `Cardio en cours — ${activityInfo?.label || 'Cardio'}` : 'Séance en cours'}
+                      {isCardio ? `Cardio en cours — ${activityInfo?.label || 'Cardio'}` : session.templateName || 'Séance en cours'}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.5rem', color: tc.f(t) }}>
-                      Depuis {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    <Typography sx={{ fontSize: '0.72rem', color: tc.m(t) }}>
+                      En cours · {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </Typography>
                   </Box>
                   <Button
@@ -301,16 +305,31 @@ function WorkoutContent() {
                   >
                     Reprendre
                   </Button>
-                  <IconButton size="small" onClick={() => handleDeleteClick(session.id)} sx={{ color: tc.f(t) }}>
-                    <Trash size={16} weight={W} />
-                  </IconButton>
+                  {localSessions.some(local => local.id === session.id) && (
+                    <IconButton size="small" aria-label="Supprimer cette séance" onClick={() => handleDeleteClick(session.id)} sx={{ color: tc.f(t) }}>
+                      <Trash size={16} weight={W} />
+                    </IconButton>
+                  )}
                 </Stack>
               </Box>
             );
           })}
 
+          {/* CTA — inverted */}
+          <Button
+            fullWidth
+            onClick={() => { setDrawerView('main'); setShowNewSessionDrawer(true); }}
+            sx={{
+              py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,
+              bgcolor: tc.h(t), color: surfaceBg(t), textTransform: 'none',
+              '&:hover': { bgcolor: tc.h(t), opacity: 0.9 },
+            }}
+          >
+            + Nouvelle séance
+          </Button>
+
           {/* Programmes */}
-          {isLoading ? (
+          {isLoading && templates.length === 0 ? (
             <Stack spacing={1}>
               <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
               <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
@@ -351,7 +370,7 @@ function WorkoutContent() {
           )}
 
           {/* Lien créer programme si aucun */}
-          {!isLoading && templates.length === 0 && (
+          {!isLoading && !unconfirmed && templates.length === 0 && (
             <Box
               onClick={() => setShowCreateDrawer(true)}
               sx={{
@@ -367,12 +386,12 @@ function WorkoutContent() {
           )}
 
           {/* Historique */}
-          {isLoading ? (
+          {isLoading && completedSessions.length === 0 ? (
             <Stack spacing={1}>
               <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
               <Skeleton variant="rounded" height={64} sx={{ borderRadius: '14px' }} />
             </Stack>
-          ) : completedSessions.length === 0 ? (
+          ) : sessions.length === 0 && !unconfirmed ? (
             <Box sx={{ textAlign: 'center', py: 5 }}>
               <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: tc.h(t) }}>
                 Pas encore de séance
@@ -381,7 +400,7 @@ function WorkoutContent() {
                 Ta première séance t&apos;attend !
               </Typography>
             </Box>
-          ) : (
+          ) : completedSessions.length > 0 && (
             <Box sx={{ ...cellSx, pb: 4 }}>
               <Typography sx={{ ...lblSx, mb: 1.5 }}>Récent</Typography>
               {completedSessions.map((session, i) => (

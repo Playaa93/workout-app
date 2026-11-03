@@ -104,6 +104,9 @@ self.addEventListener('notificationclick', (event) => {
 // Network-first strategy with offline fallback
 self.addEventListener('fetch', (event) => {
   const { request } = event
+  const url = new URL(request.url)
+  // Let the browser handle authenticated APIs, server actions and the external sync stream.
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return
 
   // Navigation requests → serve offline page on failure
   if (request.mode === 'navigate') {

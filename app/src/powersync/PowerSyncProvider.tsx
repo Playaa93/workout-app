@@ -6,10 +6,11 @@ import { useEffect, useState, useRef, type ReactNode } from 'react';
 import { useAuth } from './auth-context';
 import { getPowerSyncDb } from './system';
 import { PowerSyncConnector } from './connector';
+import FullScreenLoader from '@/components/FullScreenLoader';
 
 export function PowerSyncProvider({ children }: { children: ReactNode }) {
   const { userId, loading } = useAuth();
-  const [db, setDb] = useState<PowerSyncDatabase | null>(null);
+  const [local, setLocal] = useState<{ userId: string; db: PowerSyncDatabase } | null>(null);
   const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -24,19 +25,16 @@ export function PowerSyncProvider({ children }: { children: ReactNode }) {
         await instance.disconnectAndClear();
       }
 
+      if (!mounted || !userId) return;
       lastUserIdRef.current = userId;
+      // Queries can open the local database while the remote connection starts.
+      setLocal({ userId, db: instance });
+      Object.assign(window, { __powersync: instance });
       await instance.connect(new PowerSyncConnector());
-
-      if (mounted) {
-        (window as any).__powersync = instance;
-        setDb(instance);
-      }
     }
 
     connect().catch((err) => {
       console.error('PowerSync init failed:', err);
-      // Still provide the db instance so hooks can read from local cache
-      if (mounted) setDb(instance);
     });
 
     return () => {
@@ -45,12 +43,11 @@ export function PowerSyncProvider({ children }: { children: ReactNode }) {
     };
   }, [userId, loading]);
 
-  if (!db) {
-    return <>{children}</>;
-  }
+  if (!userId || loading) return <>{children}</>;
+  if (local?.userId !== userId) return <FullScreenLoader />;
 
   return (
-    <PowerSyncContext.Provider value={db}>
+    <PowerSyncContext.Provider value={local.db}>
       {children}
     </PowerSyncContext.Provider>
   );
