@@ -232,8 +232,8 @@ function HomeView({ data, retrySync }: { data: HomeSnapshot; retrySync?: () => v
 
           {/* CTA */}
           <Button
-            component={Link}
-            href={activeSession ? `/workout/${activeSession.sessionType === 'cardio' ? 'cardio' : 'active'}?id=${activeSession.id}` : '/workout'}
+            component={retrySync && activeSession ? 'a' : Link}
+            href={activeSession ? `/workout/${activeSession.sessionType === 'cardio' ? 'cardio' : retrySync ? 'active/en-ligne' : 'active'}?id=${activeSession.id}` : '/workout'}
             fullWidth
             sx={{
               py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,

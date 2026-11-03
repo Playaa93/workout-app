@@ -1,0 +1,15 @@
+.page { max-width: 38rem; margin: auto; padding: 1rem 1rem 5rem; font: 1rem/1.45 system-ui,sans-serif; color: var(--foreground); }
+.page a { color: inherit; text-decoration: underline; }
+.page header { margin: 1.5rem 0; }
+.page h1 { font-size: 1.65rem; font-weight: 700; }
+.page h2 { font-size: 1.1rem; font-weight: 650; }
+.page section, .finish { padding: 1rem; margin: .75rem 0; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
+.page section[aria-current] { border-color: #b48c22; box-shadow: inset 3px 0 #b48c22; }
+.page summary { cursor: pointer; padding: .75rem 0; }
+.page ul { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0; list-style: none; }
+.page li { border: 1px solid var(--border); padding: .15rem .5rem; border-radius: .4rem; }
+.fields { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .5rem; }
+.form label { display: block; font-size: .82rem; }
+.form input:not([type=checkbox]), .form select { width: 100%; min-height: 44px; border: 1px solid var(--border); border-radius: .5rem; padding: .4rem; font-size: 1rem; color: inherit; background: var(--background); }
+.form .check { display: flex; align-items: center; gap: .4rem; min-height: 44px; }
+.page button { min-height: 44px; padding: .55rem 1rem; border-radius: .65rem; background: #d4af37; color: #1a1715; font-weight: 650; cursor: pointer; }

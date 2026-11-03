@@ -1,7 +1,7 @@
 'use server';
 
 import { and, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
-import { db, exercises, workoutSessions, workoutSets, workoutTemplates } from '@/db';
+import { db, exercises, workoutSessions, workoutSets, workoutTemplates, workoutTemplateExercises } from '@/db';
 import { requireUserId } from '@/lib/auth';
 import type { EnrichedWorkoutSession, WorkoutTemplate } from './types';
 
@@ -45,15 +45,22 @@ export async function getWorkoutOverview() {
 export async function getSavedWorkout(sessionId: string) {
   const userId = await requireUserId();
   const rows = await db.select({
-    templateName: workoutTemplates.name, startedAt: workoutSessions.startedAt,
+    templateName: workoutTemplates.name, templateId: workoutTemplates.id, startedAt: workoutSessions.startedAt, endedAt: workoutSessions.endedAt,
+    exerciseId: workoutSets.exerciseId, isWarmup: workoutSets.isWarmup, performedAt: workoutSets.performedAt, rest: workoutSets.restTaken,
     setId: workoutSets.id, exercise: exercises.nameFr, reps: workoutSets.reps, weight: workoutSets.weight,
   }).from(workoutSessions)
     .leftJoin(workoutTemplates, and(eq(workoutTemplates.id, workoutSessions.templateId), eq(workoutTemplates.userId, userId)))
     .leftJoin(workoutSets, eq(workoutSets.sessionId, workoutSessions.id))
     .leftJoin(exercises, eq(exercises.id, workoutSets.exerciseId))
-    .where(and(eq(workoutSessions.id, sessionId), eq(workoutSessions.userId, userId)))
+    .where(and(eq(workoutSessions.id, sessionId), eq(workoutSessions.userId, userId), sql`${workoutSessions.sessionType} IS DISTINCT FROM 'cardio'`))
     .orderBy(workoutSets.performedAt);
   if (!rows.length) return null;
-  return { title: rows[0].templateName || 'Séance', startedAt: rows[0].startedAt,
-    sets: rows.flatMap(row => row.setId ? [{ id: row.setId, name: row.exercise || 'Exercice', reps: row.reps, weight: row.weight }] : []) };
+  const templateId = rows[0].templateId;
+  const plan = templateId ? await db.select({ exerciseId: exercises.id, name: exercises.nameFr,
+    targetSets: workoutTemplateExercises.targetSets, rest: workoutTemplateExercises.restSeconds })
+    .from(workoutTemplateExercises).innerJoin(exercises, eq(exercises.id, workoutTemplateExercises.exerciseId))
+    .where(eq(workoutTemplateExercises.templateId, templateId)).orderBy(workoutTemplateExercises.orderIndex) : [];
+  return { title: rows[0].templateName || 'Séance', startedAt: rows[0].startedAt, endedAt: rows[0].endedAt, plan,
+    sets: rows.flatMap(row => row.setId ? [{ id: row.setId, exerciseId: row.exerciseId, isWarmup: row.isWarmup,
+      performedAt: row.performedAt, rest: row.rest, name: row.exercise || 'Exercice', reps: row.reps, weight: row.weight }] : []) };
 }

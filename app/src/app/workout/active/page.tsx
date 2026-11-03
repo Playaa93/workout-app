@@ -47,13 +47,12 @@ import {
   type MorphoRecommendation,
 } from '@/lib/morpho-exercise-scoring';
 import { triggerHaptic } from '@/lib/haptic';
-import SavedWorkout from './SavedWorkout';
 import { getExerciseProgress } from './exercise-progress';
 import { useSetRestTimer } from '@/hooks/useSetRestTimer';
 import { useThemeTokens } from '@/hooks/useDark';
 import { alpha } from '@mui/material/styles';
 import { GOLD, GOLD_CONTRAST, W, tc, card, surfaceBg, panelBg, goldBtnSx, goldOutlinedBtnSx, dialogPaperSx } from '@/lib/design-tokens';
-import FullScreenLoader from '@/components/FullScreenLoader';
+import WorkoutOpening from '@/components/WorkoutOpening';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
@@ -125,12 +124,12 @@ function ActiveWorkoutContent({ sessionId, storageKey, sessionRows, setRows }: {
   const { t, d } = useThemeTokens();
 
   // PowerSync reactive hooks
-  const { data: exerciseRows, isLoading: exercisesLoading } = useExercises();
+  const { data: exerciseRows, isLoading: exercisesLoading, error: exercisesError } = useExercises();
   const { data: morphoRows } = useMorphoProfile();
 
   // Get template_id from session for template exercises
   const templateId = sessionRows?.[0]?.template_id as string | null;
-  const { data: templateExRows, isLoading: planLoading } = useTemplateExercises(templateId);
+  const { data: templateExRows, isLoading: planLoading, error: planError } = useTemplateExercises(templateId);
 
   // Map exercises
   const exercises = useMemo<Exercise[]>(() => {
@@ -243,7 +242,7 @@ function ActiveWorkoutContent({ sessionId, storageKey, sessionRows, setRows }: {
     } as MorphotypeResult;
   }, [morphoRows]);
 
-  const isLoading = exercisesLoading || (!!templateId && planLoading);
+  const awaitingExercises = exercisesLoading || exercisesError || (!!templateId && (planLoading || planError));
 
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
@@ -350,8 +349,8 @@ function ActiveWorkoutContent({ sessionId, storageKey, sessionRows, setRows }: {
     );
   }
 
-  if (isLoading) {
-    return <FullScreenLoader />;
+  if (awaitingExercises) {
+    return <WorkoutOpening sessionId={sessionId} />;
   }
 
   const formatTime = formatRestTime;
@@ -833,8 +832,8 @@ function ActiveWorkoutContent({ sessionId, storageKey, sessionRows, setRows }: {
 function SessionWorkout({ sessionId, storageKey }: { sessionId: string | null; storageKey: string }) {
   const { data: sessionRows, isLoading: sessionLoading, error: sessionError } = useActiveSession(sessionId);
   const { data: setRows, isLoading: setsLoading, error: setsError } = useSessionSets(sessionId);
-  if (sessionLoading || setsLoading) return <FullScreenLoader />;
-  if (sessionId && (!sessionRows.length || sessionError || setsError)) return <SavedWorkout sessionId={sessionId} />;
+  if (sessionLoading || setsLoading) return <WorkoutOpening sessionId={sessionId} />;
+  if (sessionId && (!sessionRows.length || sessionError || setsError)) return <WorkoutOpening sessionId={sessionId} />;
 
   return <ActiveWorkoutContent storageKey={storageKey} sessionId={sessionId} sessionRows={sessionRows} setRows={setRows} />;
 }
@@ -842,7 +841,7 @@ function SessionWorkout({ sessionId, storageKey }: { sessionId: string | null; s
 function ActiveWorkoutRoute() {
   const { userId, loading } = useAuth();
   const sessionId = useSearchParams().get('id');
-  if (loading || !userId) return <FullScreenLoader />;
+  if (loading || !userId || !sessionId) return <WorkoutOpening sessionId={sessionId} />;
 
   const storageKey = `workout.rest.v1.${userId}.${sessionId}`;
   return <SessionWorkout key={storageKey} storageKey={storageKey} sessionId={sessionId} />;
@@ -850,7 +849,7 @@ function ActiveWorkoutRoute() {
 
 export default function ActiveWorkoutPage() {
   return (
-    <Suspense fallback={<FullScreenLoader />}>
+    <Suspense fallback={<WorkoutOpening />}>
       <ActiveWorkoutRoute />
     </Suspense>
   );

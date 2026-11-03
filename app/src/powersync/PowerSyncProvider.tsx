@@ -13,8 +13,15 @@ import { useAuth } from './auth-context';
 import { getPowerSyncDb } from './system';
 import { PowerSyncConnector } from './connector';
 import FullScreenLoader from '@/components/FullScreenLoader';
+import WorkoutOpening from '@/components/WorkoutOpening';
 
 export function PowerSyncProvider({ children }: { children: ReactNode }) {
+  const path = usePathname();
+  if (path === '/workout/active/en-ligne') return children;
+  return <LocalDatabase activeWorkout={path === '/workout/active'}>{children}</LocalDatabase>;
+}
+
+function LocalDatabase({ activeWorkout, children }: { activeWorkout: boolean; children: ReactNode }) {
   const { userId, loading } = useAuth();
   const [local, setLocal] = useState<{ userId: string; db: PowerSyncDatabase } | null>(null);
   const lastUserIdRef = useRef<string | null>(null);
@@ -63,7 +70,7 @@ export function PowerSyncProvider({ children }: { children: ReactNode }) {
   }, [userId, loading]);
 
   if (!userId || loading) return <>{children}</>;
-  if (local?.userId !== userId) return <FullScreenLoader />;
+  if (local?.userId !== userId) return activeWorkout ? <WorkoutOpening sessionId={new URLSearchParams(window.location.search).get('id')} /> : <FullScreenLoader />;
 
   return (
     <PowerSyncContext.Provider value={local.db}>

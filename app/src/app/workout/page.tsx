@@ -279,9 +279,10 @@ function WorkoutContent() {
           {inProgressSessions.map((session) => {
             const date = new Date(session.startedAt);
             const isCardio = session.sessionType === 'cardio';
+            const serverOnly = !localSessions.some(local => local.id === session.id);
             const resumeHref = isCardio
               ? `/workout/cardio?id=${session.id}`
-              : `/workout/active?id=${session.id}`;
+              : `/workout/active${serverOnly ? '/en-ligne' : ''}?id=${session.id}`;
             const activityInfo = isCardio && session.cardioActivity
               ? CARDIO_ACTIVITIES[session.cardioActivity as CardioActivity]
               : null;
@@ -298,14 +299,14 @@ function WorkoutContent() {
                     </Typography>
                   </Box>
                   <Button
-                    component={Link}
+                    component={serverOnly ? 'a' : Link}
                     href={resumeHref}
                     size="small"
                     sx={{ fontWeight: 600, textTransform: 'none', fontSize: '0.7rem', color: GOLD }}
                   >
                     Reprendre
                   </Button>
-                  {localSessions.some(local => local.id === session.id) && (
+                  {!serverOnly && (
                     <IconButton size="small" aria-label="Supprimer cette séance" onClick={() => handleDeleteClick(session.id)} sx={{ color: tc.f(t) }}>
                       <Trash size={16} weight={W} />
                     </IconButton>
