@@ -1,7 +1,11 @@
 'use client'
 
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useThemeTokens } from '@/hooks/useDark'
+import { PowerSyncConnector } from '@/powersync/connector'
+import { usePowerSync, useStatus } from '@powersync/react'
+import { getHomeSnapshot } from './home-actions'
+import type { HomeSnapshot } from './home-snapshot'
 import { useAuth } from '@/powersync/auth-context'
 import {
   useUserProfile,
@@ -15,9 +19,10 @@ import { useRecentSessions, usePersonalRecords } from '@/powersync/queries/worko
 import { useLatestMeasurement, useFirstMeasurement } from '@/powersync/queries/measurement-queries'
 import { calculateLevel } from '@/lib/xp-utils'
 import { getISOWeekStart } from '@/lib/date-utils'
-import { toSqliteTimestamp } from '@/powersync/helpers'
+import { todayStr, toSqliteTimestamp } from '@/powersync/helpers'
 import { GOLD, GOLD_LIGHT, tc, sc, card, surfaceBg, W } from '@/lib/design-tokens'
 import { MUSCLE_LABELS } from '@/lib/workout-constants'
+import Alert from '@mui/material/Alert'
 import { alpha } from '@mui/material/styles'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -53,131 +58,108 @@ export default function HomeContent() {
     )
   }
 
-  return <HomeContentInner />
+  return <HomeContentInner key={userId} userId={userId} />
 }
 
-function HomeContentInner() {
-  const { displayName: authDisplayName } = useAuth()
-  const { t, d: isDark } = useThemeTokens()
-
-  const { data: profileRows } = useUserProfile()
-  const { data: gamificationRows } = useGamification()
-  const { data: statsRows } = useUserStats()
-  const { data: morphoRows } = useMorphoProfile()
-  const { data: nutritionRows } = useDailySummary()
-  const { data: nutritionProfileRows } = useNutritionProfile()
-  const { data: recentSessionRows } = useRecentSessions(3)
-  const { data: prRows } = usePersonalRecords()
-  const { data: latestMeasRows } = useLatestMeasurement()
-  const { data: firstMeasRows } = useFirstMeasurement()
-
-  const [thisWeekStart, lastWeekStart] = useMemo(() => {
-    const now = new Date()
-    const tw = toSqliteTimestamp(getISOWeekStart(now))
-    const prev = new Date(now)
-    prev.setDate(prev.getDate() - 7)
-    const lw = toSqliteTimestamp(getISOWeekStart(prev))
-    return [tw, lw]
-  }, [])
-  const { data: weeklyRows } = useWeeklyComparison(thisWeekStart, lastWeekStart)
+function HomeContentInner({ userId }: { userId: string }) {
+  const { displayName } = useAuth()
+  const { hasSynced, connected } = useStatus()
+  const db = usePowerSync()
+  const profile = useUserProfile()
+  const game = useGamification()
+  const stats = useUserStats()
+  const morpho = useMorphoProfile()
+  const daily = useDailySummary()
+  const diet = useNutritionProfile()
+  const sessions = useRecentSessions(3, true)
+  const records = usePersonalRecords()
+  const latest = useLatestMeasurement()
+  const first = useFirstMeasurement()
+  const day = todayStr()
+  const week = getISOWeekStart(new Date())
+  const previous = new Date(week.getTime() - 7 * 86400000)
+  const weekly = useWeeklyComparison(toSqliteTimestamp(week), toSqliteTimestamp(previous))
+  const queries = [profile, game, stats, morpho, daily, diet, sessions, records, latest, first, weekly]
+  const localReady = hasSynced && profile.data[0]?.id === userId && queries.every(q => !q.isLoading && !q.error)
+  const [remote, setRemote] = useState<{ day: string; data: HomeSnapshot | null } | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {})
-    }
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})
   }, [])
 
-  const gamification = useMemo(() => {
-    if (gamificationRows.length === 0) return null
-    const r = gamificationRows[0] as any
-    const totalXp = (r.total_xp as number) || 0
-    const levelInfo = calculateLevel(totalXp)
-    return {
-      currentLevel: levelInfo.level,
-      xpInCurrentLevel: levelInfo.xpInCurrentLevel,
-      xpToNextLevel: levelInfo.xpToNext,
-      xpProgress: Math.round((levelInfo.xpInCurrentLevel / levelInfo.xpToNext) * 100),
-      currentStreak: (r.current_streak as number) || 0,
-    }
-  }, [gamificationRows])
+  useEffect(() => {
+    if (localReady) return
+    let active = true
+    // Give a warm local database the first read. A stalled sync must not block the server read.
+    const timer = setTimeout(() => {
+      getHomeSnapshot(day).then(
+        data => { if (active) setRemote({ day, data }) },
+        () => { if (active) setRemote({ day, data: null }) },
+      )
+    }, 200)
+    const retry = () => setAttempt(value => value + 1)
+    window.addEventListener('online', retry)
+    return () => { active = false; clearTimeout(timer); window.removeEventListener('online', retry) }
+  }, [localReady, day, connected, attempt])
 
-  const stats = useMemo(() => {
-    if (statsRows.length === 0) return null
-    const r = statsRows[0] as any
-    return { totalWorkouts: r.total_workouts || 0, totalPRs: r.total_prs || 0 }
-  }, [statsRows])
+  if (!localReady) {
+    if (remote?.day === day && remote.data) return <HomeView data={remote.data} retrySync={() => {
+      void db.connect(new PowerSyncConnector()).catch(err => console.error('PowerSync reconnect failed:', err))
+      setAttempt(n => n + 1)
+    }} />
+    return (
+      <Box sx={{ p: 3 }} aria-live="polite">
+        <Typography variant="h5" sx={{ mb: 2 }}>{displayName || 'Accueil'}</Typography>
+        {remote?.day === day && !remote.data
+          ? <Alert severity="warning" action={<Button onClick={() => { setRemote(null); setAttempt(n => n + 1) }}>Réessayer</Button>}>
+              Les données du compte sont momentanément indisponibles.
+            </Alert>
+          : <Typography>Chargement de tes données…</Typography>}
+        <Button component={Link} href="/workout" sx={{ mt: 2 }}>Mes séances</Button>
+        <BottomNav />
+      </Box>
+    )
+  }
 
-  const hasMorphoProfile = morphoRows.length > 0
+  const nutrition = diet.data[0]
+  const summary = daily.data[0]
+  const lastMeasure = latest.data[0]
+  const firstWeight = first.data[0]?.weight
+  const open = sessions.data.find(s => !s.ended_at)
+  const data: HomeSnapshot = {
+    displayName: displayName || profile.data[0]?.display_name || null,
+    totalXp: game.data[0]?.total_xp ?? 0, streak: game.data[0]?.current_streak ?? 0,
+    totalWorkouts: stats.data[0]?.total_workouts ?? 0, totalPRs: stats.data[0]?.total_prs ?? 0,
+    weeklySessions: weekly.data.find(w => w.week === 'this')?.sessions ?? 0,
+    hasMorphoProfile: morpho.data.length > 0,
+    activeSession: open ? { id: open.id, sessionType: open.session_type } : null,
+    nutrition: nutrition ? {
+      cal: Math.round(Number(summary?.total_calories ?? 0)), prot: Math.round(Number(summary?.total_protein ?? 0)),
+      carbs: Math.round(Number(summary?.total_carbs ?? 0)), fat: Math.round(Number(summary?.total_fat ?? 0)),
+      targetCal: nutrition.target_calories || 2200, targetProt: nutrition.target_protein || 140,
+    } : null,
+    recentSessions: sessions.data.filter(s => s.ended_at).slice(0, 3).map(s => ({
+      id: s.id, startedAt: s.started_at ?? '', templateName: s.template_name, muscleGroups: s.muscle_groups?.split(',').filter(Boolean) ?? [],
+      sessionType: s.session_type, cardioActivity: s.cardio_activity,
+    })),
+    recentPRs: records.data.slice(0, 3).map(pr => ({ exerciseName: pr.exercise_name || '—', value: Number(pr.value ?? 0) })),
+    bodyEvolution: lastMeasure?.weight != null ? {
+      weight: Number(lastMeasure.weight), bodyFat: lastMeasure.body_fat_percentage == null ? null : Number(lastMeasure.body_fat_percentage),
+      weightDiff: firstWeight == null ? null : Number(lastMeasure.weight) - Number(firstWeight),
+    } : null,
+  }
+  return <HomeView data={data} />
+}
 
-  const weeklySessionCount = useMemo(() => {
-    const thisWeekRow = (weeklyRows as any[]).find(r => r.week === 'this')
-    return thisWeekRow?.sessions || 0
-  }, [weeklyRows])
-
-  const displayName = authDisplayName || (profileRows[0] as any)?.display_name || 'Guerrier'
-  const weeklyWorkouts = Math.min(weeklySessionCount, WEEKLY_GOAL)
-  const streak = gamification?.currentStreak || 0
-  const totalWorkouts = stats?.totalWorkouts || 0
-  const totalPRs = stats?.totalPRs || 0
-  const level = gamification?.currentLevel || 1
-  const xpPct = gamification?.xpProgress || 0
-  const xpCur = gamification?.xpInCurrentLevel || 0
-  const xpMax = gamification?.xpToNextLevel || 100
-
+function HomeView({ data, retrySync }: { data: HomeSnapshot; retrySync?: () => void }) {
+  const { t, d: isDark } = useThemeTokens()
+  const { streak, totalWorkouts, totalPRs, hasMorphoProfile, activeSession, nutrition, recentSessions, recentPRs, bodyEvolution } = data
+  const displayName = data.displayName || 'Guerrier'
+  const weeklyWorkouts = Math.min(data.weeklySessions, WEEKLY_GOAL)
+  const { level, xpInCurrentLevel, xpToNext } = calculateLevel(data.totalXp)
+  const xpPct = Math.round(100 * xpInCurrentLevel / xpToNext)
   const statValues = { totalWorkouts, streak, totalPRs }
-
-  // Nutrition today
-  const nutrition = useMemo(() => {
-    const summary = nutritionRows[0] as any
-    const profile = nutritionProfileRows[0] as any
-    if (!profile) return null
-    const cal = Math.round(parseFloat(summary?.total_calories || '0'))
-    const prot = Math.round(parseFloat(summary?.total_protein || '0'))
-    const carbs = Math.round(parseFloat(summary?.total_carbs || '0'))
-    const fat = Math.round(parseFloat(summary?.total_fat || '0'))
-    const targetCal = profile.target_calories || 2200
-    const targetProt = profile.target_protein || 140
-    return { cal, prot, carbs, fat, targetCal, targetProt }
-  }, [nutritionRows, nutritionProfileRows])
-
-  // Recent sessions
-  const recentSessions = useMemo(() => {
-    return recentSessionRows
-      .filter((s: any) => s.ended_at)
-      .slice(0, 3)
-      .map((s: any) => ({
-        id: s.id,
-        templateName: s.template_name || null,
-        exerciseNames: s.exercise_names ? (s.exercise_names as string).split(',') : [],
-        muscleGroups: s.muscle_groups ? (s.muscle_groups as string).split(',').filter(Boolean) : [],
-        startedAt: new Date(s.started_at),
-        sessionType: s.session_type,
-        cardioActivity: s.cardio_activity,
-      }))
-  }, [recentSessionRows])
-
-  // Recent PRs (last 5)
-  const recentPRs = useMemo(() => {
-    return prRows.slice(0, 5).map((r: any) => ({
-      exerciseName: r.exercise_name || '—',
-      value: r.value ? parseFloat(r.value) : 0,
-      recordType: r.record_type,
-      achievedAt: new Date(r.achieved_at),
-    }))
-  }, [prRows])
-
-  // Body evolution
-  const bodyEvolution = useMemo(() => {
-    const latest = latestMeasRows[0] as any
-    if (!latest?.weight) return null
-    const weight = parseFloat(latest.weight)
-    const bodyFat = latest.body_fat_percentage ? parseFloat(latest.body_fat_percentage) : null
-    const firstRow = firstMeasRows[0] as any
-    const firstWeight = firstRow?.weight ? parseFloat(firstRow.weight) : null
-    const weightDiff = firstWeight ? weight - firstWeight : null
-    return { weight, bodyFat, weightDiff }
-  }, [latestMeasRows, firstMeasRows])
-
   const MC = { P: GOLD, G: sc.green(t), L: '#f97316' }
   const cellSx = card(t, { p: 2.5 })
   const lblSx = { fontSize: '0.6rem', fontWeight: 600, color: tc.f(t), letterSpacing: '0.1em', textTransform: 'uppercase' as const }
@@ -251,7 +233,7 @@ function HomeContentInner() {
           {/* CTA */}
           <Button
             component={Link}
-            href="/workout"
+            href={activeSession ? `/workout/${activeSession.sessionType === 'cardio' ? 'cardio' : 'active'}?id=${activeSession.id}` : '/workout'}
             fullWidth
             sx={{
               py: 1.5, borderRadius: '14px', fontSize: '0.85rem', fontWeight: 700,
@@ -259,8 +241,14 @@ function HomeContentInner() {
               '&:hover': { bgcolor: tc.h(t), opacity: 0.9 },
             }}
           >
-            Lancer une Séance
+            {activeSession ? 'Reprendre ma séance' : 'Lancer une Séance'}
           </Button>
+
+          {retrySync && (
+            <Alert severity="info" action={<Button size="small" onClick={retrySync}>Réessayer</Button>}>
+              Données du compte affichées en attendant la synchronisation de cet appareil.
+            </Alert>
+          )}
 
           {/* Morpho CTA (conditionnel) */}
           {!hasMorphoProfile && (
@@ -320,7 +308,7 @@ function HomeContentInner() {
                 <Typography component={Link} href="/workout" sx={{ fontSize: '0.55rem', color: GOLD, fontWeight: 600, textDecoration: 'none' }}>Tout</Typography>
               </Stack>
               {recentSessions.map((s, i) => {
-                const dateStr = s.startedAt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
+                const dateStr = new Date(s.startedAt).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
                 const isCardio = s.sessionType === 'cardio'
                 const title = s.templateName || (isCardio ? s.cardioActivity || 'Cardio' : dateStr)
                 const muscles = s.muscleGroups.map((m: string) => MUSCLE_LABELS[m] || m).filter(Boolean)
@@ -359,7 +347,7 @@ function HomeContentInner() {
                   <Trophy size={12} weight={W} color={GOLD} />
                   <Typography sx={lblSx}>Records</Typography>
                 </Stack>
-                {recentPRs.slice(0, 3).map((pr, i) => (
+                {recentPRs.map((pr, i) => (
                   <Stack key={i} direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.4 }}>
                     <Typography sx={{ fontSize: '0.6rem', color: tc.m(t), fontWeight: 500 }} noWrap>{pr.exerciseName}</Typography>
                     <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: tc.h(t), ml: 1, flexShrink: 0 }}>
