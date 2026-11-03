@@ -30,83 +30,75 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
-// ── Rest timer notification scheduler ──
-const TIMER_TAG = 'rest-timer';
-const TIMER_ICON = '/icons/icon-192.svg';
-let timerGeneration = 0;
+// The page owns foreground feedback. While hidden it may delegate one
+// best-effort alarm per tab. Mobile browsers can suspend even a waiting worker.
+const restTimers = new Map();
+const MAX_ALERT_DELAY_MS = 30_000;
 
-function formatDuration(ms) {
-  const totalSec = Math.ceil(ms / 1000);
-  if (totalSec >= 60) {
-    const m = Math.floor(totalSec / 60);
-    const s = totalSec % 60;
-    return `${m}:${String(s).padStart(2, '0')} de repos`;
-  }
-  return `${totalSec}s de repos`;
-}
-
-function clearTimer() {
-  if (self._timer) {
-    clearInterval(self._timer.interval);
-    if (self._timer.resolve) self._timer.resolve();
-    self._timer = null;
+async function closeRestNotifications(tag, alarmId) {
+  const notifications = await self.registration.getNotifications({ tag });
+  for (const notification of notifications) {
+    if (!alarmId || notification.data?.alarmId === alarmId) notification.close();
   }
 }
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SCHEDULE_TIMER_NOTIFICATION') {
-    clearTimer();
-    const endTime = event.data.endTime;
-    if (endTime - Date.now() <= 0) return;
+  if (event.data?.type !== 'REST_TIMER_DEADLINE' || event.source?.type !== 'window') return;
+  const clientId = event.source.id;
+  const tag = `rest-timer-${clientId}`;
+  restTimers.get(clientId)?.cancel();
+  restTimers.delete(clientId);
+  const { endTime, sessionId } = event.data;
+  const delay = endTime - Date.now();
+  if (!Number.isFinite(delay) || delay <= 0) {
+    event.waitUntil(closeRestNotifications(tag).catch(() => {}));
+    return;
+  }
 
-    const gen = ++timerGeneration;
-    self.registration.showNotification('Repos en cours', {
-      body: formatDuration(endTime - Date.now()),
-      icon: TIMER_ICON,
-      tag: TIMER_TAG,
-      silent: true,
-      requireInteraction: false,
-    });
-    event.waitUntil(new Promise((resolve) => {
-      const tick = () => {
-        if (gen !== timerGeneration) return;
-        const remaining = endTime - Date.now();
-        if (remaining <= 0) {
-          clearInterval(self._timer?.interval);
-          self._timer = null;
-          self.registration.showNotification('Repos terminé !', {
-            body: "C'est reparti 💪",
-            icon: TIMER_ICON,
-            tag: TIMER_TAG,
-            renotify: true,
-            requireInteraction: true,
-            vibrate: [200, 100, 200, 100, 200],
-          });
-          resolve();
-        }
-      };
-      self._timer = { interval: setInterval(tick, 1000), resolve };
-    }));
-  }
-  if (event.data?.type === 'CANCEL_TIMER_NOTIFICATION') {
-    timerGeneration++;
-    clearTimer();
-    self.registration.getNotifications({ tag: TIMER_TAG }).then((n) => n.forEach((x) => x.close()));
-  }
+  const alarmId = crypto.randomUUID();
+  let cancel;
+  const wait = new Promise(resolve => {
+    const timeout = setTimeout(resolve, delay);
+    cancel = () => { clearTimeout(timeout); resolve(); };
+  });
+  const alarm = { cancel };
+  restTimers.set(clientId, alarm);
+  event.waitUntil((async () => {
+    try {
+      await wait;
+      if (restTimers.get(clientId) !== alarm) return;
+      const client = await self.clients.get(clientId);
+      if (client?.visibilityState !== 'hidden' || restTimers.get(clientId) !== alarm) return;
+      // After a long suspension the page will show completion on return.
+      if (Date.now() - endTime > MAX_ALERT_DELAY_MS) return;
+      await self.registration.showNotification('Repos terminé', {
+        body: 'Tu peux commencer ta prochaine série.',
+        icon: '/icons/icon-192.svg',
+        tag,
+        silent: true,
+        data: { alarmId, clientId, sessionId },
+      });
+      if (restTimers.get(clientId) !== alarm) await closeRestNotifications(tag, alarmId);
+    } catch {
+      // The tab may be gone or permission revoked while the timer was waiting.
+    } finally {
+      if (restTimers.get(clientId) === alarm) restTimers.delete(clientId);
+    }
+  })());
 });
 
-// Focus app on notification tap
 self.addEventListener('notificationclick', (event) => {
+  const { sessionId, clientId } = event.notification.data || {};
+  const path = sessionId ? '/workout/active?' + new URLSearchParams({ id: sessionId }) : '/workout';
   event.notification.close();
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if (client.visibilityState === 'visible') return client.focus();
-      }
-      if (clients.length > 0) return clients[0].navigate('/').then((c) => c?.focus());
-      return self.clients.openWindow('/');
-    })
-  );
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const url = new URL(path, self.location.origin).href;
+    const owner = windows.find(client => client.id === clientId);
+    if (owner) return owner.focus();
+    const match = windows.find(client => client.url === url);
+    return match ? match.focus() : self.clients.openWindow(url);
+  })());
 });
 
 // Network-first strategy with offline fallback

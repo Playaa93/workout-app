@@ -1,229 +1,171 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 
-export interface RestTimerState {
-  remaining: number;
-  isRunning: boolean;
-  sound: boolean;
-  vibration: boolean;
-  setSound: (v: boolean) => void;
-  setVibration: (v: boolean) => void;
-  start: (duration?: number) => void;
-  stop: () => void;
-  adjust: (deltaSeconds: number) => void;
+type AlertPermission = NotificationPermission | 'unavailable';
+
+function getPermission(): AlertPermission {
+  if (typeof window === 'undefined' || !('Notification' in window) ||
+      !('serviceWorker' in navigator) || typeof ServiceWorkerRegistration === 'undefined' ||
+      !('showNotification' in ServiceWorkerRegistration.prototype)) {
+    return 'unavailable';
+  }
+  return Notification.permission;
 }
 
-const DEFAULT_REST_SECONDS = 90;
-
-// ── Service Worker helpers ───────────────────────────────────
-
-function postToSw(msg: Record<string, unknown>) {
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.ready.then((reg) => {
-    reg.active?.postMessage(msg);
-  }).catch(() => {});
+function useAlertPreference(name: string, fallback: boolean) {
+  const key = `workout.rest.${name}`;
+  const [enabled, setEnabled] = useState(() => {
+    try {
+      const value = localStorage.getItem(key);
+      return value === null ? fallback : value === 'true';
+    } catch { return fallback; }
+  });
+  const update = (value: boolean) => {
+    setEnabled(value);
+    try { localStorage.setItem(key, String(value)); } catch { /* Session-only preference. */ }
+  };
+  return [enabled, update] as const;
 }
 
-function scheduleTimerNotification(endTime: number) {
-  postToSw({ type: 'SCHEDULE_TIMER_NOTIFICATION', endTime });
-}
-
-function cancelTimerNotification() {
-  postToSw({ type: 'CANCEL_TIMER_NOTIFICATION' });
-}
-
-function dismissSwNotification() {
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.ready.then((reg) => {
-    reg.getNotifications({ tag: 'rest-timer' }).then((notifs) => {
-      notifs.forEach((n) => n.close());
-    });
-  }).catch(() => {});
-}
-
-// ── Ensure SW is registered ──────────────────────────────────
-
-let swRegistered = false;
-function ensureSwRegistered() {
-  if (swRegistered || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
-  swRegistered = true;
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
-
-// ── Hook ─────────────────────────────────────────────────────
-
-export function useRestTimer(): RestTimerState {
-  useEffect(() => { ensureSwRegistered(); }, []);
-
+export function useRestTimer(accountAllowsNotifications: boolean) {
   const [remaining, setRemaining] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [sound, setSound] = useState(true);
-  const [vibration, setVibration] = useState(true);
-  const endRef = useRef(0);
-  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
-  const notifRequested = useRef(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const firedRef = useRef(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [finished, setFinished] = useState(false);
+  const [sound, setSound] = useAlertPreference('sound', false);
+  const [vibration, setVibration] = useAlertPreference('vibration', true);
+  const [allowNotification, saveNotification] = useAlertPreference('notification', true);
+  const [permission, setPermission] = useState(getPermission);
+  const notifications = accountAllowsNotifications && allowNotification && permission === 'granted';
+  const deadline = useRef(0);
+  const audio = useRef<HTMLAudioElement | null>(null);
+  const registration = useRef<ServiceWorkerRegistration | null>(null);
+  const delegatedEnd = useRef(0);
+  const isRunning = remaining > 0;
 
-  // ── Audio helpers ──
+  // Only the owning hidden tab delegates its deadline. A new message replaces
+  // the previous one, including when the worker first becomes ready mid-rest.
+  const syncNotification = useCallback(() => {
+    const worker = registration.current?.active;
+    if (!worker) return;
+    const shouldArm = accountAllowsNotifications && allowNotification && getPermission() === 'granted' &&
+      document.visibilityState === 'hidden' && deadline.current > Date.now();
+    const endTime = shouldArm ? deadline.current : 0;
+    if (delegatedEnd.current === endTime) return;
+    worker.postMessage({
+      type: 'REST_TIMER_DEADLINE',
+      endTime,
+      sessionId: new URLSearchParams(location.search).get('id'),
+    });
+    delegatedEnd.current = endTime;
+  }, [accountAllowsNotifications, allowNotification]);
+  const syncOnReady = useEffectEvent(syncNotification);
 
-  const getAudio = useCallback(() => {
-    if (!audioRef.current) audioRef.current = new Audio();
-    return audioRef.current;
+  useEffect(() => {
+    let mounted = true;
+    const onControllerChange = () => {
+      delegatedEnd.current = 0;
+      syncOnReady();
+    };
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+      navigator.serviceWorker.register('/sw.js').then(() => navigator.serviceWorker.ready).then((reg) => {
+        if (mounted) {
+          registration.current = reg;
+          syncOnReady();
+        }
+      }).catch(() => {});
+    }
+    return () => {
+      mounted = false;
+      navigator.serviceWorker?.removeEventListener('controllerchange', onControllerChange);
+      if (delegatedEnd.current) registration.current?.active?.postMessage({ type: 'REST_TIMER_DEADLINE', endTime: 0 });
+      delegatedEnd.current = 0;
+      registration.current = null;
+      audio.current?.pause();
+    };
   }, []);
 
-  const startSilentAudioLoop = useCallback(() => {
-    try {
-      const audio = getAudio();
-      audio.pause();
-      audio.src = '/sounds/silence.wav';
-      audio.loop = true;
-      audio.volume = 0.01;
-      audio.onended = null;
-      audio.play().catch(() => {});
-    } catch { /* audio not supported */ }
-  }, [getAudio]);
-
-  const stopSilentAudioLoop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.loop = false;
-      audioRef.current.onended = null;
+  const tick = useEffectEvent((playFeedback: boolean) => {
+    if (!deadline.current || document.visibilityState !== 'visible') return;
+    const seconds = Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000));
+    setRemaining(seconds);
+    if (seconds > 0) return;
+    deadline.current = 0;
+    setFinished(true);
+    if (!playFeedback) return;
+    if (vibration && 'vibrate' in navigator) navigator.vibrate([150, 80, 150]);
+    if (sound) {
+      audio.current ??= new Audio('/sounds/beep.wav');
+      audio.current.volume = 0.7;
+      audio.current.play().catch(() => {});
     }
-  }, []);
-
-  const playBeepAudio = useCallback(() => {
-    try {
-      const audio = getAudio();
-      audio.pause();
-      audio.src = '/sounds/beep.wav';
-      audio.loop = false;
-      audio.volume = 0.7;
-      audio.onended = () => stopSilentAudioLoop();
-      audio.play().catch(() => {});
-    } catch { /* audio not supported */ }
-  }, [getAudio, stopSilentAudioLoop]);
-
-  // ── End timer (shared logic for tick + visibility catch-up) ──
-
-  const endTimer = useCallback(() => {
-    if (firedRef.current) return;
-    firedRef.current = true;
-    endRef.current = 0;
-    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-    setIsRunning(false);
-    setRemaining(0);
-
-    if (vibration && 'vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200, 100, 200]);
-    }
-    if (sound) playBeepAudio();
-    else stopSilentAudioLoop();
-
-    dismissSwNotification();
-  }, [sound, vibration, playBeepAudio, stopSilentAudioLoop]);
-
-  // ── Countdown tick — absolute time, immune to throttling ──
+  });
 
   useEffect(() => {
     if (!isRunning) return;
-    firedRef.current = false;
-    const tick = () => {
-      const r = Math.max(0, Math.ceil((endRef.current - Date.now()) / 1000));
-      setRemaining(r);
-      if (r <= 0) endTimer();
-    };
-    tick();
-    intervalRef.current = setInterval(tick, 250);
-    return () => { if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; } };
-  }, [isRunning, endTimer]);
-
-  // ── Visibility change: catch-up + wake lock re-acquire (single listener) ──
-
-  useEffect(() => {
-    const onVisChange = async () => {
-      if (document.visibilityState !== 'visible') return;
-
-      // Catch-up: timer expired while in background
-      if (endRef.current > 0 && Date.now() >= endRef.current) {
-        endTimer();
-      }
-
-      // Dismiss stale notification only if a timer was involved
-      if (firedRef.current) dismissSwNotification();
-
-      // Re-acquire wake lock (iOS releases on tab switch)
-      if (isRunning && !wakeLockRef.current && 'wakeLock' in navigator) {
-        try { wakeLockRef.current = await navigator.wakeLock.request('screen'); } catch { /* ignored */ }
-      }
-    };
-    document.addEventListener('visibilitychange', onVisChange);
-    return () => document.removeEventListener('visibilitychange', onVisChange);
-  }, [isRunning, endTimer]);
-
-  // ── Wake Lock — keep screen on ──
-
-  useEffect(() => {
-    if (!isRunning) {
-      wakeLockRef.current?.release().catch(() => {});
-      wakeLockRef.current = null;
-      return;
-    }
     let active = true;
-    const acquire = async () => {
+    let acquiring = false;
+    let lock: WakeLockSentinel | undefined;
+    const keepScreenOn = async () => {
+      if (!('wakeLock' in navigator) || document.visibilityState !== 'visible' ||
+          !deadline.current || acquiring || (lock && !lock.released)) return;
+      acquiring = true;
       try {
-        if ('wakeLock' in navigator) {
-          const lock = await navigator.wakeLock.request('screen');
-          if (active) wakeLockRef.current = lock;
-          else lock.release();
-        }
-      } catch { /* not supported or denied */ }
+        lock = await navigator.wakeLock.request('screen');
+        if (!active) await lock.release();
+      } catch { /* A wake lock is optional. */ }
+      finally { acquiring = false; }
     };
-    acquire();
-    return () => { active = false; wakeLockRef.current?.release().catch(() => {}); };
-  }, [isRunning]);
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const onVisibility = () => {
+      clearInterval(interval);
+      tick(false);
+      syncNotification();
+      if (document.visibilityState === 'visible' && deadline.current) {
+        void keepScreenOn();
+        interval = setInterval(() => tick(true), 250);
+      }
+    };
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      active = false;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      lock?.release().catch(() => {});
+    };
+  }, [isRunning, syncNotification, permission]);
 
-  // ── Start ──
+  const setDeadline = useCallback((end: number) => {
+    deadline.current = end;
+    syncNotification();
+    setRemaining(Math.max(0, Math.ceil((end - Date.now()) / 1000)));
+    setFinished(false);
+    audio.current?.pause();
+    if (audio.current) audio.current.currentTime = 0;
+  }, [syncNotification]);
+  const stop = useCallback(() => setDeadline(0), [setDeadline]);
+  const start = (duration = 90) => setDeadline(duration > 0 ? Date.now() + duration * 1000 : 0);
+  const adjust = (delta: number) => {
+    if (!deadline.current) return;
+    const end = deadline.current + delta * 1000;
+    setDeadline(end > Date.now() ? end : 0);
+  };
 
-  const start = useCallback((duration?: number) => {
-    const seconds = duration || DEFAULT_REST_SECONDS;
-    endRef.current = Date.now() + seconds * 1000;
-    setRemaining(seconds);
-    setIsRunning(true);
-
-    if (sound) startSilentAudioLoop();
-    scheduleTimerNotification(endRef.current);
-
-    if (!notifRequested.current && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-      notifRequested.current = true;
+  const setNotifications = async (enabled: boolean) => {
+    let current = getPermission();
+    if (enabled && !accountAllowsNotifications) return;
+    if (enabled && current === 'default') {
+      try { current = await Notification.requestPermission(); }
+      catch { current = 'unavailable'; }
     }
-  }, [sound, startSilentAudioLoop]);
+    setPermission(current);
+    saveNotification(enabled && current === 'granted');
+  };
 
-  // ── Stop ──
-
-  const stop = useCallback(() => {
-    setIsRunning(false);
-    setRemaining(0);
-    endRef.current = 0;
-    stopSilentAudioLoop();
-    cancelTimerNotification();
-  }, [stopSilentAudioLoop]);
-
-  // ── Adjust ──
-
-  const adjust = useCallback((deltaSeconds: number) => {
-    if (deltaSeconds < 0 && endRef.current - Date.now() <= Math.abs(deltaSeconds) * 1000) {
-      setIsRunning(false);
-      setRemaining(0);
-      endRef.current = 0;
-      stopSilentAudioLoop();
-      cancelTimerNotification();
-    } else {
-      endRef.current += deltaSeconds * 1000;
-      scheduleTimerNotification(endRef.current);
-    }
-  }, [stopSilentAudioLoop]);
-
-  return { remaining, isRunning, sound, vibration, setSound, setVibration, start, stop, adjust };
+  return {
+    remaining, isRunning, finished, sound, vibration, notifications, permission,
+    accountAllowsNotifications, setSound, setVibration, setNotifications, start, stop, adjust,
+    refreshPermission: () => setPermission(getPermission()),
+  };
 }
+
+export type RestTimerState = ReturnType<typeof useRestTimer>;

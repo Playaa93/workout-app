@@ -36,9 +36,7 @@ import {
   Trash,
   Trophy,
   ArrowsLeftRight,
-  SpeakerHigh,
-  SpeakerSlash,
-  DeviceMobile,
+  Bell,
   Info,
   CaretDown,
   NotePencil,
@@ -246,6 +244,8 @@ function ActiveWorkoutContent() {
 
   // Rest timer with set tracking (persists rest_taken on adjust)
   const timer = useSetRestTimer();
+  const [showRestAlerts, setShowRestAlerts] = useState(false);
+  useBackHandler(showRestAlerts, () => setShowRestAlerts(false), 'rest-alerts');
 
   // Elapsed time
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -376,14 +376,27 @@ function ActiveWorkoutContent() {
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(t) }}>Séance en cours</Typography>
             <Typography variant="body2" sx={{ color: tc.m(t) }}>{formatTime(elapsedSeconds)}</Typography>
+            <Box role="status" sx={{ color: tc.h(t), fontSize: '0.875rem' }}>
+              {timer.finished && 'Repos terminé'}
+            </Box>
           </Box>
-          <Button
-            size="small"
-            onClick={() => setShowEndConfirm(true)}
-            sx={{ bgcolor: 'rgba(244,67,54,0.2)', color: 'error.light', borderRadius: '14px', '&:hover': { bgcolor: 'rgba(244,67,54,0.3)' } }}
-          >
-            Terminer
-          </Button>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <IconButton
+              aria-label="Réglages des alertes de repos"
+              title="Alertes de repos"
+              onClick={() => { timer.refreshPermission(); setShowRestAlerts(true); }}
+              sx={{ width: 44, height: 44 }}
+            >
+              <Bell size={20} weight={W} />
+            </IconButton>
+            <Button
+              size="small"
+              onClick={() => setShowEndConfirm(true)}
+              sx={{ bgcolor: 'rgba(244,67,54,0.2)', color: 'error.light', borderRadius: '14px', '&:hover': { bgcolor: 'rgba(244,67,54,0.3)' } }}
+            >
+              Terminer
+            </Button>
+          </Stack>
         </Stack>
       </Box>
 
@@ -415,89 +428,47 @@ function ActiveWorkoutContent() {
             {formatTime(timer.remaining)}
           </Typography>
 
-          {/* Controls */}
-          <Stack direction="row" justifyContent="center" alignItems="center" spacing={3} sx={{ mt: 1 }}>
-            <Typography
-              onClick={() => timer.adjustForSet(-30)}
-              sx={{
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: 500,
-                color: tc.m(t),
-                opacity: 0.6,
-                '&:active': { opacity: 1 },
-              }}
-            >
-              −30
-            </Typography>
-
-            <Typography
-              onClick={() => timer.adjustForSet(30)}
-              sx={{
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: 500,
-                color: tc.m(t),
-                opacity: 0.6,
-                '&:active': { opacity: 1 },
-              }}
-            >
-              +30
-            </Typography>
-
-            <Typography
-              onClick={() => timer.stopForSet()}
-              sx={{
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: 500,
-                color: tc.f(t),
-                '&:active': { color: 'error.main' },
-              }}
-            >
-              ✕
-            </Typography>
-          </Stack>
-
-          {/* Sound/Vibration toggles - subtle icons */}
-          <Stack direction="row" justifyContent="center" spacing={3} sx={{ mt: 1.5 }}>
-            <Box
-              onClick={() => {
-                triggerHaptic('light');
-                timer.setSound(!timer.sound);
-              }}
-              sx={{
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                color: timer.sound ? tc.m(t) : tc.f(t),
-                opacity: timer.sound ? 0.7 : 0.3,
-                transition: 'all 0.2s ease',
-                '&:active': { opacity: 1 },
-              }}
-            >
-              {timer.sound ? <SpeakerHigh size={20} weight={W} /> : <SpeakerSlash size={20} weight={W} />}
-            </Box>
-            <Box
-              onClick={() => {
-                triggerHaptic('light');
-                timer.setVibration(!timer.vibration);
-              }}
-              sx={{
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                color: timer.vibration ? tc.m(t) : tc.f(t),
-                opacity: timer.vibration ? 0.7 : 0.3,
-                transition: 'all 0.2s ease',
-                '&:active': { opacity: 1 },
-              }}
-            >
-              <DeviceMobile size={20} weight={W} />
-            </Box>
+          <Stack direction="row" justifyContent="center" alignItems="center" spacing={1}>
+            <Button aria-label="Retirer 30 secondes" onClick={() => timer.adjustForSet(-30)} sx={{ minHeight: 44, color: tc.m(t) }}>
+              −30 s
+            </Button>
+            <Button aria-label="Ajouter 30 secondes" onClick={() => timer.adjustForSet(30)} sx={{ minHeight: 44, color: tc.m(t) }}>
+              +30 s
+            </Button>
+            <IconButton aria-label="Arrêter le repos" onClick={timer.stopForSet} sx={{ width: 44, height: 44 }}>
+              <X size={18} />
+            </IconButton>
           </Stack>
         </Box>
       )}
+
+      <Dialog open={showRestAlerts} onClose={() => setShowRestAlerts(false)} aria-labelledby="rest-alerts-title"
+        maxWidth="xs" fullWidth PaperProps={{ sx: dialogPaperSx(t) }}>
+        <DialogTitle id="rest-alerts-title">Alertes de repos</DialogTitle>
+        <DialogContent>
+          <Stack>
+            <FormControlLabel label="Bip en fin de repos dans la séance"
+              control={<Checkbox checked={timer.sound} onChange={(_, checked) => timer.setSound(checked)} />} />
+            {typeof navigator !== 'undefined' && 'vibrate' in navigator && (
+              <FormControlLabel label="Vibrer en fin de repos dans la séance"
+                control={<Checkbox checked={timer.vibration} onChange={(_, checked) => timer.setVibration(checked)} />} />
+            )}
+            <FormControlLabel label="Notification silencieuse en arrière-plan"
+              disabled={!timer.accountAllowsNotifications || timer.permission === 'denied' || timer.permission === 'unavailable'}
+              control={<Checkbox checked={timer.notifications}
+                onChange={(_, checked) => { void timer.setNotifications(checked); }} />} />
+            <Typography variant="caption" sx={{ color: tc.m(t) }}>
+              {!timer.accountAllowsNotifications ? 'Les notifications sont désactivées pour ce compte.'
+                : timer.permission === 'denied'
+                  ? 'Les notifications sont bloquées dans les autorisations du site.'
+                : timer.permission === 'unavailable'
+                  ? 'Les notifications sont indisponibles dans ce navigateur.'
+                  : 'Si le navigateur met la séance en veille, la notification peut être retardée ou manquée.'}
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions><Button onClick={() => setShowRestAlerts(false)}>Fermer</Button></DialogActions>
+      </Dialog>
 
       {/* Exercise Sets */}
       <Box sx={{ flex: 1, p: 2 }}>

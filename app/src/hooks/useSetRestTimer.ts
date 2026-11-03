@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useRestTimer, type RestTimerState } from './useRestTimer';
+import { useUserSettings } from '@/powersync/queries/profile-queries';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 
 export interface SetRestTimerState extends RestTimerState {
@@ -12,7 +13,8 @@ export interface SetRestTimerState extends RestTimerState {
 }
 
 export function useSetRestTimer(): SetRestTimerState {
-  const timer = useRestTimer();
+  const { data: settings, isLoading } = useUserSettings();
+  const timer = useRestTimer(!isLoading && settings[0]?.notifications_enabled !== 0);
   const mutations = useWorkoutMutations();
   const setIdRef = useRef<string | null>(null);
   const restDurationRef = useRef(0);
