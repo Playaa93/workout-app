@@ -5,7 +5,6 @@ import { useEffect } from 'react';
 export default function WorkoutOpening({ sessionId }: { sessionId?: string | null }) {
   const href = '/workout/active/en-ligne' + (sessionId ? '?id=' + encodeURIComponent(sessionId) : '');
   useEffect(() => {
-    if (new URLSearchParams(location.search).has('local')) return;
     const timeout = setTimeout(() => {
       if (navigator.onLine) location.replace(href);
     }, 5000);

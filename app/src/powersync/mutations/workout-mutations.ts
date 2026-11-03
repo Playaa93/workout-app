@@ -30,7 +30,9 @@ export function useWorkoutMutations() {
     rpe?: number,
     isWarmup = false,
     restTaken?: number,
-    machineSetupId?: string
+    machineSetupId?: string,
+    notes?: string,
+    submissionId?: string
   ): Promise<{ id: string; isPr: boolean }> {
     const estimated1RM = weight * (1 + reps / 30);
     let isPr = false;
@@ -44,13 +46,13 @@ export function useWorkoutMutations() {
       isPr = !currentPR || estimated1RM > parseFloat(currentPR.value);
     }
 
-    const id = uuid();
+    const id = submissionId ?? uuid();
     const now = nowISO();
 
     await db.execute(
-      `INSERT INTO workout_sets (id, session_id, exercise_id, set_number, reps, weight, rpe, is_warmup, is_pr, rest_taken, machine_setup_id, performed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, sessionId, exerciseId, setNumber, reps, weight.toString(), rpe ?? null, isWarmup ? 1 : 0, isPr ? 1 : 0, restTaken ?? null, machineSetupId ?? null, now]
+      `INSERT INTO workout_sets (id, session_id, exercise_id, set_number, reps, weight, rpe, is_warmup, is_pr, rest_taken, machine_setup_id, performed_at, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, sessionId, exerciseId, setNumber, reps, weight.toString(), rpe ?? null, isWarmup ? 1 : 0, isPr ? 1 : 0, restTaken ?? null, machineSetupId ?? null, now, notes?.trim() || null]
     );
 
     if (isPr) {

@@ -5,21 +5,33 @@ import { requireUserId } from '@/lib/auth';
 import { getSavedWorkout } from '../../overview-actions';
 import { finishOnlineWorkout, recordOnlineSet } from './writes';
 import OnlineRest from './OnlineRest';
+import OnlineEditor from './OnlineEditor';
+import { uuidPattern } from './id';
+import { OnlineStrengthSummary } from '../../summary/SummaryView';
+import { getEditorPreferences, getEditorSession, getFinishedWorkoutInfo } from './reads';
 import styles from './workout.module.css';
 
 export const dynamic = 'force-dynamic';
 
 export default async function OnlineWorkout({ searchParams }: {
-  searchParams: Promise<{ id?: string; saved?: string; error?: string }>;
+  searchParams: Promise<{ id?: string; saved?: string; error?: string; simple?: string }>;
 }) {
   const userId = await requireUserId();
   const params = await searchParams;
   const id = params.id || (await db.select({ id: workoutSessions.id }).from(workoutSessions)
     .where(and(eq(workoutSessions.userId, userId), eq(workoutSessions.sessionType, 'strength'), isNull(workoutSessions.endedAt)))
     .orderBy(desc(workoutSessions.startedAt)).limit(1))[0]?.id;
-  const workout = typeof id === 'string' && /^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(id) ? await getSavedWorkout(id) : null;
-  if (!workout || !id) return <main className={styles.page}><h1>Séance introuvable</h1><a href="/workout">Mes séances</a></main>;
-
+  const validId = typeof id === 'string' && uuidPattern.test(id);
+  const missing = <main className={styles.page}><h1>Séance introuvable</h1><a href="/workout">Mes séances</a></main>;
+  if (!validId) return missing;
+  if (params.simple !== '1') {
+    const snapshot = await getEditorSession(id);
+    if (!snapshot) return missing;
+    if (!snapshot.session.endedAt) return <OnlineEditor key={id} userId={userId} initial={snapshot} preferences={await getEditorPreferences()} />;
+    return <OnlineStrengthSummary snapshot={snapshot} info={await getFinishedWorkoutInfo(id)} />;
+  }
+  const workout = await getSavedWorkout(id);
+  if (!workout) return missing;
   const choices = new Map(workout.plan.map(ex => [ex.exerciseId, ex]));
   for (const set of workout.sets) {
     if (set.exerciseId && !choices.has(set.exerciseId)) choices.set(set.exerciseId, { exerciseId: set.exerciseId, name: set.name, targetSets: null, rest: set.rest });
@@ -71,6 +83,6 @@ export default async function OnlineWorkout({ searchParams }: {
       <p>Clôturer la séance avec les {workout.sets.length} séries enregistrées et calculer son bilan ?</p><form action={finishOnlineWorkout}>
         <input type="hidden" name="session" value={id} /><button>Confirmer la fin de séance</button>
       </form></details>}
-    <a href={`/workout/active?id=${id}&local=1`}>Revenir à l’éditeur complet</a>
+    {!workout.endedAt && <a href={`?id=${id}`}>Revenir à la séance</a>}
   </main>;
 }
