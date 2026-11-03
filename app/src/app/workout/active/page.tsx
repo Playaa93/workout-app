@@ -47,6 +47,7 @@ import {
   type MorphoRecommendation,
 } from '@/lib/morpho-exercise-scoring';
 import { triggerHaptic } from '@/lib/haptic';
+import { getExerciseProgress } from './exercise-progress';
 import { useSetRestTimer } from '@/hooks/useSetRestTimer';
 import { useThemeTokens } from '@/hooks/useDark';
 import { alpha } from '@mui/material/styles';
@@ -106,6 +107,8 @@ function toMachineSetup(r: any): MachineSetup {
   };
 }
 
+const currentExerciseBorder = { borderColor: GOLD, boxShadow: `inset 3px 0 0 ${GOLD}` };
+
 function formatRestTime(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 }
@@ -125,7 +128,7 @@ function ActiveWorkoutContent() {
 
   // Get template_id from session for template exercises
   const templateId = sessionRows?.[0]?.template_id as string | null;
-  const { data: templateExRows } = useTemplateExercises(templateId);
+  const { data: templateExRows, isLoading: planLoading } = useTemplateExercises(templateId);
 
   // Map exercises
   const exercises = useMemo<Exercise[]>(() => {
@@ -191,6 +194,8 @@ function ActiveWorkoutContent() {
     }));
   }, [templateExRows]);
 
+  const { byExercise, currentId } = useMemo(() => getExerciseProgress(templateExercises, sets), [templateExercises, sets]);
+
   // Map morphotype
   const morphotype = useMemo<MorphotypeResult | null>(() => {
     if (morphoRows.length === 0) return null;
@@ -236,7 +241,7 @@ function ActiveWorkoutContent() {
     } as MorphotypeResult;
   }, [morphoRows]);
 
-  const isLoading = sessionLoading || setsLoading || exercisesLoading;
+  const isLoading = sessionLoading || setsLoading || exercisesLoading || (!!templateId && planLoading);
 
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
@@ -253,9 +258,23 @@ function ActiveWorkoutContent() {
   // Exercise info modal
   const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
 
-  // Auto-scroll to latest exercise
-  const lastExerciseRef = useRef<HTMLDivElement>(null);
-  const prevSetCount = useRef(0);
+  const currentExerciseRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const revealCurrentExercise = useCallback(() => {
+    const card = currentExerciseRef.current;
+    if (card && headerRef.current) {
+      const top = card.getBoundingClientRect().top - headerRef.current.getBoundingClientRect().bottom - 12;
+      window.scrollBy({ top, behavior: 'instant' });
+    }
+  }, []);
+  const previousProgress = useRef({ count: 0, currentId });
+  useEffect(() => {
+    const previous = previousProgress.current;
+    previousProgress.current = { count: sets.length, currentId };
+    if (previous.count > 0 && sets.length > previous.count && currentId !== previous.currentId) {
+      revealCurrentExercise();
+    }
+  }, [sets.length, currentId, revealCurrentExercise]);
 
   // Swap exercise state
   const [swapExerciseId, setSwapExerciseId] = useState<string | null>(null);
@@ -318,17 +337,6 @@ function ActiveWorkoutContent() {
     }
   };
 
-  // Auto-scroll to last exercise when sets change
-  const currentSetCount = session?.sets.length || 0;
-  useEffect(() => {
-    if (currentSetCount > prevSetCount.current && prevSetCount.current > 0) {
-      setTimeout(() => {
-        lastExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    }
-    prevSetCount.current = currentSetCount;
-  }, [currentSetCount]);
-
   if (!sessionId) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: surfaceBg(t) }}>
@@ -343,13 +351,9 @@ function ActiveWorkoutContent() {
 
   const formatTime = formatRestTime;
 
-  // Group sets by exercise
-  const setsByExercise = new Map<string, WorkoutSet[]>();
-  session?.sets.forEach((set) => {
-    const group = setsByExercise.get(set.exerciseId);
-    if (group) group.push(set);
-    else setsByExercise.set(set.exerciseId, [set]);
-  });
+  const currentName = currentId && (exerciseMap.get(currentId)?.nameFr ||
+    templateExercises.find(exercise => exercise.exerciseId === currentId)?.exerciseName);
+  const currentLabel = currentId && byExercise.has(currentId) ? 'En cours' : 'À suivre';
 
   // Get last rest time used (from most recent set)
   const lastRestTime = session?.sets.length
@@ -358,89 +362,103 @@ function ActiveWorkoutContent() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', pb: 16, bgcolor: surfaceBg(t) }}>
-      {/* Header with timer */}
-      <Box
-        sx={{
-          px: 2,
-          py: 1.5,
-          borderBottom: '1px solid',
-          borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
-          borderRadius: 0,
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          bgcolor: panelBg(t),
-        }}
-      >
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(t) }}>Séance en cours</Typography>
-            <Typography variant="body2" sx={{ color: tc.m(t) }}>{formatTime(elapsedSeconds)}</Typography>
-            <Box role="status" sx={{ color: tc.h(t), fontSize: '0.875rem' }}>
-              {timer.finished && 'Repos terminé'}
-            </Box>
-          </Box>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton
-              aria-label="Réglages des alertes de repos"
-              title="Alertes de repos"
-              onClick={() => { timer.refreshPermission(); setShowRestAlerts(true); }}
-              sx={{ width: 44, height: 44 }}
-            >
-              <Bell size={20} weight={W} />
-            </IconButton>
-            <Button
-              size="small"
-              onClick={() => setShowEndConfirm(true)}
-              sx={{ bgcolor: 'rgba(244,67,54,0.2)', color: 'error.light', borderRadius: '14px', '&:hover': { bgcolor: 'rgba(244,67,54,0.3)' } }}
-            >
-              Terminer
-            </Button>
-          </Stack>
-        </Stack>
-      </Box>
-
-      {/* Rest Timer (sticky) - Apple-style minimal */}
-      {(timer.isRunning || timer.remaining > 0) && (
+      <Box ref={headerRef} sx={{ position: 'sticky', top: 0, zIndex: 10 }}>
+        {/* Header with timer */}
         <Box
           sx={{
-            position: 'sticky',
-            top: 56,
-            zIndex: 10,
-            py: 2,
-            bgcolor: surfaceBg(t),
+            px: 2,
+            py: 1.5,
             borderBottom: '1px solid',
             borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+            borderRadius: 0,
+            bgcolor: panelBg(t),
           }}
         >
-          {/* Timer display - hero element */}
-          <Typography
-            sx={{
-              textAlign: 'center',
-              fontSize: '3rem',
-              fontWeight: 200,
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              letterSpacing: '-0.02em',
-              color: timer.remaining <= 10 ? 'error.main' : tc.h(t),
-              transition: 'color 0.3s ease',
-            }}
-          >
-            {formatTime(timer.remaining)}
-          </Typography>
-
-          <Stack direction="row" justifyContent="center" alignItems="center" spacing={1}>
-            <Button aria-label="Retirer 30 secondes" onClick={() => timer.adjustForSet(-30)} sx={{ minHeight: 44, color: tc.m(t) }}>
-              −30 s
-            </Button>
-            <Button aria-label="Ajouter 30 secondes" onClick={() => timer.adjustForSet(30)} sx={{ minHeight: 44, color: tc.m(t) }}>
-              +30 s
-            </Button>
-            <IconButton aria-label="Arrêter le repos" onClick={timer.stopForSet} sx={{ width: 44, height: 44 }}>
-              <X size={18} />
-            </IconButton>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Box sx={{ minWidth: 0, pr: 1 }}>
+              {currentName ? (
+                <Box
+                  component="button"
+                  aria-label={`Afficher l’exercice · ${currentName}`}
+                  onClick={revealCurrentExercise}
+                  sx={{ display: 'block', maxWidth: '100%', minHeight: 44, p: 0, border: 0, bgcolor: 'transparent', textAlign: 'left', cursor: 'pointer' }}
+                >
+                  <Typography component="span" variant="subtitle1" sx={{ display: 'block', fontWeight: 600, lineHeight: 1.3, overflowWrap: 'anywhere', color: tc.h(t) }}>
+                    {currentName}
+                  </Typography>
+                  <Typography component="span" variant="body2" sx={{ color: tc.m(t) }}>
+                    {currentLabel} · {formatTime(elapsedSeconds)}
+                  </Typography>
+                </Box>
+              ) : (
+                <>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: tc.h(t) }}>Séance en cours</Typography>
+                  <Typography variant="body2" sx={{ color: tc.m(t) }}>{formatTime(elapsedSeconds)}</Typography>
+                </>
+              )}
+              <Box role="status" sx={{ color: tc.h(t), fontSize: '0.875rem' }}>
+                {timer.finished && 'Repos terminé'}
+              </Box>
+            </Box>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <IconButton
+                aria-label="Réglages des alertes de repos"
+                title="Alertes de repos"
+                onClick={() => { timer.refreshPermission(); setShowRestAlerts(true); }}
+                sx={{ width: 44, height: 44 }}
+              >
+                <Bell size={20} weight={W} />
+              </IconButton>
+              <Button
+                size="small"
+                onClick={() => setShowEndConfirm(true)}
+                sx={{ bgcolor: 'rgba(244,67,54,0.2)', color: 'error.light', borderRadius: '14px', '&:hover': { bgcolor: 'rgba(244,67,54,0.3)' } }}
+              >
+                Terminer
+              </Button>
+            </Stack>
           </Stack>
         </Box>
-      )}
+
+        {/* Rest Timer (sticky) - Apple-style minimal */}
+        {(timer.isRunning || timer.remaining > 0) && (
+          <Box
+            sx={{
+              py: 2,
+              bgcolor: surfaceBg(t),
+              borderBottom: '1px solid',
+              borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08),
+            }}
+          >
+            {/* Timer display - hero element */}
+            <Typography
+              sx={{
+                textAlign: 'center',
+                fontSize: '3rem',
+                fontWeight: 200,
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                letterSpacing: '-0.02em',
+                color: timer.remaining <= 10 ? 'error.main' : tc.h(t),
+                transition: 'color 0.3s ease',
+              }}
+            >
+              {formatTime(timer.remaining)}
+            </Typography>
+
+            <Stack direction="row" justifyContent="center" alignItems="center" spacing={1}>
+              <Button aria-label="Retirer 30 secondes" onClick={() => timer.adjustForSet(-30)} sx={{ minHeight: 44, color: tc.m(t) }}>
+                −30 s
+              </Button>
+              <Button aria-label="Ajouter 30 secondes" onClick={() => timer.adjustForSet(30)} sx={{ minHeight: 44, color: tc.m(t) }}>
+                +30 s
+              </Button>
+              <IconButton aria-label="Arrêter le repos" onClick={timer.stopForSet} sx={{ width: 44, height: 44 }}>
+                <X size={18} />
+              </IconButton>
+            </Stack>
+          </Box>
+        )}
+      </Box>
 
       <Dialog open={showRestAlerts} onClose={() => setShowRestAlerts(false)} aria-labelledby="rest-alerts-title"
         maxWidth="xs" fullWidth PaperProps={{ sx: dialogPaperSx(t) }}>
@@ -477,29 +495,34 @@ function ActiveWorkoutContent() {
           {templateExercises.length > 0 && (
             <>
               {templateExercises.map((templateEx, index) => {
-                const exerciseSets = setsByExercise.get(templateEx.exerciseId) || [];
-                const exercise = exercises.find(e => e.id === templateEx.exerciseId);
-                const completedSets = exerciseSets.filter(s => !s.isWarmup).length;
+                const progress = byExercise.get(templateEx.exerciseId);
+                const exerciseSets = progress?.sets ?? [];
+                const exercise = exerciseMap.get(templateEx.exerciseId);
+                const completedSets = progress?.workingSets ?? 0;
                 const targetSets = templateEx.targetSets;
                 const isComplete = completedSets >= targetSets;
+                const isCurrent = templateEx.exerciseId === currentId;
 
                 return (
                   <Box
                     key={templateEx.exerciseId}
-                    sx={card(d, {
-                      p: 2,
-                      border: isComplete ? '2px solid' : '1px solid',
-                      borderColor: isComplete ? 'success.main' : (d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08)),
-                      opacity: isComplete ? 0.7 : 1,
-                    })}
+                    ref={isCurrent ? currentExerciseRef : undefined}
+                    aria-current={isCurrent ? 'step' : undefined}
+                    sx={card(t, { p: 2, ...(isCurrent && currentExerciseBorder) })}
                   >
-                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                        <Box sx={{ flex: 1 }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start"
+                        sx={{ '@media (max-width: 359px)': { flexDirection: 'column', gap: 1 } }}>
+                        <Box sx={{ flex: 1, minWidth: 0, pr: 1 }}>
+                          {isCurrent && (
+                            <Typography component="p" variant="caption" sx={{ m: 0, mb: 0.5, fontWeight: 700, color: tc.h(t) }}>
+                              {currentLabel} · Série {completedSets + 1} sur {targetSets}
+                            </Typography>
+                          )}
                           <Stack direction="row" spacing={1} alignItems="center">
                             <Chip
                               label={index + 1}
                               size="small"
-                              sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: isComplete ? 'success.main' : GOLD, color: isComplete ? '#fff' : GOLD_CONTRAST }}
+                              sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: isCurrent ? GOLD : alpha(tc.h(t), 0.08), color: isCurrent ? GOLD_CONTRAST : tc.m(t), flexShrink: 0 }}
                             />
                             <Typography
                               variant="subtitle2"
@@ -523,11 +546,12 @@ function ActiveWorkoutContent() {
                             </Typography>
                           )}
                         </Box>
-                        <Stack direction="row" spacing={0.5}>
+                        <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
                           <IconButton
                             size="small"
+                            aria-label={`Remplacer ${templateEx.exerciseName}`}
                             onClick={() => handleOpenSwap(templateEx.exerciseId)}
-                            sx={{ border: '1px solid', borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }}
+                            sx={{ width: 44, height: 44, border: '1px solid', borderColor: d ? alpha('#ffffff', 0.1) : alpha('#000000', 0.08) }}
                           >
                             <ArrowsLeftRight size={18} weight={W} />
                           </IconButton>
@@ -538,11 +562,9 @@ function ActiveWorkoutContent() {
                                 setSelectedExercise(exercise);
                               }
                             }}
+                            aria-label={`Ajouter une série · ${templateEx.exerciseName}`}
                             disabled={!exercise}
-                            sx={isComplete
-                              ? { ...goldOutlinedBtnSx }
-                              : { ...goldBtnSx }
-                            }
+                            sx={isCurrent ? goldBtnSx : { ...goldOutlinedBtnSx, color: tc.m(t), borderColor: alpha(tc.h(t), 0.18) }}
                           >
                             {isComplete ? '+ série' : 'Ajouter'}
                           </Button>
@@ -584,19 +606,19 @@ function ActiveWorkoutContent() {
 
           {/* Sets from exercises not in template */}
           {(() => {
-            const freeExercises = Array.from(setsByExercise.entries())
+            const freeExercises = Array.from(byExercise.entries())
               .filter(([exerciseId]) => !templateExercises.some(t => t.exerciseId === exerciseId));
-            return freeExercises.map(([exerciseId, sets], index) => {
+            return freeExercises.map(([exerciseId, progress]) => {
               const exercise = session?.exercises.get(exerciseId);
-              const isLast = index === freeExercises.length - 1;
+              const isCurrent = exerciseId === currentId;
               return (
-                <div key={exerciseId} ref={isLast ? lastExerciseRef : undefined}>
+                <div key={exerciseId} ref={isCurrent ? currentExerciseRef : undefined} aria-current={isCurrent ? 'step' : undefined}>
                   <ExerciseCard
                     exercise={exercise}
-                    sets={sets}
+                    sets={progress.sets}
                     sessionId={sessionId}
                     defaultRestTime={lastRestTime}
-                    isLastExercise={isLast}
+                    isCurrent={isCurrent}
                     onStartTimer={timer.startForSet}
                     onShowInfo={setInfoExercise}
                   />
@@ -638,7 +660,7 @@ function ActiveWorkoutContent() {
           <SetInputSheet
             exercise={selectedExercise}
             sessionId={sessionId}
-            setNumber={(setsByExercise.get(selectedExercise.id)?.length || 0) + 1}
+            setNumber={(byExercise.get(selectedExercise.id)?.sets.length || 0) + 1}
             morphotype={morphotype}
             defaultRestTime={lastRestTime}
             onClose={() => setSelectedExercise(null)}
@@ -964,7 +986,7 @@ function ExerciseCard({
   sets,
   sessionId,
   defaultRestTime = 90,
-  isLastExercise = false,
+  isCurrent = false,
   onStartTimer,
   onShowInfo,
 }: {
@@ -972,7 +994,7 @@ function ExerciseCard({
   sets: WorkoutSet[];
   sessionId: string;
   defaultRestTime?: number;
-  isLastExercise?: boolean;
+  isCurrent?: boolean;
   onStartTimer: (setId: string, duration: number) => void;
   onShowInfo: (exercise: Exercise) => void;
 }) {
@@ -980,7 +1002,7 @@ function ExerciseCard({
   const { t, d } = useThemeTokens();
   const [showAddSet, setShowAddSet] = useState(false);
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState(!isLastExercise && sets.length > 0);
+  const [collapsed, setCollapsed] = useState(!isCurrent && sets.length > 0);
   const [selectedMachineSetupId, setSelectedMachineSetupId] = useState<string | null>(null);
   const [machineSheetOpen, setMachineSheetOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
@@ -995,11 +1017,10 @@ function ExerciseCard({
     return prevSetRows.map(toWorkoutSet);
   }, [prevSetRows]);
 
-  // Auto-collapse when this exercise is no longer the last one
+  // Keep the current exercise expanded when moving between exercises.
   useEffect(() => {
-    if (!isLastExercise) setCollapsed(true);
-    if (isLastExercise) setCollapsed(false);
-  }, [isLastExercise]);
+    setCollapsed(!isCurrent);
+  }, [isCurrent]);
 
   const handleSelectSetup = useCallback((setup: MachineSetup | null) => {
     setSelectedMachineSetupId(setup?.id ?? null);
@@ -1013,7 +1034,7 @@ function ExerciseCard({
   const totalVolume = workingSets.reduce((sum, s) => sum + (s.reps || 0) * parseFloat(s.weight || '0'), 0);
 
   return (
-    <Box sx={card(t)}>
+    <Box sx={card(t, isCurrent ? currentExerciseBorder : undefined)}>
       {/* Exercise Header — tap to collapse/expand */}
       <Box
         sx={{ p: 2, pb: collapsed ? 2 : 0, cursor: 'pointer' }}
@@ -1021,6 +1042,7 @@ function ExerciseCard({
       >
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           <Box sx={{ flex: 1 }}>
+            {isCurrent && <Typography component="p" variant="caption" sx={{ m: 0, fontWeight: 700, color: tc.h(t) }}>En cours</Typography>}
             <Stack direction="row" alignItems="center" spacing={1}>
               <Typography
                 variant="subtitle1"
