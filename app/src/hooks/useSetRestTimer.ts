@@ -1,54 +1,16 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { useRestTimer, type RestTimerState } from './useRestTimer';
+import { useRestTimer } from './useRestTimer';
 import { useUserSettings } from '@/powersync/queries/profile-queries';
 import { useWorkoutMutations } from '@/powersync/mutations/workout-mutations';
 
-export interface SetRestTimerState extends RestTimerState {
-  /** Start the timer for a specific set */
-  startForSet: (setId: string, duration: number) => void;
-  /** Adjust timer and persist rest_taken for the tracked set */
-  adjustForSet: (deltaSeconds: number) => void;
-  /** Stop timer and clear set tracking */
-  stopForSet: () => void;
-}
-
-export function useSetRestTimer(): SetRestTimerState {
+export function useSetRestTimer(storageKey: string, canResumeSet: (id: string) => boolean) {
   const { data: settings, isLoading } = useUserSettings();
-  const timer = useRestTimer(!isLoading && settings[0]?.notifications_enabled !== 0);
-  const mutations = useWorkoutMutations();
-  const setIdRef = useRef<string | null>(null);
-  const restDurationRef = useRef(0);
+  const { updateSetRestTaken } = useWorkoutMutations();
+  const { start, stop, adjust, ...timer } = useRestTimer(storageKey, !isLoading && settings[0]?.notifications_enabled !== 0, canResumeSet);
 
-  // Clear set tracking when timer stops (natural finish or manual stop)
-  useEffect(() => {
-    if (!timer.isRunning) {
-      setIdRef.current = null;
-    }
-  }, [timer.isRunning]);
-
-  const startForSet = useCallback((setId: string, duration: number) => {
-    setIdRef.current = setId;
-    restDurationRef.current = duration;
-    timer.start(duration);
-  }, [timer]);
-
-  const adjustForSet = useCallback((deltaSeconds: number) => {
-    timer.adjust(deltaSeconds);
-    if (setIdRef.current) {
-      restDurationRef.current = Math.max(0, restDurationRef.current + deltaSeconds);
-      mutations.updateSetRestTaken(setIdRef.current, restDurationRef.current);
-    }
-  }, [timer, mutations]);
-
-  const stopForSet = useCallback(() => {
-    timer.stop();
-    setIdRef.current = null;
-  }, [timer]);
-
-  return {
-    ...timer,
-    startForSet,
-    adjustForSet,
-    stopForSet,
+  const adjustForSet = (delta: number) => {
+    const adjusted = adjust(delta);
+    if (adjusted) void updateSetRestTaken(adjusted.setId, adjusted.duration);
   };
+
+  return { ...timer, startForSet: start, stopForSet: stop, adjustForSet };
 }

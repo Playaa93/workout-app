@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { readSetRest, remainingSeconds, saveSetRest, type SetRest } from '@/lib/rest-timer-storage';
 
 type AlertPermission = NotificationPermission | 'unavailable';
 
@@ -26,15 +27,19 @@ function useAlertPreference(name: string, fallback: boolean) {
   return [enabled, update] as const;
 }
 
-export function useRestTimer(accountAllowsNotifications: boolean) {
-  const [remaining, setRemaining] = useState(0);
-  const [finished, setFinished] = useState(false);
+export function useRestTimer(storageKey: string, accountAllowsNotifications: boolean, canResumeSet: (id: string) => boolean) {
+  const [initialRest] = useState(() => {
+    const saved = readSetRest(storageKey);
+    return saved && canResumeSet(saved.setId) ? saved : null;
+  });
+  const [remaining, setRemaining] = useState(() => remainingSeconds(initialRest));
+  const [finished, setFinished] = useState(initialRest !== null && remaining === 0);
+  const currentRest = useRef(remaining > 0 ? initialRest : null);
   const [sound, setSound] = useAlertPreference('sound', false);
   const [vibration, setVibration] = useAlertPreference('vibration', true);
   const [allowNotification, saveNotification] = useAlertPreference('notification', true);
   const [permission, setPermission] = useState(getPermission);
   const notifications = accountAllowsNotifications && allowNotification && permission === 'granted';
-  const deadline = useRef(0);
   const audio = useRef<HTMLAudioElement | null>(null);
   const registration = useRef<ServiceWorkerRegistration | null>(null);
   const delegatedEnd = useRef(0);
@@ -45,9 +50,10 @@ export function useRestTimer(accountAllowsNotifications: boolean) {
   const syncNotification = useCallback(() => {
     const worker = registration.current?.active;
     if (!worker) return;
+    const deadline = currentRest.current?.endTime ?? 0;
     const shouldArm = accountAllowsNotifications && allowNotification && getPermission() === 'granted' &&
-      document.visibilityState === 'hidden' && deadline.current > Date.now();
-    const endTime = shouldArm ? deadline.current : 0;
+      document.visibilityState === 'hidden' && deadline > Date.now();
+    const endTime = shouldArm ? deadline : 0;
     if (delegatedEnd.current === endTime) return;
     worker.postMessage({
       type: 'REST_TIMER_DEADLINE',
@@ -59,6 +65,8 @@ export function useRestTimer(accountAllowsNotifications: boolean) {
   const syncOnReady = useEffectEvent(syncNotification);
 
   useEffect(() => {
+    // An expired or invalid saved rest is consumed once, without replaying feedback.
+    if (!currentRest.current) saveSetRest(storageKey, null);
     let mounted = true;
     const onControllerChange = () => {
       delegatedEnd.current = 0;
@@ -81,14 +89,16 @@ export function useRestTimer(accountAllowsNotifications: boolean) {
       registration.current = null;
       audio.current?.pause();
     };
-  }, []);
+  }, [storageKey]);
 
   const tick = useEffectEvent((playFeedback: boolean) => {
-    if (!deadline.current || document.visibilityState !== 'visible') return;
-    const seconds = Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000));
+    const rest = currentRest.current;
+    if (!rest || document.visibilityState !== 'visible') return;
+    const seconds = remainingSeconds(rest);
     setRemaining(seconds);
     if (seconds > 0) return;
-    deadline.current = 0;
+    currentRest.current = null;
+    saveSetRest(storageKey, null);
     setFinished(true);
     if (!playFeedback) return;
     if (vibration && 'vibrate' in navigator) navigator.vibrate([150, 80, 150]);
@@ -106,7 +116,7 @@ export function useRestTimer(accountAllowsNotifications: boolean) {
     let lock: WakeLockSentinel | undefined;
     const keepScreenOn = async () => {
       if (!('wakeLock' in navigator) || document.visibilityState !== 'visible' ||
-          !deadline.current || acquiring || (lock && !lock.released)) return;
+          !currentRest.current || acquiring || (lock && !lock.released)) return;
       acquiring = true;
       try {
         lock = await navigator.wakeLock.request('screen');
@@ -119,7 +129,7 @@ export function useRestTimer(accountAllowsNotifications: boolean) {
       clearInterval(interval);
       tick(false);
       syncNotification();
-      if (document.visibilityState === 'visible' && deadline.current) {
+      if (document.visibilityState === 'visible' && currentRest.current) {
         void keepScreenOn();
         interval = setInterval(() => tick(true), 250);
       }
@@ -134,20 +144,26 @@ export function useRestTimer(accountAllowsNotifications: boolean) {
     };
   }, [isRunning, syncNotification, permission]);
 
-  const setDeadline = useCallback((end: number) => {
-    deadline.current = end;
+  const setRest = useCallback((rest: SetRest | null) => {
+    currentRest.current = rest;
+    saveSetRest(storageKey, rest);
     syncNotification();
-    setRemaining(Math.max(0, Math.ceil((end - Date.now()) / 1000)));
+    setRemaining(remainingSeconds(rest));
     setFinished(false);
     audio.current?.pause();
     if (audio.current) audio.current.currentTime = 0;
-  }, [syncNotification]);
-  const stop = useCallback(() => setDeadline(0), [setDeadline]);
-  const start = (duration = 90) => setDeadline(duration > 0 ? Date.now() + duration * 1000 : 0);
+  }, [storageKey, syncNotification]);
+  const stop = () => setRest(null);
+  const start = (setId: string, duration: number) => {
+    setRest(duration > 0 ? { setId, duration, endTime: Date.now() + duration * 1000 } : null);
+  };
   const adjust = (delta: number) => {
-    if (!deadline.current) return;
-    const end = deadline.current + delta * 1000;
-    setDeadline(end > Date.now() ? end : 0);
+    const rest = currentRest.current;
+    if (!rest || rest.endTime <= Date.now()) return;
+    const duration = Math.max(0, rest.duration + delta);
+    const endTime = rest.endTime + delta * 1000;
+    setRest(endTime > Date.now() ? { ...rest, duration, endTime } : null);
+    return { setId: rest.setId, duration };
   };
 
   const setNotifications = async (enabled: boolean) => {
@@ -167,5 +183,3 @@ export function useRestTimer(accountAllowsNotifications: boolean) {
     refreshPermission: () => setPermission(getPermission()),
   };
 }
-
-export type RestTimerState = ReturnType<typeof useRestTimer>;

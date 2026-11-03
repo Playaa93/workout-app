@@ -113,16 +113,17 @@ function formatRestTime(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 }
 
-function ActiveWorkoutContent() {
+function ActiveWorkoutContent({ sessionId, storageKey, sessionRows, setRows }: {
+  sessionId: string | null;
+  storageKey: string;
+  sessionRows: ReturnType<typeof useActiveSession>['data'];
+  setRows: ReturnType<typeof useSessionSets>['data'];
+}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const sessionId = searchParams.get('id');
   const mutations = useWorkoutMutations();
   const { t, d } = useThemeTokens();
 
   // PowerSync reactive hooks
-  const { data: sessionRows, isLoading: sessionLoading } = useActiveSession(sessionId);
-  const { data: setRows, isLoading: setsLoading } = useSessionSets(sessionId);
   const { data: exerciseRows, isLoading: exercisesLoading } = useExercises();
   const { data: morphoRows } = useMorphoProfile();
 
@@ -241,19 +242,21 @@ function ActiveWorkoutContent() {
     } as MorphotypeResult;
   }, [morphoRows]);
 
-  const isLoading = sessionLoading || setsLoading || exercisesLoading || (!!templateId && planLoading);
+  const isLoading = exercisesLoading || (!!templateId && planLoading);
 
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   // Rest timer with set tracking (persists rest_taken on adjust)
-  const timer = useSetRestTimer();
+  const timer = useSetRestTimer(storageKey, setId =>
+    !!session && !session.session.endedAt && sets.some(set => set.id === setId));
   const [showRestAlerts, setShowRestAlerts] = useState(false);
   useBackHandler(showRestAlerts, () => setShowRestAlerts(false), 'rest-alerts');
 
   // Elapsed time
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(() =>
+    session ? Math.max(0, Math.floor((Date.now() - session.session.startedAt.getTime()) / 1000)) : 0);
 
   // Exercise info modal
   const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
@@ -309,6 +312,7 @@ function ActiveWorkoutContent() {
     if (!sessionId) return;
     try {
       const result = await mutations.endWorkoutSession(sessionId);
+      timer.stopForSet();
       dismissAllOverlays();
       router.push(`/workout/summary?sessionId=${sessionId}&xp=${result.xpEarned}&volume=${result.totalVolume}&duration=${result.duration}&prs=${result.prCount}`);
     } catch (error) {
@@ -825,14 +829,27 @@ function ActiveWorkoutContent() {
   );
 }
 
+function SessionWorkout({ sessionId, storageKey }: { sessionId: string | null; storageKey: string }) {
+  const { data: sessionRows, isLoading: sessionLoading } = useActiveSession(sessionId);
+  const { data: setRows, isLoading: setsLoading } = useSessionSets(sessionId);
+  if (sessionLoading || setsLoading) return <FullScreenLoader />;
+
+  return <ActiveWorkoutContent storageKey={storageKey} sessionId={sessionId} sessionRows={sessionRows} setRows={setRows} />;
+}
+
+function ActiveWorkoutRoute() {
+  const { userId, loading } = useAuth();
+  const sessionId = useSearchParams().get('id');
+  if (loading || !userId) return <FullScreenLoader />;
+
+  const storageKey = `workout.rest.v1.${userId}.${sessionId}`;
+  return <SessionWorkout key={storageKey} storageKey={storageKey} sessionId={sessionId} />;
+}
+
 export default function ActiveWorkoutPage() {
-  const { userId, loading: authLoading } = useAuth();
-  if (authLoading || !userId) {
-    return <FullScreenLoader />;
-  }
   return (
     <Suspense fallback={<FullScreenLoader />}>
-      <ActiveWorkoutContent />
+      <ActiveWorkoutRoute />
     </Suspense>
   );
 }
