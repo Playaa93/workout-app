@@ -159,9 +159,9 @@ describe('todayStr', () => {
 });
 
 describe('nowISO', () => {
-  it('returns ISO 8601 string', () => {
+  it('returns a UTC timestamp matching the database representation', () => {
     const result = nowISO();
-    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
 
   it('returns a parseable date', () => {

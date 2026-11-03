@@ -2,15 +2,11 @@
 
 import { randomUUID } from 'node:crypto';
 import { uuidPattern } from './id';
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { transactionalDb as connection } from '@/db/transaction';
 import { sql } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { requireUserId } from '@/lib/auth';
 import { calculateLevel } from '@/lib/xp-utils';
-
-// Interactive transactions keep the set, its record and the end-of-session rewards atomic.
-const connection = drizzle(postgres(process.env.DATABASE_URL!, { max: 2, prepare: false, idle_timeout: 15, connect_timeout: 8 }));
 
 
 function id(form: FormData, key: string) {

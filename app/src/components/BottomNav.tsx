@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useThemeTokens } from '@/hooks/useDark';
+import { dismissAllOverlays } from '@/hooks/useBackHandler';
 import { GOLD, W } from '@/lib/design-tokens';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -19,7 +20,7 @@ const NAV_ITEMS = [
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { t, d: isDark } = useThemeTokens();
+  const { d: isDark } = useThemeTokens();
 
   const activeKey = NAV_ITEMS.find((item) =>
     item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
@@ -53,6 +54,7 @@ export default function BottomNav() {
                   key={item.key}
                   component={Link}
                   href={item.href}
+                  onNavigate={dismissAllOverlays}
                   sx={{
                     flex: 1, display: 'flex', flexDirection: 'column',
                     alignItems: 'center', justifyContent: 'center', gap: 0.4,

@@ -1,7 +1,7 @@
 'use server';
 
 import { db, foods, foodCravings, foodEntries, nutritionDailySummary, nutritionProfiles, userGamification, xpTransactions } from '@/db';
-import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
+import { eq, desc, sql, and, or, isNull, gte, lte } from 'drizzle-orm';
 import { requireUserId } from '@/lib/auth';
 import { getLocalDateStr } from '@/lib/date-utils';
 import { updateStreak } from '@/app/profile/actions';
@@ -163,6 +163,8 @@ const foodColumns = {
 export async function searchFoods(query: string, limit = 20): Promise<FoodData[]> {
   if (!query || query.length < 2) return [];
 
+  const userId = await requireUserId();
+  const visible = or(isNull(foods.createdBy), eq(foods.createdBy, userId));
   const words = query.toLowerCase().split(/\s+/).filter(w => w.length >= 2);
   if (words.length === 0) return [];
 
@@ -171,7 +173,7 @@ export async function searchFoods(query: string, limit = 20): Promise<FoodData[]
   const fts = await db
     .select(foodColumns)
     .from(foods)
-    .where(sql`search_vector @@ ${tsQuery}`)
+    .where(and(visible, sql`search_vector @@ ${tsQuery}`))
     .orderBy(
       sql`ts_rank(search_vector, ${tsQuery}) DESC`,
       sql`LENGTH(${foods.nameFr})`,
@@ -193,7 +195,7 @@ export async function searchFoods(query: string, limit = 20): Promise<FoodData[]
   const fuzzy = await db
     .select(foodColumns)
     .from(foods)
-    .where(and(...fuzzyConditions))
+    .where(and(visible, ...fuzzyConditions))
     .orderBy(sql`${simScore} DESC`, sql`LENGTH(${foods.nameFr})`)
     .limit(limit);
 

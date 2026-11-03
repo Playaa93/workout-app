@@ -2,7 +2,6 @@ import {
   AbstractPowerSyncDatabase,
   CrudEntry,
   PowerSyncBackendConnector,
-  UpdateType,
 } from '@powersync/web';
 
 // Determine base URL for API calls
@@ -57,15 +56,9 @@ export class PowerSyncConnector implements PowerSyncBackendConnector {
       await transaction.complete();
     } catch (error) {
       console.error('PowerSync upload error:', error);
-      const msg = error instanceof Error ? error.message : '';
-      // Permanent errors (bad SQL, schema mismatch): complete transaction to unblock queue
-      // Transient errors (network): rethrow so PowerSync retries
-      if (msg.includes('Failed query') || msg.includes('violates') || msg.includes('no column')) {
-        console.warn('Permanent upload error — discarding transaction to unblock sync queue');
-        await transaction.complete();
-      } else {
-        throw error;
-      }
+      // A failed upload must stay queued, including schema and constraint errors.
+      // A later retry is safe because the backend commits each batch atomically.
+      throw error;
     }
   }
 }

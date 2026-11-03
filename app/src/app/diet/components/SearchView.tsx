@@ -12,7 +12,7 @@ import { alpha } from '@mui/material/styles';
 import { tc, card, GOLD, W } from '@/lib/design-tokens';
 import { useThemeTokens } from '@/hooks/useDark';
 import { triggerHaptic, MACRO_COLORS } from './shared';
-import { searchFoods, searchOpenFoodFacts, cacheFoodProduct, addFoodEntry } from '../actions';
+import { cacheFoodProduct, addFoodEntry } from '../actions';
 import type { FoodData, MealType } from './shared';
 
 function foodDedupeKey(f: FoodData): string {
@@ -68,7 +68,7 @@ export default function SearchView({
   onClose,
 }: {
   mealType: MealType;
-  onAdd: (data: Parameters<typeof addFoodEntry>[0]) => void;
+  onAdd: (data: Parameters<typeof addFoodEntry>[0]) => void | Promise<void>;
   onClose: () => void;
 }) {
   const { t, d } = useThemeTokens();
@@ -78,41 +78,43 @@ export default function SearchView({
   const [offResults, setOffResults] = useState<FoodData[]>([]);
   const [selectedFood, setSelectedFood] = useState<FoodData | null>(null);
   const [quantity, setQuantity] = useState('100');
-  const [mealType, setMealType] = useState<string>(initialMealType);
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchingOff, setIsSearchingOff] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [addedSnackbar, setAddedSnackbar] = useState<string | null>(null);
   const [isEstimatingAI, setIsEstimatingAI] = useState(false);
 
   useEffect(() => {
-    if (query.length < 2) {
+    if (query.trim().length < 2) {
       setLocalResults([]);
       setOffResults([]);
+      setIsSearching(false);
+      setIsSearchingOff(false);
       return;
     }
-
+    const controller = new AbortController();
     let cancelled = false;
-
+    async function findFoods(source: 'local' | 'off'): Promise<FoodData[]> {
+      try {
+        const params = new URLSearchParams({ q: query.trim(), source });
+        const response = await fetch(`/api/foods/search?${params}`, { signal: controller.signal, cache: 'no-store' });
+        return response.ok ? await response.json() : [];
+      } catch { return []; }
+    }
     const timer = setTimeout(async () => {
       setIsSearching(true);
-      setIsSearchingOff(true);
+      setIsSearchingOff(false);
+      setLocalResults([]);
       setOffResults([]);
-
-      // Run local DB + Open Food Facts in parallel
-      const localPromise = searchFoods(query).catch(() => [] as FoodData[]);
-      const offPromise = searchOpenFoodFacts(query).catch(() => [] as FoodData[]);
-
       try {
-        // Show local results as soon as ready
-        const local = await localPromise;
+        const local = await findFoods('local');
         if (cancelled) return;
         setLocalResults(local);
         setIsSearching(false);
-
-        // Then merge OFF results (already fetching in parallel)
         if (local.length < 5) {
-          const off = await offPromise;
+          setIsSearchingOff(true);
+          const off = await findFoods('off');
           if (cancelled) return;
           const localKeys = new Set(local.map(foodDedupeKey));
           setOffResults(off.filter(f => !localKeys.has(foodDedupeKey(f))));
@@ -124,10 +126,10 @@ export default function SearchView({
         }
       }
     }, 300);
-
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      controller.abort();
     };
   }, [query]);
 
@@ -173,6 +175,7 @@ export default function SearchView({
   const handleAdd = async () => {
     if (!selectedFood || isAdding) return;
     setIsAdding(true);
+    setSaveError(null);
     try {
       let foodId = selectedFood.id;
       if (foodId.startsWith('off:') || foodId.startsWith('ai:')) {
@@ -183,10 +186,10 @@ export default function SearchView({
       const mult = qty / 100;
       const scaled = (val: string | null | undefined) =>
         val ? parseFloat(val) * mult : undefined;
-      onAdd({
+      await onAdd({
         foodId,
         customName: selectedFood.nameFr,
-        mealType,
+        mealType: initialMealType,
         quantity: qty,
         calories: scaled(selectedFood.calories),
         protein: scaled(selectedFood.protein),
@@ -197,7 +200,7 @@ export default function SearchView({
       setSelectedFood(null);
       setQuantity('100');
     } catch {
-      setAddedSnackbar(null);
+      setSaveError('Enregistrement impossible. Réessaie.');
     } finally {
       setIsAdding(false);
     }
@@ -210,6 +213,7 @@ export default function SearchView({
         food={selectedFood}
         quantity={quantity}
         isAdding={isAdding}
+        saveError={saveError}
         d={d}
         onBack={() => setSelectedFood(null)}
         onQuantityChange={setQuantity}
@@ -411,6 +415,7 @@ function FoodDetail({
   food,
   quantity,
   isAdding,
+  saveError,
   d,
   onBack,
   onQuantityChange,
@@ -419,6 +424,7 @@ function FoodDetail({
   food: FoodData;
   quantity: string;
   isAdding: boolean;
+  saveError: string | null;
   d: boolean;
   onBack: () => void;
   onQuantityChange: (v: string) => void;
@@ -593,6 +599,7 @@ function FoodDetail({
             ? `linear-gradient(transparent, rgba(10,10,9,0.95) 20%)`
             : `linear-gradient(transparent, rgba(243,241,236,0.95) 20%)`,
         }}>
+          {saveError && <Typography role="alert" color="error" sx={{ mb: 1 }}>{saveError}</Typography>}
           <Box
             onClick={isValid && !isAdding ? onAdd : undefined}
             sx={{
